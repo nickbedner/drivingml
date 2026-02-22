@@ -1,0 +1,82 @@
+#include "mana/graphics/utilities/collada/modelanimation.h"
+
+struct AnimationData *animation_extract_animation(struct XmlNode *animation_data, struct XmlNode *joint_hierarchy, bool inverted_y) {
+  char *root_node = xml_node_get_attribute(xml_node_get_child(xml_node_get_child_with_attribute(xml_node_get_child(joint_hierarchy, "visual_scene"), "node", "id", "Armature"), "node"), "id");
+  struct Vector *times = animation_get_key_times(animation_data);
+  float duration = *(float *)vector_get(times, vector_size(times) - 1);
+  struct ArrayList *key_frames = animation_init_key_frames(times);
+  vector_delete(times);
+  free(times);
+  struct ArrayList *animation_node = xml_node_get_children(animation_data, "animation");
+  for (size_t joint_node_num = 0; joint_node_num < array_list_size(animation_node); joint_node_num++)
+    animation_load_joint_transform(key_frames, (struct XmlNode *)array_list_get(animation_node, joint_node_num), root_node, inverted_y);
+  struct AnimationData *anim_data = malloc(sizeof(struct AnimationData));
+  animation_data_init(anim_data, duration, key_frames);
+  return anim_data;
+}
+
+struct Vector *animation_get_key_times(struct XmlNode *animation_data) {
+  struct XmlNode *time_data = xml_node_get_child(xml_node_get_child(xml_node_get_child(animation_data, "animation"), "source"), "float_array");
+  char *raw_times = _strdup(xml_node_get_data(time_data));
+  struct Vector *times = malloc(sizeof(struct Vector));
+  vector_init(times, sizeof(float));
+  char *next_token = NULL;
+  char *raw_part = strtok_s(raw_times, " ", &next_token);
+  while (raw_part != NULL) {
+    float time = (float)atof(raw_part);
+    vector_push_back(times, &time);
+    raw_part = strtok_s(NULL, " ", &next_token);
+  }
+  free(raw_times);
+  return times;
+}
+
+struct ArrayList *animation_init_key_frames(struct Vector *times) {
+  struct ArrayList *frames = malloc(sizeof(struct ArrayList));
+  array_list_init(frames);
+  for (size_t frame_num = 0; frame_num < vector_size(times); frame_num++) {
+    struct KeyFrameData *key_frame_data = malloc(sizeof(struct KeyFrameData));
+    key_frame_data_init(key_frame_data, *(float *)vector_get(times, frame_num));
+    array_list_add(frames, key_frame_data);
+  }
+  return frames;
+}
+
+void animation_load_joint_transform(struct ArrayList *frames, struct XmlNode *joint_data, char *root_node_id, bool inverted_y) {
+  char *joint_name_raw = xml_node_get_attribute(xml_node_get_child(joint_data, "channel"), "target");
+  char *slash_pos = strchr(joint_name_raw, '/');
+  size_t joint_name_length = (size_t)(slash_pos - joint_name_raw);
+  char *joint_name_id = malloc(sizeof(char) * (joint_name_length + 1));
+  memcpy(joint_name_id, joint_name_raw, joint_name_length);
+  joint_name_id[joint_name_length] = '\0';
+  char *data_id = xml_node_get_attribute(xml_node_get_child_with_attribute(xml_node_get_child(joint_data, "sampler"), "input", "semantic", "OUTPUT"), "source") + 1;
+  // TODO: Support other animation transforms
+  if (strstr(data_id, "matrix-output") != NULL) {
+    struct XmlNode *transform_data = xml_node_get_child_with_attribute(joint_data, "source", "id", data_id);
+    char *raw_data = xml_node_get_data(xml_node_get_child(transform_data, "float_array"));
+    animation_process_transforms(joint_name_id, raw_data, frames, strcmp(joint_name_id, root_node_id) == 0, inverted_y);
+  }
+  free(joint_name_id);
+}
+
+void animation_process_transforms(char *joint_name, char *raw_data, struct ArrayList *key_frames, bool root, bool inverted_y) {
+  char *next_token = NULL;
+  char *raw_part = strtok_s(raw_data, " ", &next_token);
+  for (size_t key_frame_num = 0; key_frame_num < array_list_size(key_frames); key_frame_num++) {
+    mat4 transform = MAT4_ZERO;
+    for (int matrix_value = 0; matrix_value < 16; matrix_value++) {
+      *(((float *)&transform) + matrix_value) = (float)atof(raw_part);
+      raw_part = strtok_s(NULL, " ", &next_token);
+    }
+    transform = mat4_transpose(transform);
+    if (root) {
+      mat4 correction = mat4_rotate(MAT4_IDENTITY, degree_to_radian(-90.0f), (vec3){.data[0] = 1.0f, .data[1] = 0.0f, .data[2] = 0.0f});
+      // if (inverted_y == false)
+      //   correction.data[10] = -1.0f; // Mirror on the Z-axis
+      transform = mat4_mul(correction, transform);
+    }
+    struct JointTransformData *joint_transform_data = malloc(sizeof(struct JointTransformData));
+    joint_transform_data_init(joint_transform_data, _strdup(joint_name), transform);
+    array_list_add(((struct KeyFrameData *)array_list_get(key_frames, key_frame_num))->joint_transforms, joint_transform_data);
+  }
+}

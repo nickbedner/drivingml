@@ -1,0 +1,37 @@
+#pragma once
+
+#include "mana/graphics/apis/api.h"
+#ifdef VULKAN_API_SUPPORTED
+#include "mana/graphics/entities/model/modelvulkan.h"
+#endif
+#ifdef DIRECTX_12_API_SUPPORTED
+#include "mana/graphics/entities/model/modeldirectx12.h"
+#endif
+
+struct ModelFunc {
+  void (*model_clone_init)(struct ModelCommon *, struct APICommon *);
+  void (*model_clone_delete)(struct ModelCommon *, struct APICommon *);
+  void (*model_render)(struct ModelCommon *, struct GBuffer *, double);
+  void (*model_update_uniforms)(struct ModelCommon *, struct APICommon *, struct GBuffer *, vec3d, vec3);
+};
+
+#ifdef VULKAN_API_SUPPORTED
+static const struct ModelFunc VULKAN_MODEL = {model_vulkan_clone_init, model_vulkan_clone_delete, model_vulkan_render, model_vulkan_update_uniforms};
+#endif
+#ifdef DIRECTX_12_API_SUPPORTED
+static const struct ModelFunc directx_12_MODEL = {model_directx_12_clone_init, model_directx_12_clone_delete, model_directx_12_render, model_directx_12_update_uniforms};
+#endif
+
+struct Model {
+  struct ModelFunc model_func;
+  struct ModelCommon model_common;
+};
+
+uint_fast8_t model_init(struct Model *model, struct APICommon *api_common, struct ModelSettings *model_settings, size_t num);
+void model_delete(struct Model *model, struct APICommon *api_common);
+struct Model *model_get_clone(struct Model *model, struct APICommon *api_common);
+
+void model_clone_delete(struct Model *model, struct APICommon *api_common);
+void model_render(struct Model *model, struct GBuffer *gbuffer, double delta_time);
+void model_update_uniforms(struct Model *model, struct APICommon *api_common, struct GBuffer *gbuffer, vec3d position, vec3 light_pos);
+void model_recreate(struct Model *model, struct APICommon *api_common);

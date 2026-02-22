@@ -1,0 +1,172 @@
+#include "mana/graphics/entities/model/model.h"
+
+uint_fast8_t model_init(struct Model *model, struct APICommon *api_common, struct ModelSettings *model_settings, size_t num) {
+#ifdef VULKAN_API_SUPPORTED
+  if (api_common->api_type == API_VULKAN)
+    model->model_func = VULKAN_MODEL;
+#endif
+#ifdef DIRECTX_12_API_SUPPORTED
+  if (api_common->api_type == API_DIRECTX12)
+    model->model_func = directx_12_MODEL;
+#endif
+
+  struct XmlNode *collada_node = xml_parser_load_xml_file(model_settings->path);
+  struct XmlNode *library_controllers_node = xml_node_get_child(collada_node, "library_controllers");  // If texture is null, use custom 8x8 ubo color palette
+  model->model_common.animated = !(library_controllers_node == NULL || library_controllers_node->child_nodes == NULL || library_controllers_node->child_nodes->num_buckets == 0);
+
+  struct SkinningData *skinning_data = NULL;
+  if (model->model_common.animated) {
+    skinning_data = skin_loader_extract_skin_data(library_controllers_node, model_settings->max_weights);
+    model->model_common.joints = skeleton_loader_extract_bone_data(xml_node_get_child(collada_node, "library_visual_scenes"), skinning_data->joint_order, api_common->inverted_y);
+    model->model_common.model_mesh = geometry_loader_extract_model_data(api_common, xml_node_get_child(collada_node, "library_geometries"), skinning_data->vertices_skin_data, model->model_common.animated, api_common->inverted_y);
+
+    model->model_common.root_joint = model_create_joints(model->model_common.joints->head_joint);
+    model->model_common.animator = malloc(sizeof(struct Animator));
+    animator_init(model->model_common.animator, &(model->model_common));
+    joint_calc_inverse_bind_transform(model->model_common.root_joint, MAT4_IDENTITY);
+
+    struct XmlNode *anim_node = xml_node_get_child(collada_node, "library_animations");
+    struct XmlNode *joints_node = xml_node_get_child(collada_node, "library_visual_scenes");
+    struct AnimationData *animation_data = animation_extract_animation(anim_node, joints_node, api_common->inverted_y);
+
+    struct ArrayList *frames = malloc(sizeof(struct ArrayList));
+    array_list_init(frames);
+
+    for (size_t frame_num = 0; frame_num < array_list_size(animation_data->key_frames); frame_num++)
+      array_list_add(frames, model_create_key_frame(array_list_get(animation_data->key_frames, frame_num)));
+
+    model->model_common.animation = malloc(sizeof(struct Animation));
+    animation_init(model->model_common.animation, animation_data->length_seconds, frames);
+
+    for (size_t frame_num = 0; frame_num < array_list_size(animation_data->key_frames); frame_num++) {
+      struct KeyFrameData *key_frame_data = (struct KeyFrameData *)array_list_get(animation_data->key_frames, frame_num);
+      for (size_t transform_num = 0; transform_num < array_list_size(key_frame_data->joint_transforms); transform_num++) {
+        struct JointTransformData *joint_transform_data = (struct JointTransformData *)array_list_get(key_frame_data->joint_transforms, transform_num);
+        free(joint_transform_data->joint_name_id);
+        free(joint_transform_data);
+      }
+      array_list_delete(key_frame_data->joint_transforms);
+      free(key_frame_data->joint_transforms);
+      free(key_frame_data);
+    }
+    array_list_delete(animation_data->key_frames);
+    free(animation_data->key_frames);
+    free(animation_data);
+
+    animator_do_animation(model->model_common.animator, model->model_common.animation);
+
+    for (size_t joint_num = 0; joint_num < vector_size(skinning_data->joint_order); joint_num++)
+      free(*((char **)vector_get(skinning_data->joint_order, joint_num)));
+
+    vector_delete(skinning_data->joint_order);
+    free(skinning_data->joint_order);
+
+    for (size_t vertice_num = 0; vertice_num < vector_size(skinning_data->vertices_skin_data); vertice_num++) {
+      struct VertexSkinData *vertex_skin_data = (struct VertexSkinData *)vector_get(skinning_data->vertices_skin_data, vertice_num);
+      vector_delete(vertex_skin_data->joint_ids);
+      free(vertex_skin_data->joint_ids);
+      vector_delete(vertex_skin_data->weights);
+      free(vertex_skin_data->weights);
+    }
+
+    vector_delete(skinning_data->vertices_skin_data);
+    free(skinning_data->vertices_skin_data);
+
+    free(skinning_data);
+
+  } else
+    model->model_common.model_mesh = geometry_loader_extract_model_data(api_common, xml_node_get_child(collada_node, "library_geometries"), NULL, model->model_common.animated, api_common->inverted_y);
+
+  model->model_common.path = _strdup(model_settings->path);
+  model->model_common.model_diffuse_texture = model_settings->diffuse_texture;
+  model->model_common.model_normal_texture = model_settings->normal_texture;
+  model->model_common.model_metallic_texture = model_settings->metallic_texture;
+  model->model_common.model_roughness_texture = model_settings->roughness_texture;
+  model->model_common.model_ao_texture = model_settings->ao_texture;
+  model->model_common.shader_handle = model_settings->shader;
+  model->model_common.model_num = num;
+
+  xml_parser_delete(collada_node);
+
+  return MODEL_SUCCESS;
+}
+
+void model_delete(struct Model *model, struct APICommon *api_common) {
+  if (model->model_common.animated) {
+    model_delete_joints_data(model->model_common.joints->head_joint);
+    free(model->model_common.joints);
+    model_delete_joints(model->model_common.root_joint);
+    model_delete_animation(model->model_common.animation);
+    free(model->model_common.animation);
+    free(model->model_common.animator);
+  }
+
+  free(model->model_common.path);
+  mesh_delete(model->model_common.model_mesh, api_common);
+  free(model->model_common.model_mesh);
+}
+
+void model_update_uniforms(struct Model *model, struct APICommon *api_common, struct GBuffer *gbuffer, vec3d position, vec3 light_pos) {
+  model->model_func.model_update_uniforms(&model->model_common, api_common, gbuffer, position, light_pos);
+}
+
+struct Model *model_get_clone(struct Model *model, struct APICommon *api_common) {
+  struct Model *new_model = malloc(sizeof(struct Model));
+  *new_model = *model;
+
+  new_model->model_common.position = VEC3_ZERO;
+  new_model->model_common.rotation = QUAT_DEFAULT;
+  new_model->model_common.scale = VEC3_ONE;
+
+  new_model->model_common.model_mesh = malloc(sizeof(struct Mesh));
+  new_model->model_common.model_mesh->mesh_common.indices = malloc(sizeof(struct Vector));
+  new_model->model_common.model_mesh->mesh_common.vertices = malloc(sizeof(struct Vector));
+
+  *new_model->model_common.model_mesh->mesh_common.indices = *model->model_common.model_mesh->mesh_common.indices;
+  *new_model->model_common.model_mesh->mesh_common.vertices = *model->model_common.model_mesh->mesh_common.vertices;
+  //(new_model->animated) ? mesh_model_init(new_model->model_mesh) : mesh_model_static_init(new_model->model_mesh);
+  new_model->model_common.model_mesh->mesh_common.indices->items = malloc(model->model_common.model_mesh->mesh_common.indices->capacity * model->model_common.model_mesh->mesh_common.indices->memory_size);
+  memcpy(new_model->model_common.model_mesh->mesh_common.indices->items, model->model_common.model_mesh->mesh_common.indices->items, model->model_common.model_mesh->mesh_common.indices->capacity * model->model_common.model_mesh->mesh_common.indices->memory_size);
+
+  new_model->model_common.model_mesh->mesh_common.vertices->items = malloc(model->model_common.model_mesh->mesh_common.vertices->capacity * model->model_common.model_mesh->mesh_common.vertices->memory_size);
+  memcpy(new_model->model_common.model_mesh->mesh_common.vertices->items, model->model_common.model_mesh->mesh_common.vertices->items, model->model_common.model_mesh->mesh_common.vertices->capacity * model->model_common.model_mesh->mesh_common.vertices->memory_size);
+
+  new_model->model_common.model_mesh->mesh_common.mesh_type = model->model_common.model_mesh->mesh_common.mesh_type;
+  new_model->model_common.model_mesh->mesh_common.mesh_memory_size = model->model_common.model_mesh->mesh_common.mesh_memory_size;
+
+  if (new_model->model_common.animated) {
+    new_model->model_common.root_joint = model_create_joints_clone(model->model_common.root_joint);
+    new_model->model_common.animator = malloc(sizeof(struct Animator));
+    animator_init(new_model->model_common.animator, &(new_model->model_common));
+    animator_do_animation(new_model->model_common.animator, new_model->model_common.animation);
+  }
+
+  model->model_func.model_clone_init(&new_model->model_common, api_common);
+
+  return new_model;
+}
+
+void model_clone_delete(struct Model *model, struct APICommon *api_common) {
+  model->model_func.model_clone_delete(&model->model_common, api_common);
+
+  // TODO: Delete uniform colors if needed
+
+  if (model->model_common.animated) {
+    free(model->model_common.animator);
+    model_joints_clone_delete(model->model_common.root_joint);
+  }
+
+  mesh_delete(model->model_common.model_mesh, api_common);
+  free(model->model_common.model_mesh);
+}
+
+void model_render(struct Model *model, struct GBuffer *gbuffer, double delta_time) {
+  model->model_func.model_render(&(model->model_common), gbuffer, delta_time);
+}
+
+void model_recreate(struct Model *model, struct APICommon *api_common) {
+  model->model_func.model_clone_delete(&model->model_common, api_common);
+  model->model_func.model_clone_init(&model->model_common, api_common);
+}
+
+// TODO: Maybe get instanced/batched where specific vertex data is not needed

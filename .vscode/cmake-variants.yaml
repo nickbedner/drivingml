@@ -1,0 +1,15 @@
+buildType:
+  default: debug
+  choices:
+    debug:
+      short: Debug
+      long: Emit debug information
+      buildType: Debug
+    release:
+      short: Release
+      long: Optimize generated code for deployment
+      buildType: Release
+    relwithdebinfo:
+      short: RelWithDebInfo
+      long: Optimize generated code - include debug information
+      buildType: RelWithDebInfo
