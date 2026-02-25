@@ -1,7 +1,28 @@
+#define WIN32_LEAN_AND_MEAN
+#include <WS2tcpip.h>
+#include <WinSock2.h>
+#include <Windows.h>
+
+////////
+
 #include "drivingml/game.h"
+
+static int recv_all(SOCKET sock, char* buffer, int size) {
+  int total = 0;
+  int bytes;
+
+  while (total < size) {
+    bytes = recv(sock, buffer + total, size - total, 0);
+    if (bytes <= 0) return bytes;
+    total += bytes;
+  }
+  return total;
+}
 
 void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->window = window;
+
+  game->previous_reward = 0.0f;
 
   player_init(&(game->player), 1, game->window->renderer.renderer_settings.height);
 
@@ -12,57 +33,99 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/map.png");
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/mario.png");
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/whispy.png");
-  //
-  // texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/pbr/rust/albedo.png");
-  // texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/pbr/rust/normal.png");
-  // texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/pbr/rust/metallic.png");
-  // texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/pbr/rust/roughness.png");
-  // texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/pbr/rust/ao.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/track.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/startfinish.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/fence.png");
 
   sprite_manager_init(&(game->sprite_manager), &(game->texture_manager), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 128);
 
   game->mario_speed = 0.0f;
 
-  game->water = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/water.png");
-  // game->sprite->sprite_common.position = (vec3){.x = 0, .y = 15.0f, .z = 0};
-  game->water->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = -10};
-  game->water->sprite_common.scale = (vec3){.x = 30.0f, .y = 30.0f, .z = 0.0f};
-  mat4 water_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI, (vec3){.x = 1, .y = 0, .z = 0});
-  //  sprite_rotation.m00 = M_PI / 3.25f;
-  game->water->sprite_common.rotation = mat4_to_quaternion(water_rotation);
+  game->track = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/track.png");
+  game->track->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = 0};
+  game->track->sprite_common.scale = (vec3){.x = 10.0f, .y = 10.0f, .z = 0.0f};
 
-  game->map = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/map.png");
-  // game->sprite->sprite_common.position = (vec3){.x = 0, .y = 15.0f, .z = 0};
-  game->map->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = 0};
-  game->map->sprite_common.scale = (vec3){.x = 20.0f, .y = 20.0f, .z = 0.0f};
-  mat4 map_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI, (vec3){.x = 1, .y = 0, .z = 0});
-  //  sprite_rotation.m00 = M_PI / 3.25f;
-  game->map->sprite_common.rotation = mat4_to_quaternion(map_rotation);
+  game->start = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/startfinish.png");
+  game->start->sprite_common.position = (vec3){.x = 0, .y = 90.0f, .z = 0.01f};
+  game->start->sprite_common.scale = (vec3){.x = 10.0f, .y = 10.0f, .z = 0.0f};
 
-  for (int whispy_num = 0; whispy_num < 5; whispy_num++) {
-    game->whispy[whispy_num] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/whispy.png");
-    if (whispy_num % 2 == 0)
-      game->whispy[whispy_num]->sprite_common.position = (vec3){.x = 20.0f + whispy_num * 15.0f, .y = 20.0f + (whispy_num * 15.0f), .z = 3.0f};
-    else
-      game->whispy[whispy_num]->sprite_common.position = (vec3){.x = 20.0f + whispy_num * 15.0f, .y = 20.0f - (whispy_num * 5.0f), .z = 3.0f};
-    game->whispy[whispy_num]->sprite_common.scale = (vec3){.x = 1.0f, .y = 1.0f, .z = 0.0f};
-    mat4 whispy_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-    whispy_rotation = mat4_rotate(whispy_rotation, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-    game->whispy[whispy_num]->sprite_common.rotation = mat4_to_quaternion(whispy_rotation);
-  }
+  game->finish = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/startfinish.png");
+  game->finish->sprite_common.position = (vec3){.x = 0, .y = -90.0f, .z = 0.01f};
+  game->finish->sprite_common.scale = (vec3){.x = 10.0f, .y = 10.0f, .z = 0.0f};
+
+  game->fence = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/fence.png");
+  game->fence->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = 2.5f};
+  game->fence->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
+  mat4 fence_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
+  fence_rotation = mat4_rotate(fence_rotation, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+  game->fence->sprite_common.rotation = mat4_to_quaternion(fence_rotation);
 
   game->mario = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/mario.png");
-  game->mario_position = (vec3){.x = -1.0f, .y = -75.0f, .z = 0.75};
+  game->mario_position = (vec3){.x = 0.0f, .y = 95.0f, .z = 0.75};
   game->mario->sprite_common.position = game->mario_position;
   game->mario->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
   mat4 mario_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  mario_rotation = mat4_rotate(mario_rotation, M_PI / 2, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+  // mario_rotation = mat4_rotate(mario_rotation, M_PI / 2, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
   game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
 
-  // game->sprite->sprite_common.rotation = quaternion_rotate_by_vector((quat){.data[0] = 0, .data[1] = 0, .data[2] = 0, .data[3] = 1.0f}, (vec3){.x = 0, .y = 1, .z = 0});
-  //  game->sprite->sprite_common.rotation = (quat){.data[0] = M_PI / 3.25f, .data[1] = 0, .data[2] = 0.0, .data[3] = 1.0f};
-  //      sprite->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = 0};
-  //      sprite->sprite_common.rotation = (quat){.data[0] = 0, .data[1] = 0, .data[2] = 0, .data[3] = 1.0f};
+  ///////////////////////////////////////
+
+  WSADATA wsa;
+  struct sockaddr_in server;
+
+  // Initialize Winsock
+  if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+    printf("WSAStartup failed\n");
+    return;
+  }
+
+  game->sock = socket(AF_INET, SOCK_STREAM, 0);
+  if (game->sock == INVALID_SOCKET) {
+    printf("Socket creation failed\n");
+    WSACleanup();
+    return;
+  }
+
+  server.sin_family = AF_INET;
+  server.sin_port = htons(5000);
+  inet_pton(AF_INET, "127.0.0.1", &server.sin_addr);
+
+  if (connect(game->sock, (struct sockaddr*)&server, sizeof(server)) < 0) {
+    printf("Connection failed\n");
+    closesocket(game->sock);
+    WSACleanup();
+    return;
+  }
+
+  ///////////////////////////////////////
+
+  // game->water = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/water.png");
+  //// game->sprite->sprite_common.position = (vec3){.x = 0, .y = 15.0f, .z = 0};
+  // game->water->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = -10};
+  // game->water->sprite_common.scale = (vec3){.x = 30.0f, .y = 30.0f, .z = 0.0f};
+  // mat4 water_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI, (vec3){.x = 1, .y = 0, .z = 0});
+  ////  sprite_rotation.m00 = M_PI / 3.25f;
+  // game->water->sprite_common.rotation = mat4_to_quaternion(water_rotation);
+  //
+  // game->map = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/map.png");
+  //// game->sprite->sprite_common.position = (vec3){.x = 0, .y = 15.0f, .z = 0};
+  // game->map->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = 0};
+  // game->map->sprite_common.scale = (vec3){.x = 20.0f, .y = 20.0f, .z = 0.0f};
+  // mat4 map_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI, (vec3){.x = 1, .y = 0, .z = 0});
+  ////  sprite_rotation.m00 = M_PI / 3.25f;
+  // game->map->sprite_common.rotation = mat4_to_quaternion(map_rotation);
+
+  // for (int whispy_num = 0; whispy_num < 5; whispy_num++) {
+  //   game->whispy[whispy_num] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/whispy.png");
+  //   if (whispy_num % 2 == 0)
+  //     game->whispy[whispy_num]->sprite_common.position = (vec3){.x = 20.0f + whispy_num * 15.0f, .y = 20.0f + (whispy_num * 15.0f), .z = 3.0f};
+  //   else
+  //     game->whispy[whispy_num]->sprite_common.position = (vec3){.x = 20.0f + whispy_num * 15.0f, .y = 20.0f - (whispy_num * 5.0f), .z = 3.0f};
+  //   game->whispy[whispy_num]->sprite_common.scale = (vec3){.x = 1.0f, .y = 1.0f, .z = 0.0f};
+  //   mat4 whispy_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
+  //   whispy_rotation = mat4_rotate(whispy_rotation, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+  //   game->whispy[whispy_num]->sprite_common.rotation = mat4_to_quaternion(whispy_rotation);
+  // }
 
   // struct SpriteAnimation *sprite_animation = sprite_manager_add_sprite_animation(&(game->sprite_manager), &(mana->api.api_common), L"/textures/spritesheet.png", 4, 0.5f, 200);
   // sprite_animation->sprite_animation_common.position = (vec3){.x = 0, .y = 15.0f, .z = 0};
@@ -71,56 +134,14 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 
   player_init(&(game->player), 1, game->window->renderer.renderer_settings.height);
 
-  game->player.player_controller.pos = (vec3d){.x = 0, .y = -10, .z = 5};
-
-  game->player.camera.look_at_azimuth += M_PI / 2;
-
-  // struct Sprite *sprite = calloc(1, sizeof(struct Sprite));
-
-  // for (size_t loop_num = 1; loop_num <= 5; loop_num++) {
-  //  // for (size_t loop_num = 1; loop_num <= 1; loop_num++) {
-  //  struct Sprite *new_sprite = sprite_manager_add(&(game->sprite_manager), &(mana->api.api_common), "./assets/textures/pbr/rust/roughness.png");
-  //  new_sprite->sprite_common.position = (vec3){.x = 0, .y = 15.0f, .z = 0};
-  //  new_sprite->sprite_common.rotation = (quat){.data[0] = M_PI / 3.25f, .data[1] = 0, .data[2] = 0, .data[3] = 1.0f};
-  //  //     new_sprite->sprite_common.position = (vec3){.x = (float)loop_num, .y = (float)loop_num, .z = (float)loop_num};
-  //  // new_sprite->sprite_common.rotation = (quat){.data[0] = (float)loop_num / 3.0f, .data[1] = (float)loop_num / 3.0f, .data[2] = (float)loop_num / 3.0f, .data[3] = 1.0f};
-  //}
-  //
-  // sprite_manager_remove(&(game->sprite_manager), &(mana->api.api_common), 1);
-  // sprite_manager_remove(&(game->sprite_manager), &(mana->api.api_common), 3);
-
-  // struct ModelStaticShader *model_static_shader, struct APICommon *api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, struct GBufferCommon *gbuffer_common, bool depth_test, const uint_fast32_t msaa_samples, uint_fast32_t descriptors
-  //  sprite_shader_init(&(sprite_manager->sprite_manager_common.sprite_shader), api_common, width, height, supersample_scale, gbuffer_common, true, msaa_samples, descriptors);
-
-  // model_static_shader_init(&(game->model_static_shader), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), true, window->renderer.renderer_settings.msaa_samples, 2048);
-
-  // model_static_shader_init(&(game->model_static_shader), &(mana->api.api_common), &(window->swap_chain->swap_chain_common), &(window->gbuffer->gbuffer_common), true, window->renderer.renderer_settings.msaa_samples, 2048);
-  // model_shader_init(&(game->model_shader), &(mana->api.api_common), &(window->swap_chain->swap_chain_common), &(window->gbuffer->gbuffer_common), true, window->renderer.renderer_settings.msaa_samples, 2048);
-
-  // struct ModelSettings model1 = {"./assets/models/testmodel/model.dae", 3, &game->model_shader.shader,
-  //                                texture_manager_get(&game->texture_manager, "./assets/textures/pbr/rust/diffuse.png"),
-  //                                texture_manager_get(&game->texture_manager, "./assets/textures/pbr/rust/normal.png"),
-  //                                texture_manager_get(&game->texture_manager, "./assets/textures/pbr/rust/metallic.png"),
-  //                                texture_manager_get(&game->texture_manager, "./assets/textures/pbr/rust/roughness.png"),
-  //                                texture_manager_get(&game->texture_manager, "./assets/textures/pbr/rust/ao.png")};
-  //
-  // struct ModelSettings model2 = {"./assets/models/swords/nusword.dae", 3, &game->model_static_shader.shader,
-  //                               texture_manager_get(&(game->texture_manager), L"/textures/pbr/rust/albedo.png"),  // texture_cache_get(&game->texture_cache, "./assets/models/swords/colorgrid.png"),
-  //                               texture_manager_get(&(game->texture_manager), L"/textures/pbr/rust/normal.png"),
-  //                               texture_manager_get(&(game->texture_manager), L"/textures/pbr/rust/metallic.png"),
-  //                               texture_manager_get(&(game->texture_manager), L"/textures/pbr/rust/roughness.png"),
-  //                               texture_manager_get(&(game->texture_manager), L"/textures/pbr/rust/ao.png")};
-  //
-  // model_cache_init(&(game->model_cache));
-  //// model_cache_add(&(game->model_cache), &(mana->api.api_common), &model1, 0);
-  // model_cache_add(&(game->model_cache), &(mana->api.api_common), &model2, 1);
-  //
-  // array_list_init(&(game->models));
-  //// array_list_add(&(game->models), model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/testmodel/model.dae"));
-  // array_list_add(&(game->models), model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/swords/nusword.dae"));
+  // game->player.player_controller.pos = (vec3d){.x = 0, .y = -500, .z = 5};
+  // game->player.camera.look_at_azimuth += M_PI / 2;
 }
 
 void game_delete(struct Game* game, struct Mana* mana) {
+  closesocket(game->sock);
+  WSACleanup();
+
   struct APICommon* api_common = &(mana->api.api_common);
 
   // TODO: Throw this in a prepare delete function or something
@@ -136,6 +157,53 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   struct Window* window = game->window;
   struct InputManager* input_manager = &window->input_manager;
 
+  // Note: Potential-based reward shaping
+  float reward_func = ((-game->mario_position.y + 100.0f) / 2.0f) - (fabs(game->mario_position.x) / 5.0f);
+  float reward = reward_func - game->previous_reward;
+  game->previous_reward = reward_func;
+
+  bool done = false;
+
+  game->timer++;
+  if (game->timer > 8640) {
+    done = true;
+  }
+
+  if (reward_func > 100.0f)
+    done = true;
+
+  struct Packet {
+    float x;
+    float y;
+    float reward;
+    int done;
+  };
+
+  struct Packet packet;
+
+  packet.x = game->mario_position.x;
+  packet.y = game->mario_position.y;
+  packet.reward = reward;
+  packet.done = done;
+
+  send(game->sock, (char*)&packet, sizeof(packet), 0);
+
+  float action[2] = {0};
+  recv_all(game->sock, (char*)action, sizeof(action));
+
+  // printf("Action: %f %f\n", action[0], action[1]);
+
+  float threshold = 0.3f;
+
+  bool left = action[0] < -threshold;
+  bool right = action[0] > threshold;
+  bool backward = action[1] < -threshold;
+  bool forward = action[1] > threshold;
+
+  printf("Reward: %f\n Cummulate reward: %f\n", reward, reward_func);
+
+  // printf("Mario position: %f %f\n", game->mario_position.x, (-game->mario_position.y + 100.0f) / 2.0f);
+
   // game->mario_position.y -= 1.5f * delta_time;
   game->mario->sprite_common.position = game->mario_position;
   // game->mario->sprite_common.rotation = quaternion_rotate_by_vector((quat){.data[0] = 0, .data[1] = game->mario_rotation, .data[2] = 0, .data[3] = 1.0f}, (vec3){.x = 0, .y = 1, .z = 0});
@@ -145,7 +213,32 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   float move_speed = 30.0f;
   float rotation_speed = 1.5f - game->mario_speed / 50.0f;
 
-  vec3 forward = {.x = cosf(game->player.camera.look_at_azimuth), .y = sinf(game->player.camera.look_at_azimuth), .z = 0.0f};
+  if (true) {
+    if (left) {
+      float angle = -rotation_speed * delta_time;
+      mat4 mario_rotation = quaternion_to_mat4(game->mario->sprite_common.rotation);
+      mario_rotation = mat4_rotate(mario_rotation, angle, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+      game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
+
+      game->player.camera.look_at_azimuth -= angle;
+    }
+    if (right) {
+      float angle = rotation_speed * delta_time;
+      mat4 mario_rotation = quaternion_to_mat4(game->mario->sprite_common.rotation);
+      mario_rotation = mat4_rotate(mario_rotation, angle, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+      game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
+
+      game->player.camera.look_at_azimuth -= angle;
+    }
+    if (forward) {
+      game->mario_speed += move_speed * delta_time;
+    }
+    if (backward) {
+      game->mario_speed -= move_speed * delta_time;
+    }
+  }
+
+  vec3 forward_vel = {.x = cosf(game->player.camera.look_at_azimuth), .y = sinf(game->player.camera.look_at_azimuth), .z = 0.0f};
 
   for (size_t i = 0; i < input_manager->controllers.size; i++) {
     struct Controller* controller = array_list_get(&(input_manager->controllers), i);
@@ -176,21 +269,21 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     }
   }
 
-  game->mario_position.x += forward.x * game->mario_speed * delta_time;
-  game->mario_position.y += forward.y * game->mario_speed * delta_time;
+  game->mario_position.x += forward_vel.x * game->mario_speed * delta_time;
+  game->mario_position.y += forward_vel.y * game->mario_speed * delta_time;
 
   game->mario_speed *= 0.999f * (1.0f - delta_time);
 
-  for (int whispy_num = 0; whispy_num < 5; whispy_num++) {
-    struct Sprite* whispy = game->whispy[whispy_num];
-
-    // Make sprite face the camera (Y-axis billboard)
-    float angle = game->player.camera.look_at_azimuth;
-    mat4 rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-    rotation = mat4_rotate(rotation, -angle + M_PI / 2, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
-    whispy->sprite_common.rotation = mat4_to_quaternion(rotation);
-  }
-
+  // for (int whispy_num = 0; whispy_num < 5; whispy_num++) {
+  //   struct Sprite* whispy = game->whispy[whispy_num];
+  //
+  //  // Make sprite face the camera (Y-axis billboard)
+  //  float angle = game->player.camera.look_at_azimuth;
+  //  mat4 rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
+  //  rotation = mat4_rotate(rotation, -angle + M_PI / 2, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
+  //  whispy->sprite_common.rotation = mat4_to_quaternion(rotation);
+  //}
+  //
   // if (input_manager->keys[KEY_ESC].state == PRESSED)
   //   window->should_close = true;
   //
@@ -258,6 +351,14 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
   player_update(&(game->player), input_manager_get_controller_actions(input_manager), input_manager_get_controller_action_list_length(input_manager));
 
+  if (done) {
+    game->timer = 0;
+    game->mario_position = (vec3){.x = 0.0f, .y = 95.0f, .z = 0.75};
+    game->mario_speed = 0.0f;
+    game->player.camera.look_at_azimuth = -M_PI / 2;
+    game->previous_reward = 0.0f;
+  }
+
   window->gbuffer->gbuffer_common.projection_matrix = camera_get_projection_matrix(&(game->player.camera), window);
   window->gbuffer->gbuffer_common.view_matrix = camera_get_view_matrix(&(game->player.camera));
 
@@ -273,18 +374,12 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
     sprite_manager_update(&(game->sprite_manager), delta_time);
     sprite_manager_update_uniforms(&(game->sprite_manager), api_common, &(window->gbuffer->gbuffer_common));
-    //
-    // for (size_t model_num = 0; model_num < array_list_size(&(game->models)); model_num++)
-    //  model_update_uniforms(array_list_get(&(game->models), model_num), api_common, window->gbuffer, game->camera.fly_pos, vec3d_to_vec3(game->camera.fly_pos));
 
     // GBuffer, only texture that needs to be multisampled
     gbuffer_start(window->gbuffer, &(window->swap_chain->swap_chain_common), window->renderer.renderer_settings.msaa_samples);
 
     // Transparent sprites
     sprite_manager_render(&(game->sprite_manager), &(window->gbuffer->gbuffer_common));
-    //
-    // for (size_t model_num = 0; model_num < array_list_size(&(game->models)); model_num++)
-    //  model_render(array_list_get(&(game->models), model_num), window->gbuffer, delta_time / 40.0);
 
     gbuffer_stop(window->gbuffer, api_common, window->renderer.renderer_settings.msaa_samples);
 

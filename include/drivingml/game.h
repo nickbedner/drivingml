@@ -25,15 +25,24 @@ struct Game {
 
   struct Player player;
 
+  SOCKET sock;
+  float previous_reward;
+
+  int timer;
+
   float mario_speed;
   vec3 mario_position;
   double mario_drive_rotation;
   double mario_drive_accum;
-  struct Sprite* water;
-  struct Sprite* map;
   struct Sprite* mario;
+  // struct Sprite* water;
+  // struct Sprite* map;
+  struct Sprite* track;
+  struct Sprite* start;
+  struct Sprite* finish;
+  struct Sprite* fence;
 
-  struct Sprite* whispy[5];
+  // struct Sprite* whispy[5];
 };
 
 void game_init(struct Game* game, struct Mana* mana, struct Window* window);

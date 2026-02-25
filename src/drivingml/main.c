@@ -1,7 +1,3 @@
-#ifdef __ANDROID__
-#include <jni.h>
-#endif
-
 #include <mana/core/corecommon.h>
 
 #include "drivingml/drivingml.h"

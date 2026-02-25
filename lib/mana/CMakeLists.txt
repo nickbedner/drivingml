@@ -10,7 +10,7 @@ file(GLOB_RECURSE mana_SRC include/*.h src/*.c)
 
 add_library(mana STATIC ${mana_SRC})
 
-set(MANA_BUILD_LIBRARIES mana "$ENV{VULKAN_SDK}/Lib/vulkan-1.lib" d3d12 dxgi d3dcompiler xinput winusb setupapi)
+set(MANA_BUILD_LIBRARIES mana "$ENV{VULKAN_SDK}/Lib/vulkan-1.lib" d3d12 dxgi d3dcompiler xinput winusb setupapi ws2_32)
 
 
 target_link_libraries(${MANA_BUILD_LIBRARIES})
