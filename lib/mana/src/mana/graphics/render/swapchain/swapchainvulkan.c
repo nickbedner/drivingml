@@ -1,6 +1,6 @@
 #include "mana/graphics/render/swapchain/swapchainvulkan.h"
 
-static inline uint_fast8_t swap_chain_vulkan_init_common(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common, uint_fast32_t width, uint_fast32_t height, VkSwapchainKHR *old_swap_chain) {
+static inline uint_fast8_t swap_chain_vulkan_init_common(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, uint_fast32_t width, uint_fast32_t height, VkSwapchainKHR* old_swap_chain) {
   struct SwapChainSupportDetails swap_chain_support = {0};
 
   vector_init(&swap_chain_support.formats, sizeof(struct VkSurfaceFormatKHR));
@@ -28,16 +28,16 @@ static inline uint_fast8_t swap_chain_vulkan_init_common(struct SwapChainCommon 
 
   VkSurfaceFormatKHR surface_format = {0};
 
-  if (format_count == 1 && ((struct VkSurfaceFormatKHR *)vector_get(&swap_chain_support.formats, 0))->format == VK_FORMAT_UNDEFINED) {
+  if (format_count == 1 && ((struct VkSurfaceFormatKHR*)vector_get(&swap_chain_support.formats, 0))->format == VK_FORMAT_UNDEFINED) {
     surface_format.format = VK_FORMAT_B8G8R8A8_UNORM;
     surface_format.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
   } else {
     for (size_t swap_chain_format_num = 0; swap_chain_format_num < vector_size(&swap_chain_support.formats); swap_chain_format_num++) {
-      if (((struct VkSurfaceFormatKHR *)vector_get(&swap_chain_support.formats, swap_chain_format_num))->format == VK_FORMAT_B8G8R8A8_UNORM && ((struct VkSurfaceFormatKHR *)vector_get(&swap_chain_support.formats, swap_chain_format_num))->colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-        surface_format = *(struct VkSurfaceFormatKHR *)vector_get(&swap_chain_support.formats, swap_chain_format_num);
+      if (((struct VkSurfaceFormatKHR*)vector_get(&swap_chain_support.formats, swap_chain_format_num))->format == VK_FORMAT_B8G8R8A8_UNORM && ((struct VkSurfaceFormatKHR*)vector_get(&swap_chain_support.formats, swap_chain_format_num))->colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+        surface_format = *(struct VkSurfaceFormatKHR*)vector_get(&swap_chain_support.formats, swap_chain_format_num);
         break;
       } else
-        surface_format = *(struct VkSurfaceFormatKHR *)vector_get(&swap_chain_support.formats, 0);
+        surface_format = *(struct VkSurfaceFormatKHR*)vector_get(&swap_chain_support.formats, 0);
     }
   }
 
@@ -55,18 +55,20 @@ static inline uint_fast8_t swap_chain_vulkan_init_common(struct SwapChainCommon 
   VkPresentModeKHR present_mode = {0};
 
   for (size_t swap_chain_present_num = 0; swap_chain_present_num < vector_size(&swap_chain_support.present_modes); swap_chain_present_num++) {
-    if (*(enum VkPresentModeKHR *)vector_get(&swap_chain_support.present_modes, swap_chain_present_num) == VK_PRESENT_MODE_MAILBOX_KHR) {
-      present_mode = *(enum VkPresentModeKHR *)vector_get(&swap_chain_support.present_modes, swap_chain_present_num);
+    if (*(enum VkPresentModeKHR*)vector_get(&swap_chain_support.present_modes, swap_chain_present_num) == VK_PRESENT_MODE_MAILBOX_KHR) {
+      present_mode = *(enum VkPresentModeKHR*)vector_get(&swap_chain_support.present_modes, swap_chain_present_num);
       break;
-    } else if (*(enum VkPresentModeKHR *)vector_get(&swap_chain_support.present_modes, swap_chain_present_num) == VK_PRESENT_MODE_IMMEDIATE_KHR)
-      present_mode = *(enum VkPresentModeKHR *)vector_get(&swap_chain_support.present_modes, swap_chain_present_num);
+    } else if (*(enum VkPresentModeKHR*)vector_get(&swap_chain_support.present_modes, swap_chain_present_num) == VK_PRESENT_MODE_IMMEDIATE_KHR)
+      present_mode = *(enum VkPresentModeKHR*)vector_get(&swap_chain_support.present_modes, swap_chain_present_num);
   }
 
-  // Force Vsync
-  // TODO: if vsync_enabled
-  // VK_PRESENT_MODE_FIFO_KHR is vsync
-  // VK_PRESENT_MODE_MAILBOX_KHR is triple buffering
-  present_mode = VK_PRESENT_MODE_FIFO_KHR;
+  // VK_PRESENT_MODE_FIFO_KHR is generic high compatibility vsync
+  // VK_PRESENT_MODE_MAILBOX_KHR is vsync with triple buffering ideal for gaming because lower latency, though doesn't wait for frames so no fps cap because no stalling occurs
+  // present_mode = VK_PRESENT_MODE_FIFO_KHR;
+  if (swap_chain_common->vsync)
+    present_mode = VK_PRESENT_MODE_FIFO_KHR;
+  else
+    present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
 
   VkExtent2D extent = {width, height};
   if (swap_chain_support.capabilities.currentExtent.width != UINT32_MAX)
@@ -215,15 +217,15 @@ static inline uint_fast8_t swap_chain_vulkan_init_common(struct SwapChainCommon 
   return 0;
 }
 
-static inline void swap_chain_vulkan_update_uniform_buffer(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common, uint_fast32_t width, uint_fast32_t height) {
+static inline void swap_chain_vulkan_update_uniform_buffer(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, uint_fast32_t width, uint_fast32_t height) {
   struct BlitUniformBufferObject ubos = {.screen_size = (vec2){.x = (float)swap_chain_common->swap_chain_extent.width, .y = (float)swap_chain_common->swap_chain_extent.height}};
-  void *data;
+  void* data;
   vkMapMemory(api_common->vulkan_api.device, swap_chain_common->swap_chain_vulkan.uniform_buffers_memory, 0, sizeof(struct BlitUniformBufferObject), 0, &data);
   memcpy(data, &ubos, sizeof(struct BlitUniformBufferObject));
   vkUnmapMemory(api_common->vulkan_api.device, swap_chain_common->swap_chain_vulkan.uniform_buffers_memory);
 }
 
-uint_fast8_t swap_chain_vulkan_init(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common, uint_fast32_t width, uint_fast32_t height, void *extra_data) {
+uint_fast8_t swap_chain_vulkan_init(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, uint_fast32_t width, uint_fast32_t height, bool vsync, void* extra_data) {
   if (swap_chain_vulkan_init_common(swap_chain_common, api_common, width, height, NULL) != 0)
     return VULKAN_RENDERER_CREATE_SWAP_CHAIN_ERROR;
 
@@ -263,7 +265,7 @@ uint_fast8_t swap_chain_vulkan_init(struct SwapChainCommon *swap_chain_common, s
   return 0;
 }
 
-static inline void swap_chain_vulkan_delete_common(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common) {
+static inline void swap_chain_vulkan_delete_common(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common) {
   vkDestroyRenderPass(api_common->vulkan_api.device, swap_chain_common->swap_chain_vulkan.render_pass, NULL);
 
   for (uint_fast8_t loop_num = 0; loop_num < MAX_SWAP_CHAIN_FRAMES; loop_num++) {
@@ -272,7 +274,7 @@ static inline void swap_chain_vulkan_delete_common(struct SwapChainCommon *swap_
   }
 }
 
-void swap_chain_vulkan_delete(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common) {
+void swap_chain_vulkan_delete(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common) {
   for (uint_fast8_t loop_num = 0; loop_num < MAX_FRAMES_IN_FLIGHT; loop_num++)
     vkWaitForFences(api_common->vulkan_api.device, 1, &(swap_chain_common->swap_chain_vulkan.in_flight_fences[loop_num]), VK_TRUE, UINT64_MAX);
 
@@ -296,7 +298,7 @@ void swap_chain_vulkan_delete(struct SwapChainCommon *swap_chain_common, struct 
   }
 }
 
-uint_fast8_t swap_chain_vulkan_resize(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common) {
+uint_fast8_t swap_chain_vulkan_resize(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common) {
   // Ensure all operations using the swap chain have finished
   for (uint_fast8_t loop_num = 0; loop_num < MAX_FRAMES_IN_FLIGHT; loop_num++)
     swap_chain_vulkan_wait_for_fences(swap_chain_common, api_common, loop_num);
@@ -317,11 +319,11 @@ uint_fast8_t swap_chain_vulkan_resize(struct SwapChainCommon *swap_chain_common,
   return 0;
 }
 
-void swap_chain_vulkan_prepare_delete(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common) {
+void swap_chain_vulkan_prepare_delete(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common) {
   vkWaitForFences(api_common->vulkan_api.device, 2, swap_chain_common->swap_chain_vulkan.in_flight_fences, VK_TRUE, UINT64_MAX);
 }
 
-uint_fast8_t swap_chain_vulkan_blit_init(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common, struct PostProcessCommon *post_process_common) {
+uint_fast8_t swap_chain_vulkan_blit_init(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, struct PostProcessCommon* post_process_common) {
   vulkan_graphics_utils_create_descriptors(&(api_common->vulkan_api), swap_chain_common->swap_chain_vulkan.descriptor_set, &(swap_chain_common->blit_shader->shader.shader_common.shader_vulkan.descriptor_set_layout), &(swap_chain_common->blit_shader->shader.shader_common.shader_vulkan.descriptor_pool), swap_chain_common->blit_shader->shader.shader_common.shader_settings.descriptors);
 
   for (uint_fast64_t target = 0; target < swap_chain_common->descriptors; target++) {
@@ -337,7 +339,7 @@ uint_fast8_t swap_chain_vulkan_blit_init(struct SwapChainCommon *swap_chain_comm
   return 0;
 }
 
-uint_fast8_t swap_chain_vulkan_blit_update(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common, struct PostProcessCommon *post_process_common) {
+uint_fast8_t swap_chain_vulkan_blit_update(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, struct PostProcessCommon* post_process_common) {
   for (uint_fast64_t target = 0; target < swap_chain_common->descriptors; target++) {
     VkWriteDescriptorSet dcs[2] = {0};
     vulkan_graphics_utils_setup_descriptor_buffer(dcs, 0, &(swap_chain_common->swap_chain_vulkan.descriptor_set[target]), (VkDescriptorBufferInfo[]){vulkan_graphics_utils_setup_descriptor_buffer_info(sizeof(struct BlitUniformBufferObject), &(swap_chain_common->swap_chain_vulkan.uniform_buffer))});
@@ -348,8 +350,8 @@ uint_fast8_t swap_chain_vulkan_blit_update(struct SwapChainCommon *swap_chain_co
   return 0;
 }
 
-uint_fast8_t swap_chain_vulkan_blit_render(struct SwapChainCommon *swap_chain_common, struct PostProcessCommon *post_process_common, uint_fast8_t swap_chain_num) {
-  struct SwapChainVulkan *swap_chain_vulkan = &(swap_chain_common->swap_chain_vulkan);
+uint_fast8_t swap_chain_vulkan_blit_render(struct SwapChainCommon* swap_chain_common, struct PostProcessCommon* post_process_common, uint_fast8_t swap_chain_num) {
+  struct SwapChainVulkan* swap_chain_vulkan = &(swap_chain_common->swap_chain_vulkan);
 
   VkCommandBufferBeginInfo begin_info = {0};
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -396,7 +398,7 @@ uint_fast8_t swap_chain_vulkan_blit_render(struct SwapChainCommon *swap_chain_co
   return 0;
 }
 
-bool swap_chain_vulkan_wait_for_fences(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common, size_t frame) {
+bool swap_chain_vulkan_wait_for_fences(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, size_t frame) {
   VkResult result = vkWaitForFences(api_common->vulkan_api.device, 2, swap_chain_common->swap_chain_vulkan.in_flight_fences, VK_TRUE, UINT64_MAX);
   result = vkAcquireNextImageKHR(api_common->vulkan_api.device, swap_chain_common->swap_chain_vulkan.swap_chain_khr, UINT64_MAX, swap_chain_common->swap_chain_vulkan.image_available_semaphores[frame], VK_NULL_HANDLE, &(swap_chain_common->image_index));
 
@@ -410,8 +412,8 @@ bool swap_chain_vulkan_wait_for_fences(struct SwapChainCommon *swap_chain_common
   return false;
 }
 
-uint_fast8_t swap_chain_vulkan_end_frame(struct SwapChainCommon *swap_chain_common, struct PostProcessCommon *post_process_common, struct APICommon *api_common) {
-  struct VulkanAPI *vulkan_api = &api_common->vulkan_api;
+uint_fast8_t swap_chain_vulkan_end_frame(struct SwapChainCommon* swap_chain_common, struct PostProcessCommon* post_process_common, struct APICommon* api_common) {
+  struct VulkanAPI* vulkan_api = &api_common->vulkan_api;
   VkSubmitInfo swap_chain_submit_info = {0};
   swap_chain_submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 

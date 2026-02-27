@@ -42,6 +42,11 @@ struct Game {
   struct Sprite* finish;
   struct Sprite* fence;
 
+  float car_heading;
+  float prev_y;
+
+  float last_action[2];
+
   // struct Sprite* whispy[5];
 };
 

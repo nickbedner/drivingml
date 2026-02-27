@@ -22,9 +22,10 @@ static int recv_all(SOCKET sock, char* buffer, int size) {
 void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->window = window;
 
-  game->previous_reward = 0.0f;
-
   player_init(&(game->player), 1, game->window->renderer.renderer_settings.height);
+  game->car_heading = M_PI / 2.0f;  // facing down -Y
+
+  game->previous_reward = 0.0f;
 
   struct TextureSettings sprite_texture_settings = {FILTER_NEAREST, MODE_CLAMP_TO_EDGE, FORMAT_R8G8B8A8_UNORM, true, true};
   texture_manager_init(&(game->texture_manager), &(mana->api.api_common));
@@ -64,8 +65,18 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->mario_position = (vec3){.x = 0.0f, .y = 95.0f, .z = 0.75};
   game->mario->sprite_common.position = game->mario_position;
   game->mario->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
-  mat4 mario_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  // mario_rotation = mat4_rotate(mario_rotation, M_PI / 2, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+  // Build same rotation as runtime
+  mat4 mario_rotation = MAT4_IDENTITY;
+
+  mario_rotation = mat4_rotate(
+      mario_rotation,
+      -M_PI / 2,
+      (vec3){0.5f, 0.0f, 0.0f});
+
+  mario_rotation = mat4_rotate(
+      mario_rotation,
+      -game->car_heading + M_PI / 2,
+      (vec3){0.0f, 1.0f, 0.0f});
   game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
 
   ///////////////////////////////////////
@@ -132,7 +143,12 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   // sprite_animation->sprite_animation_common.rotation = (quat){.data[0] = M_PI / 3.25f, .data[1] = 0, .data[2] = 0, .data[3] = 1.0f};
   // sprite_animation->sprite_animation_common.direction = SPRITE_ANIMATION_FORWARD;
 
-  player_init(&(game->player), 1, game->window->renderer.renderer_settings.height);
+  game->last_action[0] = 0.0f;
+  game->last_action[1] = 0.0f;
+
+  game->timer = 0;
+
+  game->prev_y = game->mario_position.y;
 
   // game->player.player_controller.pos = (vec3d){.x = 0, .y = -500, .z = 5};
   // game->player.camera.look_at_azimuth += M_PI / 2;
@@ -157,52 +173,95 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   struct Window* window = game->window;
   struct InputManager* input_manager = &window->input_manager;
 
-  // Note: Potential-based reward shaping
-  float reward_func = ((-game->mario_position.y + 100.0f) / 2.0f) - (fabs(game->mario_position.x) / 5.0f);
-  float reward = reward_func - game->previous_reward;
-  game->previous_reward = reward_func;
-
   bool done = false;
 
+  // Delta time clamping, good for ML but not so good for game?
+  if (delta_time > 0.05)
+    delta_time = 0.05;
+
+  // Hardcoded to allow for 30 seconds
   game->timer++;
-  if (game->timer > 8640) {
+  // if (game->timer > 4320) {
+  if (game->timer > 1800) {
+    printf("Episode timed out\n");
     done = true;
   }
 
-  if (reward_func > 100.0f)
-    done = true;
+  float steer = game->last_action[0];
+  float throttle = game->last_action[1];
 
-  struct Packet {
-    float x;
-    float y;
-    float reward;
-    int done;
-  };
+  if (steer > 1.0f)
+    steer = 1.0f;
+  if (steer < -1.0f)
+    steer = -1.0f;
+  if (throttle > 1.0f)
+    throttle = 1.0f;
+  if (throttle < -1.0f)
+    throttle = -1.0f;
 
-  struct Packet packet;
+  // printf("Steer: %f, Throttle: %f\n", steer, throttle);
 
-  packet.x = game->mario_position.x;
-  packet.y = game->mario_position.y;
-  packet.reward = reward;
-  packet.done = done;
+  float move_speed = 30.0f;
+  float rotation_speed = 1.5f;  // - game->mario_speed / 50.0f;
 
-  send(game->sock, (char*)&packet, sizeof(packet), 0);
+  for (size_t i = 0; i < input_manager->controllers.size; i++) {
+    struct Controller* controller = array_list_get(&(input_manager->controllers), i);
+    if (controller->controller_common.controller_type == CONTROLLER_KEYBOARD_MOUSE) {
+      struct KeyboardMouseController* keyboard_mouse_controller = &(controller->controller_common.keyboard_mouse_controller);
+      if (keyboard_mouse_controller->keys[KEY_W].state == PRESSED) {
+        throttle = 1.0f;
+      }
+      if (keyboard_mouse_controller->keys[KEY_S].state == PRESSED) {
+        throttle = -1.0f;
+      }
+      if (keyboard_mouse_controller->keys[KEY_A].state == PRESSED) {
+        steer = -1.0f;
+      }
+      if (keyboard_mouse_controller->keys[KEY_D].state == PRESSED) {
+        steer = 1.0f;
+      }
+    }
+  }
 
-  float action[2] = {0};
-  recv_all(game->sock, (char*)action, sizeof(action));
+  float angle = -rotation_speed * delta_time * steer;
 
-  // printf("Action: %f %f\n", action[0], action[1]);
+  // Update car heading
+  game->car_heading += angle;
+  game->player.camera.look_at_azimuth = game->car_heading + M_PI;
 
-  float threshold = 0.3f;
+  // Update sprite rotation from heading
+  // Start from identity
+  mat4 mario_rotation = MAT4_IDENTITY;
 
-  bool left = action[0] < -threshold;
-  bool right = action[0] > threshold;
-  bool backward = action[1] < -threshold;
-  bool forward = action[1] > threshold;
+  // 1) Tilt upright (same as original working code)
+  mario_rotation = mat4_rotate(
+      mario_rotation,
+      -M_PI / 2,
+      (vec3){0.5f, 0.0f, 0.0f});
 
-  printf("Reward: %f\n Cummulate reward: %f\n", reward, reward_func);
+  // 2) Apply heading rotation
+  mario_rotation = mat4_rotate(mario_rotation, -game->car_heading + M_PI / 2, (vec3){0.0f, 1.0f, 0.0f});
+  game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
+  game->mario_speed += throttle * move_speed * delta_time;
 
-  // printf("Mario position: %f %f\n", game->mario_position.x, (-game->mario_position.y + 100.0f) / 2.0f);
+  // Clamp speed (important!)
+  if (game->mario_speed > 50.0f)
+    game->mario_speed = 50.0f;
+  if (game->mario_speed < -20.0f)
+    game->mario_speed = -20.0f;
+
+  // Movement direction
+  float heading = game->car_heading;
+
+  vec3 forward_vel = {-cosf(heading), -sinf(heading), 0.0f};
+
+  game->mario_position.x += forward_vel.x * game->mario_speed * delta_time;
+  game->mario_position.y += forward_vel.y * game->mario_speed * delta_time;
+
+  // game->mario_speed *= 0.999f * (1.0f - delta_time);
+
+  float damping = 2.0f;  // higher = stronger friction
+  game->mario_speed *= expf(-damping * delta_time);
 
   // game->mario_position.y -= 1.5f * delta_time;
   game->mario->sprite_common.position = game->mario_position;
@@ -210,153 +269,167 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   game->player.look_at_pos = (vec3d){.x = game->mario_position.x, .y = game->mario_position.y, .z = game->mario_position.z};
   // game->player.camera.look_at_azimuth = game->mario_drive_rotation;
 
-  float move_speed = 30.0f;
-  float rotation_speed = 1.5f - game->mario_speed / 50.0f;
+  float reward = 0.0f;
 
-  if (true) {
-    if (left) {
-      float angle = -rotation_speed * delta_time;
-      mat4 mario_rotation = quaternion_to_mat4(game->mario->sprite_common.rotation);
-      mario_rotation = mat4_rotate(mario_rotation, angle, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-      game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
+  const float track_half_width = 25.0f;
+  const float forward_limit = -100.0f;
 
-      game->player.camera.look_at_azimuth -= angle;
-    }
-    if (right) {
-      float angle = rotation_speed * delta_time;
-      mat4 mario_rotation = quaternion_to_mat4(game->mario->sprite_common.rotation);
-      mario_rotation = mat4_rotate(mario_rotation, angle, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-      game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
+  // 1️⃣ Reward forward velocity directly
+  float forward_speed = -sinf(game->car_heading) * game->mario_speed;
+  reward += 0.5f * fmaxf(0.0f, forward_speed);
 
-      game->player.camera.look_at_azimuth -= angle;
+  // 2️⃣ Penalize being far from center
+  float xnorm = fabsf(game->mario_position.x) / track_half_width;
+  reward -= 1.5f * xnorm * xnorm;
+
+  // 3️⃣ Penalize sharp turning (smoothness)
+  reward -= 0.2f * steer * steer;
+
+  // 4️⃣ Small time penalty (encourage faster finish)
+  reward -= 0.01f;
+
+  // Note: Potential-based reward shaping
+  // Small time penalty
+  // Reward shaping (prevents "spin + drift + crash" exploit)
+  // float reward = 0.0f;
+  //
+  // const float track_half_width = 25.0f;
+  // const float forward_limit = -100.0f;
+  // const float backward_limit = 100.0f;
+  //
+  //// True forward progress = decrease in Y
+  // float dy = game->prev_y - game->mario_position.y;
+  // game->prev_y = game->mario_position.y;
+  //
+  //// 1) Only reward progress when facing the correct way (-Y)
+  //// heading is game->car_heading
+  // float alignment = sinf(heading);         // ~1 when facing -Y, ~-1 when facing +Y
+  // float aligned = fmaxf(0.0f, alignment);  // clamp to [0,1]
+  // reward += 0.25f * dy * aligned;
+  //
+  // reward += 0.02f * aligned;                  // small shaping for facing correct way
+  // reward -= 0.02f * fmaxf(0.0f, -alignment);  // small penalty for facing backward
+  //
+  //// 2) Strong lane keeping penalty that ramps up near edges
+  // float xnorm = fabsf(game->mario_position.x) / track_half_width;  // 0..>1
+  // reward -= 2.0f * xnorm * xnorm * xnorm;                          // cubic
+  //
+  //// 3) Penalize violent steering / spinning
+  // reward -= 0.05f * fabsf(steer);  // discourages full-lock steering
+  // reward -= 0.50f * fabsf(angle);  // discourages high yaw-rate (spinning)
+  //
+  //// 4) Penalize reversing more strongly
+  // if (game->mario_speed < 0.0f)
+  //   reward -= 0.20f * (-game->mario_speed);
+  //
+  //// 5) Small living cost (less incentive to stall)
+  // reward -= 0.005f;
+
+  // if (fabsf(game->mario_position.x) > track_half_width) {
+  //   done = true;
+  //   reward -= 200.0f;
+  // }
+
+  if (fabsf(game->mario_position.x) > track_half_width) {
+    float side = (game->mario_position.x > 0.0f) ? 1.0f : -1.0f;
+
+    // Clamp to boundary
+    game->mario_position.x = side * track_half_width;
+
+    // Kill outward velocity component
+    if ((side > 0.0f && game->mario_speed * -cosf(game->car_heading) > 0.0f) ||
+        (side < 0.0f && game->mario_speed * -cosf(game->car_heading) < 0.0f)) {
+      game->mario_speed = 0.0f;
     }
-    if (forward) {
-      game->mario_speed += move_speed * delta_time;
-    }
-    if (backward) {
-      game->mario_speed -= move_speed * delta_time;
-    }
+
+    // Continuous wall penalty (scaled by speed so slamming is worse)
+    reward -= 5.0f + 0.1f * fabsf(game->mario_speed);
   }
 
-  vec3 forward_vel = {.x = cosf(game->player.camera.look_at_azimuth), .y = sinf(game->player.camera.look_at_azimuth), .z = 0.0f};
+  const float backward_limit = 100.0f;
 
-  for (size_t i = 0; i < input_manager->controllers.size; i++) {
-    struct Controller* controller = array_list_get(&(input_manager->controllers), i);
-    if (controller->controller_common.controller_type == CONTROLLER_KEYBOARD_MOUSE) {
-      struct KeyboardMouseController* keyboard_mouse_controller = &(controller->controller_common.keyboard_mouse_controller);
-      if (keyboard_mouse_controller->keys[KEY_W].state == PRESSED) {
-        game->mario_speed += move_speed * delta_time;
-      }
-      if (keyboard_mouse_controller->keys[KEY_S].state == PRESSED) {
-        game->mario_speed -= move_speed * delta_time;
-      }
-      if (keyboard_mouse_controller->keys[KEY_A].state == PRESSED) {
-        float angle = -rotation_speed * delta_time;
-        mat4 mario_rotation = quaternion_to_mat4(game->mario->sprite_common.rotation);
-        mario_rotation = mat4_rotate(mario_rotation, angle, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-        game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
-
-        game->player.camera.look_at_azimuth -= angle;
-      }
-      if (keyboard_mouse_controller->keys[KEY_D].state == PRESSED) {
-        float angle = rotation_speed * delta_time;
-        mat4 mario_rotation = quaternion_to_mat4(game->mario->sprite_common.rotation);
-        mario_rotation = mat4_rotate(mario_rotation, angle, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-        game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
-
-        game->player.camera.look_at_azimuth -= angle;
-      }
-    }
+  if (game->mario_position.y < forward_limit) {
+    done = true;
+    reward += 200.0f;  // strong success bonus
   }
 
-  game->mario_position.x += forward_vel.x * game->mario_speed * delta_time;
-  game->mario_position.y += forward_vel.y * game->mario_speed * delta_time;
+  if (game->mario_position.y > backward_limit) {
+    reward -= 5.0f;
+    game->mario_position.y = backward_limit;
+    if (game->mario_speed > 0)
+      game->mario_speed = 0;
+  }
 
-  game->mario_speed *= 0.999f * (1.0f - delta_time);
+  // if (game->mario_position.y < forward_limit) {
+  //   done = true;
+  //   if (alignment > 0.7f && game->mario_speed > 0.0f)
+  //     reward += 50.0f;
+  //   else
+  //     reward -= 50.0f;
+  // }
 
-  // for (int whispy_num = 0; whispy_num < 5; whispy_num++) {
-  //   struct Sprite* whispy = game->whispy[whispy_num];
-  //
-  //  // Make sprite face the camera (Y-axis billboard)
-  //  float angle = game->player.camera.look_at_azimuth;
-  //  mat4 rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  //  rotation = mat4_rotate(rotation, -angle + M_PI / 2, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
-  //  whispy->sprite_common.rotation = mat4_to_quaternion(rotation);
-  //}
-  //
-  // if (input_manager->keys[KEY_ESC].state == PRESSED)
-  //   window->should_close = true;
-  //
-  // bool mouse_locked_left = false;
-  // bool mouse_locked_right = false;
-  // if (input_manager_in_window(&(window->input_manager), &(window->surface))) {
-  //  mouse_locked_left = (input_manager->keys[MOUSE_LEFT].state == PRESSED) ? true : false;
-  //  mouse_locked_right = (input_manager->keys[MOUSE_RIGHT].state == PRESSED) ? true : false;
-  //}
-  // camera_update_parameters_from_camera(&(game->camera));
-  // if (game->camera.camera_state == CAMERA_FLY) {
-  //  if (mouse_locked_right) {
-  //    input_manager_show_cursor(input_manager, false);
-  //    input_manager_lock_cursor(input_manager, &(window->surface), true);
-  //  } else {
-  //    input_manager_show_cursor(input_manager, true);
-  //    input_manager_lock_cursor(input_manager, &(window->surface), false);
-  //  }
-  //
-  //  if (input_manager->keys[KEY_SHIFT].state == PRESSED)
-  //    ;
-  //  if (input_manager->keys[KEY_W].state == PRESSED)
-  //    camera_fly_move_forward(&(game->camera), delta_time);
-  //  if (input_manager->keys[KEY_S].state == PRESSED)
-  //    camera_fly_move_backward(&(game->camera), delta_time);
-  //  if (input_manager->keys[KEY_A].state == PRESSED)
-  //    camera_fly_move_left(&(game->camera), delta_time);
-  //  if (input_manager->keys[KEY_D].state == PRESSED)
-  //    camera_fly_move_right(&(game->camera), delta_time);
-  //  if (input_manager->keys[KEY_E].state == PRESSED)
-  //    camera_fly_move_up(&(game->camera), delta_time);
-  //  if (input_manager->keys[KEY_Q].state == PRESSED)
-  //    camera_fly_move_down(&(game->camera), delta_time);
-  //  if (input_manager->keys[KEY_Z].state == PRESSED)
-  //    camera_fly_roll_left(&(game->camera), delta_time);
-  //  if (input_manager->keys[KEY_X].state == PRESSED)
-  //    camera_fly_roll_right(&(game->camera), delta_time);
-  //
-  //  game->camera.fly_zoom += input_manager->mouse_wheel;
-  //  input_manager->mouse_wheel = 0.0;
-  //
-  //  // TODO: Make sensitivity a setting 2.0 is hardcoded
-  //  double mouse_sensitivity = 2.0;
-  //  if (mouse_locked_right)
-  //    camera_rotate(&(game->camera), (int32_t)(input_manager->mouse_x_pos_diff * mouse_sensitivity), (int32_t)(input_manager->mouse_y_pos_diff * mouse_sensitivity), (int32_t)(game->window->renderer.renderer_settings.width), (int32_t)(game->window->renderer.renderer_settings.height));
-  //}
-  // if (game->camera.camera_state == CAMERA_LOOK_AT) {
-  //  if (mouse_locked_left || mouse_locked_right) {
-  //    input_manager_show_cursor(input_manager, false);
-  //    input_manager_lock_cursor(input_manager, &(window->surface), true);
-  //  } else {
-  //    input_manager_show_cursor(input_manager, true);
-  //    input_manager_lock_cursor(input_manager, &(window->surface), false);
-  //  }
-  //
-  //  if (mouse_locked_left)
-  //    camera_rotate(&(game->camera), (int32_t)(input_manager->mouse_x_pos_diff), (int32_t)(input_manager->mouse_y_pos_diff), (int32_t)(game->window->renderer.renderer_settings.width), (int32_t)(game->window->renderer.renderer_settings.height));
-  //  if (mouse_locked_right)
-  //    camera_look_at_zoom(&(game->camera), input_manager->mouse_x_pos_diff, game->window->renderer.renderer_settings.height);
-  //}
-  // camera_update_camera_from_parameters(&(game->camera));
-  // camera_update(&(game->camera));
+  // if (game->mario_position.y > backward_limit) {
+  //   reward -= 5.0f;                                    // per frame penalty while behind start
+  //   game->mario_position.y = backward_limit;           // clamp
+  //   if (game->mario_speed > 0) game->mario_speed = 0;  // prevent pushing further back
+  // }
 
-  // game->sprite->sprite_common.rotation = quaternion_add((quat){.data[0] = game->sprite->sprite_common.rotation.x, .data[1] = game->sprite->sprite_common.rotation.y, .data[2] = game->sprite->sprite_common.rotation.z, .data[3] = game->sprite->sprite_common.rotation.w}, (quat){.data[0] = 0, .data[1] = 0, .data[2] = delta_time, .data[3] = 1.0f});
+  // if (game->mario_position.y > backward_limit) {
+  //   done = true;
+  //   reward -= 500.0f;
+  // }
+
+  struct Packet {
+    float x;
+    float y;
+    float speed;
+    float azimuth;  // radians
+    float reward;
+    int done;
+  };
+
+  struct Packet packet;
+  packet.x = game->mario_position.x;
+  packet.y = game->mario_position.y;
+  packet.speed = game->mario_speed;
+  packet.azimuth = heading;
+  packet.reward = reward;
+  packet.done = done;
+
+  send(game->sock, (char*)&packet, sizeof(packet), 0);
+
+  if (recv_all(game->sock, (char*)game->last_action, sizeof(game->last_action)) <= 0) {
+    game->last_action[0] = 0.0f;
+    game->last_action[1] = 0.0f;
+  }
 
   player_update(&(game->player), input_manager_get_controller_actions(input_manager), input_manager_get_controller_action_list_length(input_manager));
 
   if (done) {
     game->timer = 0;
-    game->mario_position = (vec3){.x = 0.0f, .y = 95.0f, .z = 0.75};
+    game->mario_position = (vec3){0.0f, 95.0f, 0.75f};
+
     game->mario_speed = 0.0f;
-    game->player.camera.look_at_azimuth = -M_PI / 2;
-    game->previous_reward = 0.0f;
+    game->car_heading = M_PI / 2;
+    mat4 mario_rotation = MAT4_IDENTITY;
+
+    mario_rotation = mat4_rotate(
+        mario_rotation,
+        -M_PI / 2,
+        (vec3){0.5f, 0.0f, 0.0f});
+
+    mario_rotation = mat4_rotate(
+        mario_rotation,
+        -game->car_heading + M_PI / 2,
+        (vec3){0.0f, 1.0f, 0.0f});
+
+    game->mario->sprite_common.rotation =
+        mat4_to_quaternion(mario_rotation);
+    // game->player.camera.look_at_azimuth = game->car_heading;
+
+    game->last_action[0] = 0.0f;
+    game->last_action[1] = 0.0f;
+    game->prev_y = game->mario_position.y;
   }
 
   window->gbuffer->gbuffer_common.projection_matrix = camera_get_projection_matrix(&(game->player.camera), window);

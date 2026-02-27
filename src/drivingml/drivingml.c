@@ -69,7 +69,8 @@ void drivingml_start(struct DrivingML* drivingml) {
 
     // Frame update
     window_prepare_frame(&(drivingml->window));
-    game_update(&(drivingml->game), &(drivingml->mana), delta_time);
+    // game_update(&(drivingml->game), &(drivingml->mana), delta_time);
+    game_update(&(drivingml->game), &(drivingml->mana), 0.01666666666);
     window_end_frame(&(drivingml->window));
 
     frame_count++;

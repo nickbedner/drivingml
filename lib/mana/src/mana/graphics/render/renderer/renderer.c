@@ -1,6 +1,6 @@
 #include "mana/graphics/render/renderer/renderer.h"
 
-uint8_t renderer_init(struct Renderer *renderer, struct APICommon *api_common, struct Surface *surface, struct SwapChain *swap_chain, struct GBuffer *gbuffer, struct PostProcess *post_process) {
+uint8_t renderer_init(struct Renderer* renderer, struct APICommon* api_common, struct Surface* surface, struct SwapChain* swap_chain, struct GBuffer* gbuffer, struct PostProcess* post_process) {
 #ifdef VULKAN_API_SUPPORTED
   if (api_common->api_type == API_VULKAN)
     renderer->renderer_func = VULKAN_RENDERER;
@@ -12,7 +12,7 @@ uint8_t renderer_init(struct Renderer *renderer, struct APICommon *api_common, s
 
   renderer->renderer_func.renderer_init(api_common, surface, swap_chain, gbuffer, post_process, &(renderer->renderer_settings));
 
-  if (swap_chain_init(swap_chain, api_common, renderer->renderer_settings.width, renderer->renderer_settings.height, renderer->renderer_settings.supersample_scale, surface->hwnd))
+  if (swap_chain_init(swap_chain, api_common, renderer->renderer_settings.width, renderer->renderer_settings.height, renderer->renderer_settings.supersample_scale, renderer->renderer_settings.vsync, surface->hwnd))
     goto renderer_swap_chain_error;
   if (post_process_init(post_process, api_common, &(swap_chain->swap_chain_common)))
     goto renderer_post_process_error;
@@ -36,13 +36,13 @@ renderer_swap_chain_error:
   return 1;
 }
 
-void renderer_delete(struct Renderer *renderer, struct APICommon *api_common, struct Surface *surface, struct SwapChain *swap_chain, struct GBuffer *gbuffer, struct PostProcess *post_process) {
+void renderer_delete(struct Renderer* renderer, struct APICommon* api_common, struct Surface* surface, struct SwapChain* swap_chain, struct GBuffer* gbuffer, struct PostProcess* post_process) {
   gbuffer_delete(gbuffer, api_common, renderer->renderer_settings.msaa_samples);
   post_process_delete(post_process, api_common);
   swap_chain_delete(swap_chain, api_common);
   renderer->renderer_func.renderer_delete(api_common, surface, swap_chain, gbuffer, post_process, &(renderer->renderer_settings));
 }
 
-void renderer_wait_for_device(struct Renderer *renderer, struct APICommon *api_common) {
+void renderer_wait_for_device(struct Renderer* renderer, struct APICommon* api_common) {
   renderer->renderer_func.renderer_wait_for_device(api_common);
 }

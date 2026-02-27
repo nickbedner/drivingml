@@ -1,7 +1,7 @@
 #include "mana/graphics/render/swapchain/swapchaindirectx12.h"
 
 // Note: This function if here because it is used by both init and resize
-static inline uint_fast8_t swap_chain_directx_12_init_common(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common) {
+static inline uint_fast8_t swap_chain_directx_12_init_common(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common) {
   HRESULT hr;
   for (uint_fast8_t frame = 0; frame < MAX_SWAP_CHAIN_FRAMES; frame++) {
     swap_chain_common->swap_chain_directx12.frame_index[frame] = swap_chain_common->swap_chain_directx12.swap_chain->lpVtbl->GetCurrentBackBufferIndex(swap_chain_common->swap_chain_directx12.swap_chain);
@@ -13,7 +13,7 @@ static inline uint_fast8_t swap_chain_directx_12_init_common(struct SwapChainCom
     rtv_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     rtv_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-    hr = api_common->directx_12_api.device->lpVtbl->CreateDescriptorHeap(api_common->directx_12_api.device, &rtv_heap_desc, &IID_ID3D12DescriptorHeap, (void **)&(swap_chain_common->swap_chain_directx12.rtv_descriptor_heap[frame]));
+    hr = api_common->directx_12_api.device->lpVtbl->CreateDescriptorHeap(api_common->directx_12_api.device, &rtv_heap_desc, &IID_ID3D12DescriptorHeap, (void**)&(swap_chain_common->swap_chain_directx12.rtv_descriptor_heap[frame]));
     if (FAILED(hr))
       return 1;
 
@@ -24,7 +24,7 @@ static inline uint_fast8_t swap_chain_directx_12_init_common(struct SwapChainCom
 
     // Create a RTV for each frame.
     D3D12_CPU_DESCRIPTOR_HANDLE current_rtv_handle = swap_chain_common->swap_chain_directx12.rtv_handle[frame];
-    hr = swap_chain_common->swap_chain_directx12.swap_chain->lpVtbl->GetBuffer(swap_chain_common->swap_chain_directx12.swap_chain, frame, &IID_ID3D12Resource, (void **)&(swap_chain_common->swap_chain_directx12.render_targets[frame]));
+    hr = swap_chain_common->swap_chain_directx12.swap_chain->lpVtbl->GetBuffer(swap_chain_common->swap_chain_directx12.swap_chain, frame, &IID_ID3D12Resource, (void**)&(swap_chain_common->swap_chain_directx12.render_targets[frame]));
     if (FAILED(hr))
       return 1;
 
@@ -32,13 +32,13 @@ static inline uint_fast8_t swap_chain_directx_12_init_common(struct SwapChainCom
 
     current_rtv_handle.ptr += swap_chain_common->swap_chain_directx12.rtv_descriptor_size[frame];
 
-    hr = api_common->directx_12_api.device->lpVtbl->CreateCommandAllocator(api_common->directx_12_api.device, D3D12_COMMAND_LIST_TYPE_DIRECT, &IID_ID3D12CommandAllocator, (void **)&(swap_chain_common->swap_chain_directx12.command_allocator[frame]));
+    hr = api_common->directx_12_api.device->lpVtbl->CreateCommandAllocator(api_common->directx_12_api.device, D3D12_COMMAND_LIST_TYPE_DIRECT, &IID_ID3D12CommandAllocator, (void**)&(swap_chain_common->swap_chain_directx12.command_allocator[frame]));
     if (FAILED(hr))
       return 1;
 
     // Note: Assets
     // Create the command list.
-    hr = api_common->directx_12_api.device->lpVtbl->CreateCommandList(api_common->directx_12_api.device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, swap_chain_common->swap_chain_directx12.command_allocator[frame], NULL, &IID_ID3D12CommandList, (void **)&(swap_chain_common->swap_chain_directx12.command_list[frame]));
+    hr = api_common->directx_12_api.device->lpVtbl->CreateCommandList(api_common->directx_12_api.device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, swap_chain_common->swap_chain_directx12.command_allocator[frame], NULL, &IID_ID3D12CommandList, (void**)&(swap_chain_common->swap_chain_directx12.command_list[frame]));
     if (FAILED(hr))
       return 1;
 
@@ -51,7 +51,7 @@ static inline uint_fast8_t swap_chain_directx_12_init_common(struct SwapChainCom
   for (uint_fast8_t frame = 0; frame < MAX_FRAMES_IN_FLIGHT; frame++) {
     // Create synchronization objects.
 
-    hr = api_common->directx_12_api.device->lpVtbl->CreateFence(api_common->directx_12_api.device, 0, D3D12_FENCE_FLAG_NONE, &IID_ID3D12Fence, (void **)&(swap_chain_common->swap_chain_directx12.fence[frame]));
+    hr = api_common->directx_12_api.device->lpVtbl->CreateFence(api_common->directx_12_api.device, 0, D3D12_FENCE_FLAG_NONE, &IID_ID3D12Fence, (void**)&(swap_chain_common->swap_chain_directx12.fence[frame]));
     if (FAILED(hr))
       return 1;
     swap_chain_common->swap_chain_directx12.fence_value[frame] = 1;
@@ -68,12 +68,12 @@ static inline uint_fast8_t swap_chain_directx_12_init_common(struct SwapChainCom
   return 0;
 }
 
-static inline void swap_chain_directx_12_update_constant_buffer(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common, uint_fast32_t width, uint_fast32_t height) {
+static inline void swap_chain_directx_12_update_constant_buffer(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, uint_fast32_t width, uint_fast32_t height) {
   struct BlitUniformBufferObject ubos = {0};
   ubos.screen_size = (vec2){.x = (float)width, .y = (float)height};
 
   // Map the constant buffer to update it
-  void *data;
+  void* data;
   HRESULT hr = swap_chain_common->swap_chain_directx12.constant_buffer->lpVtbl->Map(swap_chain_common->swap_chain_directx12.constant_buffer, 0, NULL, &data);
   if (SUCCEEDED(hr)) {
     memcpy(data, &ubos, sizeof(struct BlitUniformBufferObject));
@@ -82,7 +82,7 @@ static inline void swap_chain_directx_12_update_constant_buffer(struct SwapChain
     log_message(LOG_SEVERITY_ERROR, "Failed to map constant buffer.\n");
 }
 
-uint_fast8_t swap_chain_directx_12_init(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common, uint_fast32_t width, uint_fast32_t height, void *extra_data) {
+uint_fast8_t swap_chain_directx_12_init(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, uint_fast32_t width, uint_fast32_t height, bool vsync, void* extra_data) {
   DXGI_SWAP_CHAIN_DESC1 swap_chain_desc = {0};
   swap_chain_desc.BufferCount = MAX_SWAP_CHAIN_FRAMES;
   swap_chain_desc.Width = width;
@@ -93,7 +93,7 @@ uint_fast8_t swap_chain_directx_12_init(struct SwapChainCommon *swap_chain_commo
   swap_chain_desc.SampleDesc.Count = 1;
 
   HRESULT hr;
-  hr = api_common->directx_12_api.factory->lpVtbl->CreateSwapChainForHwnd(api_common->directx_12_api.factory, (IUnknown *)api_common->directx_12_api.command_queue, swap_chain_common->hwnd, &swap_chain_desc, NULL, NULL, (IDXGISwapChain1 **)&(swap_chain_common->swap_chain_directx12.swap_chain));
+  hr = api_common->directx_12_api.factory->lpVtbl->CreateSwapChainForHwnd(api_common->directx_12_api.factory, (IUnknown*)api_common->directx_12_api.command_queue, swap_chain_common->hwnd, &swap_chain_desc, NULL, NULL, (IDXGISwapChain1**)&(swap_chain_common->swap_chain_directx12.swap_chain));
   if (FAILED(hr))
     return 2;
 
@@ -119,7 +119,7 @@ uint_fast8_t swap_chain_directx_12_init(struct SwapChainCommon *swap_chain_commo
 }
 
 // Note: This function if here because it is used by both init and resize
-static inline void swap_chain_directx_12_delete_common(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common) {
+static inline void swap_chain_directx_12_delete_common(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common) {
   // Release render targets, descriptor heaps, and related resources.
   for (UINT frame = 0; frame < MAX_SWAP_CHAIN_FRAMES; frame++) {
     if (swap_chain_common->swap_chain_directx12.rtv_descriptor_heap[frame]) {
@@ -157,7 +157,7 @@ static inline void swap_chain_directx_12_delete_common(struct SwapChainCommon *s
   }
 }
 
-void swap_chain_directx_12_delete(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common) {
+void swap_chain_directx_12_delete(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common) {
   swap_chain_directx_12_delete_common(swap_chain_common, api_common);
 
   // Release the swap chain itself.
@@ -172,7 +172,7 @@ void swap_chain_directx_12_delete(struct SwapChainCommon *swap_chain_common, str
   memset(swap_chain_common->swap_chain_directx12.fence_value, 0, sizeof(swap_chain_common->swap_chain_directx12.fence_value));
 }
 
-uint_fast8_t swap_chain_directx_12_resize(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common) {
+uint_fast8_t swap_chain_directx_12_resize(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common) {
   for (uint_fast8_t frame_num = 0; frame_num < MAX_FRAMES_IN_FLIGHT; frame_num++)
     swap_chain_directx_12_wait_for_fences(swap_chain_common, api_common, frame_num);
 
@@ -198,10 +198,10 @@ uint_fast8_t swap_chain_directx_12_resize(struct SwapChainCommon *swap_chain_com
   return 0;
 }
 
-void swap_chain_directx_12_prepare_delete(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common) {
+void swap_chain_directx_12_prepare_delete(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common) {
 }
 
-static uint_fast8_t swap_chain_directx_12_blit_init_wrapper(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common, struct PostProcessCommon *post_process_common) {
+static uint_fast8_t swap_chain_directx_12_blit_init_wrapper(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, struct PostProcessCommon* post_process_common) {
   if (directx_12_graphics_utils_setup_vertex_buffer(&(api_common->directx_12_api), swap_chain_common->blit_fullscreen_triangle.mesh_common.vertices, &(swap_chain_common->swap_chain_directx12.vertex_buffer)))
     return 1;
   if (directx_12_graphics_utils_setup_index_buffer(&(api_common->directx_12_api), swap_chain_common->blit_fullscreen_triangle.mesh_common.indices, &(swap_chain_common->swap_chain_directx12.index_buffer)))
@@ -210,7 +210,7 @@ static uint_fast8_t swap_chain_directx_12_blit_init_wrapper(struct SwapChainComm
   return 0;
 }
 
-uint_fast8_t swap_chain_directx_12_blit_init(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common, struct PostProcessCommon *post_process_common) {
+uint_fast8_t swap_chain_directx_12_blit_init(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, struct PostProcessCommon* post_process_common) {
   if (swap_chain_directx_12_blit_init_wrapper(swap_chain_common, api_common, post_process_common)) {
     directx_12_graphics_utils_poll_debug_messages(&(api_common->directx_12_api));
     return 1;
@@ -219,11 +219,11 @@ uint_fast8_t swap_chain_directx_12_blit_init(struct SwapChainCommon *swap_chain_
   return 0;
 }
 
-uint_fast8_t swap_chain_directx_12_blit_update(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common, struct PostProcessCommon *post_process_common) {
+uint_fast8_t swap_chain_directx_12_blit_update(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, struct PostProcessCommon* post_process_common) {
   return 0;
 }
 
-uint_fast8_t swap_chain_directx_12_blit_render(struct SwapChainCommon *swap_chain_common, struct PostProcessCommon *post_process_common, uint_fast8_t swap_chain_num) {
+uint_fast8_t swap_chain_directx_12_blit_render(struct SwapChainCommon* swap_chain_common, struct PostProcessCommon* post_process_common, uint_fast8_t swap_chain_num) {
   // Reset the command allocator and command list for the given swap chain.
   swap_chain_common->swap_chain_directx12.command_allocator[swap_chain_num]->lpVtbl->Reset(swap_chain_common->swap_chain_directx12.command_allocator[swap_chain_num]);
   swap_chain_common->swap_chain_directx12.command_list[swap_chain_num]->lpVtbl->Reset(swap_chain_common->swap_chain_directx12.command_list[swap_chain_num], swap_chain_common->swap_chain_directx12.command_allocator[swap_chain_num], NULL);
@@ -233,8 +233,8 @@ uint_fast8_t swap_chain_directx_12_blit_render(struct SwapChainCommon *swap_chai
   swap_chain_common->swap_chain_directx12.command_list[swap_chain_num]->lpVtbl->RSSetScissorRects(swap_chain_common->swap_chain_directx12.command_list[swap_chain_num], 1, &(swap_chain_common->blit_shader->shader.shader_common.shader_directx12.scissor_rect));
 
   // Insert the resource barrier transition.
-  ID3D12Resource *back_buffer;
-  swap_chain_common->swap_chain_directx12.swap_chain->lpVtbl->GetBuffer(swap_chain_common->swap_chain_directx12.swap_chain, swap_chain_num, &IID_ID3D12Resource, (void **)&back_buffer);
+  ID3D12Resource* back_buffer;
+  swap_chain_common->swap_chain_directx12.swap_chain->lpVtbl->GetBuffer(swap_chain_common->swap_chain_directx12.swap_chain, swap_chain_num, &IID_ID3D12Resource, (void**)&back_buffer);
 
   D3D12_RESOURCE_BARRIER barrier = {0};
   barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -265,7 +265,7 @@ uint_fast8_t swap_chain_directx_12_blit_render(struct SwapChainCommon *swap_chai
 
   // ID3D12DescriptorHeap *descriptor_heaps[] = {post_process_common->post_process_directx12.srv_heap[post_process_common->ping_pong]};
   // swap_chain_common->swap_chain_directx12.command_list[swap_chain_num]->lpVtbl->SetDescriptorHeaps(swap_chain_common->swap_chain_directx12.command_list[swap_chain_num], _countof(descriptor_heaps), descriptor_heaps);
-  ID3D12DescriptorHeap *descriptor_heaps[] = {post_process_common->post_process_directx12.srv_heap[post_process_common->ping_pong], swap_chain_common->blit_shader->shader.shader_common.shader_directx12.sampler_heap};
+  ID3D12DescriptorHeap* descriptor_heaps[] = {post_process_common->post_process_directx12.srv_heap[post_process_common->ping_pong], swap_chain_common->blit_shader->shader.shader_common.shader_directx12.sampler_heap};
   swap_chain_common->swap_chain_directx12.command_list[swap_chain_num]->lpVtbl->SetDescriptorHeaps(swap_chain_common->swap_chain_directx12.command_list[swap_chain_num], _countof(descriptor_heaps), descriptor_heaps);
   swap_chain_common->swap_chain_directx12.command_list[swap_chain_num]->lpVtbl->SetGraphicsRootSignature(swap_chain_common->swap_chain_directx12.command_list[swap_chain_num], swap_chain_common->blit_shader->shader.shader_common.shader_directx12.root_signature);
   D3D12_GPU_VIRTUAL_ADDRESS cbv_address = swap_chain_common->swap_chain_directx12.constant_buffer->lpVtbl->GetGPUVirtualAddress(swap_chain_common->swap_chain_directx12.constant_buffer);
@@ -293,9 +293,9 @@ uint_fast8_t swap_chain_directx_12_blit_render(struct SwapChainCommon *swap_chai
   return 0;
 }
 
-bool swap_chain_directx_12_wait_for_fences(struct SwapChainCommon *swap_chain_common, struct APICommon *api_common, size_t frame) {
+bool swap_chain_directx_12_wait_for_fences(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, size_t frame) {
   // Wait for the current frame's fence.
-  ID3D12Fence *current_fence = swap_chain_common->swap_chain_directx12.fence[frame];
+  ID3D12Fence* current_fence = swap_chain_common->swap_chain_directx12.fence[frame];
   HANDLE current_fence_event = swap_chain_common->swap_chain_directx12.fence_event[frame];
   UINT64 current_fence_value = swap_chain_common->swap_chain_directx12.fence_value[frame];
 
@@ -324,9 +324,9 @@ bool swap_chain_directx_12_wait_for_fences(struct SwapChainCommon *swap_chain_co
   return false;
 }
 
-uint_fast8_t swap_chain_directx_12_end_frame(struct SwapChainCommon *swap_chain_common, struct PostProcessCommon *post_process_common, struct APICommon *api_common) {
+uint_fast8_t swap_chain_directx_12_end_frame(struct SwapChainCommon* swap_chain_common, struct PostProcessCommon* post_process_common, struct APICommon* api_common) {
   // Execute the command list
-  ID3D12CommandList *pp_command_lists[] = {(ID3D12CommandList *)swap_chain_common->swap_chain_directx12.command_list[swap_chain_common->image_index]};
+  ID3D12CommandList* pp_command_lists[] = {(ID3D12CommandList*)swap_chain_common->swap_chain_directx12.command_list[swap_chain_common->image_index]};
   api_common->directx_12_api.command_queue->lpVtbl->ExecuteCommandLists(api_common->directx_12_api.command_queue, 1, pp_command_lists);
 
   // Present the frame

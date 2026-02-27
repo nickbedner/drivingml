@@ -45,23 +45,23 @@ struct SwapChainVulkan {
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
 struct SwapChainDirectX12 {
-  IDXGISwapChain3 *swap_chain;
+  IDXGISwapChain3* swap_chain;
 
-  ID3D12DescriptorHeap *rtv_descriptor_heap[MAX_SWAP_CHAIN_FRAMES];
+  ID3D12DescriptorHeap* rtv_descriptor_heap[MAX_SWAP_CHAIN_FRAMES];
   UINT rtv_descriptor_size[MAX_SWAP_CHAIN_FRAMES];
   D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle[MAX_SWAP_CHAIN_FRAMES];
-  ID3D12Resource *render_targets[MAX_SWAP_CHAIN_FRAMES];
-  ID3D12CommandAllocator *command_allocator[MAX_SWAP_CHAIN_FRAMES];
-  ID3D12GraphicsCommandList *command_list[MAX_SWAP_CHAIN_FRAMES];
+  ID3D12Resource* render_targets[MAX_SWAP_CHAIN_FRAMES];
+  ID3D12CommandAllocator* command_allocator[MAX_SWAP_CHAIN_FRAMES];
+  ID3D12GraphicsCommandList* command_list[MAX_SWAP_CHAIN_FRAMES];
 
-  ID3D12Resource *vertex_buffer;
+  ID3D12Resource* vertex_buffer;
   D3D12_VERTEX_BUFFER_VIEW vertex_buffer_view;
-  ID3D12Resource *index_buffer;
+  ID3D12Resource* index_buffer;
   D3D12_INDEX_BUFFER_VIEW index_buffer_view;
 
-  ID3D12Resource *constant_buffer;  // Constant Buffer Resource
+  ID3D12Resource* constant_buffer;  // Constant Buffer Resource
 
-  ID3D12Fence *fence[MAX_FRAMES_IN_FLIGHT];
+  ID3D12Fence* fence[MAX_FRAMES_IN_FLIGHT];
   HANDLE fence_event[MAX_FRAMES_IN_FLIGHT];
   UINT64 fence_value[MAX_FRAMES_IN_FLIGHT];
   UINT frame_index[MAX_FRAMES_IN_FLIGHT];
@@ -73,9 +73,10 @@ struct SwapChainCommon {
   size_t current_frame;
   uint32_t image_index;
   uint_fast8_t supersample_scale;
+  bool vsync;
   struct SwapchainExtent swap_chain_extent;
 
-  struct BlitShader *blit_shader;
+  struct BlitShader* blit_shader;
   struct Mesh blit_fullscreen_triangle;
 
 #ifdef _WIN64

@@ -15,15 +15,15 @@ struct APICommon;
 struct SwapChain;
 
 struct SwapChainFunc {
-  uint_fast8_t (*swap_chain_init)(struct SwapChainCommon *, struct APICommon *, uint_fast32_t, uint_fast32_t, void *);
-  void (*swap_chain_delete)(struct SwapChainCommon *, struct APICommon *);
-  uint_fast8_t (*swap_chain_resize)(struct SwapChainCommon *, struct APICommon *);
-  void (*swap_chain_prepare_delete)(struct SwapChainCommon *, struct APICommon *);
-  uint_fast8_t (*swap_chain_blit_init)(struct SwapChainCommon *, struct APICommon *, struct PostProcessCommon *);
-  uint_fast8_t (*swap_chain_blit_update)(struct SwapChainCommon *, struct APICommon *, struct PostProcessCommon *);
-  uint_fast8_t (*swap_chain_blit_render)(struct SwapChainCommon *, struct PostProcessCommon *, uint_fast8_t);
-  bool (*swap_chain_wait_for_fences)(struct SwapChainCommon *, struct APICommon *, size_t);
-  uint_fast8_t (*swap_chain_end_frame)(struct SwapChainCommon *, struct PostProcessCommon *, struct APICommon *);
+  uint_fast8_t (*swap_chain_init)(struct SwapChainCommon*, struct APICommon*, uint_fast32_t, uint_fast32_t, bool, void*);
+  void (*swap_chain_delete)(struct SwapChainCommon*, struct APICommon*);
+  uint_fast8_t (*swap_chain_resize)(struct SwapChainCommon*, struct APICommon*);
+  void (*swap_chain_prepare_delete)(struct SwapChainCommon*, struct APICommon*);
+  uint_fast8_t (*swap_chain_blit_init)(struct SwapChainCommon*, struct APICommon*, struct PostProcessCommon*);
+  uint_fast8_t (*swap_chain_blit_update)(struct SwapChainCommon*, struct APICommon*, struct PostProcessCommon*);
+  uint_fast8_t (*swap_chain_blit_render)(struct SwapChainCommon*, struct PostProcessCommon*, uint_fast8_t);
+  bool (*swap_chain_wait_for_fences)(struct SwapChainCommon*, struct APICommon*, size_t);
+  uint_fast8_t (*swap_chain_end_frame)(struct SwapChainCommon*, struct PostProcessCommon*, struct APICommon*);
 };
 
 #ifdef VULKAN_API_SUPPORTED
@@ -38,14 +38,14 @@ struct SwapChain {
   struct SwapChainCommon swap_chain_common;
 };
 
-uint_fast8_t swap_chain_init(struct SwapChain *swap_chain, struct APICommon *api_common, uint_fast32_t width, uint_fast32_t height, uint_fast8_t supersample_scale, void *extra_data);
-void swap_chain_delete(struct SwapChain *swap_chain, struct APICommon *api_common);
-uint_fast8_t swap_chain_resize(struct SwapChain *swap_chain, struct APICommon *api_common, uint_fast32_t width, uint_fast32_t height, uint_fast8_t supersample_scale);
-void swap_chain_prepare_delete(struct SwapChain *swap_chain, struct APICommon *api_common);
+uint_fast8_t swap_chain_init(struct SwapChain* swap_chain, struct APICommon* api_common, uint_fast32_t width, uint_fast32_t height, uint_fast8_t supersample_scale, bool vsync, void* extra_data);
+void swap_chain_delete(struct SwapChain* swap_chain, struct APICommon* api_common);
+uint_fast8_t swap_chain_resize(struct SwapChain* swap_chain, struct APICommon* api_common, uint_fast32_t width, uint_fast32_t height, uint_fast8_t supersample_scale);
+void swap_chain_prepare_delete(struct SwapChain* swap_chain, struct APICommon* api_common);
 
-uint_fast8_t swap_chain_blit_init(struct SwapChain *swap_chain, struct APICommon *api_common, struct PostProcessCommon *post_process_common);
-uint_fast8_t swap_chain_blit_update(struct SwapChain *swap_chain, struct APICommon *api_common, struct PostProcessCommon *post_process_common);
-void swap_chain_blit_delete(struct SwapChain *swap_chain, struct APICommon *api_common);
-uint_fast8_t swap_chain_blit_render(struct SwapChain *swap_chain, struct PostProcessCommon *post_process_common);
-bool swap_chain_wait_for_fences(struct SwapChain *swap_chain, struct APICommon *api_common, size_t frame);
-uint_fast8_t swap_chain_end_frame(struct SwapChain *swap_chain, struct PostProcessCommon *post_process_common, struct APICommon *api_common);
+uint_fast8_t swap_chain_blit_init(struct SwapChain* swap_chain, struct APICommon* api_common, struct PostProcessCommon* post_process_common);
+uint_fast8_t swap_chain_blit_update(struct SwapChain* swap_chain, struct APICommon* api_common, struct PostProcessCommon* post_process_common);
+void swap_chain_blit_delete(struct SwapChain* swap_chain, struct APICommon* api_common);
+uint_fast8_t swap_chain_blit_render(struct SwapChain* swap_chain, struct PostProcessCommon* post_process_common);
+bool swap_chain_wait_for_fences(struct SwapChain* swap_chain, struct APICommon* api_common, size_t frame);
+uint_fast8_t swap_chain_end_frame(struct SwapChain* swap_chain, struct PostProcessCommon* post_process_common, struct APICommon* api_common);
