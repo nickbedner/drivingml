@@ -69,7 +69,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->mario->sprite_common.position = game->mario_position;
   game->mario->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
   game->car_heading = 0.0f;  // M_PI / 2.0f;  // facing down -Y
-  mat4 mario_rotation = mario_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){0.5f, 0.0f, 0.0f});
+  mat4 mario_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){0.5f, 0.0f, 0.0f});
   mario_rotation = mat4_rotate(mario_rotation, -game->car_heading + M_PI / 2, (vec3){0.0f, 1.0f, 0.0f});
   game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
 
@@ -164,9 +164,9 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   if (delta_time > 0.05)
     delta_time = 0.05;
 
-  // Hardcoded to allow for 2 minutes to complete a lap
+  // Hardcoded to allow for 30 seconds to complete a lap
   game->timer++;
-  if (game->timer > 75600) {
+  if (game->timer > 1800) {
     printf("Episode timed out\n");
     done = true;
   }
@@ -231,31 +231,55 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   if (game->mario_speed < -20.0f)
     game->mario_speed = -20.0f;
 
-  // Movement direction
-  float heading = game->car_heading;
+  // ------------------------------------------------------
+  // Movement + Forward Progress Reward
+  // ------------------------------------------------------
 
+  float heading = game->car_heading;
   vec3 forward_vel = {-cosf(heading), -sinf(heading), 0.0f};
 
+  // Get current marker position
+  vec3 marker_pos = game->marker[game->current_marker]->sprite_common.position;
+
+  // Distance BEFORE movement
+  float dx_before = marker_pos.x - game->mario_position.x;
+  float dy_before = marker_pos.y - game->mario_position.y;
+  float dist_before = sqrtf(dx_before * dx_before + dy_before * dy_before);
+
+  // Move car
   game->mario_position.x += forward_vel.x * game->mario_speed * delta_time;
   game->mario_position.y += forward_vel.y * game->mario_speed * delta_time;
 
-  float damping = 2.0f;  // higher = stronger friction
+  // Apply damping
+  float damping = 2.0f;
   game->mario_speed *= expf(-damping * delta_time);
+
+  // Update sprite + camera
   game->mario->sprite_common.position = game->mario_position;
-  game->player.look_at_pos = (vec3d){.x = game->mario_position.x, .y = game->mario_position.y, .z = game->mario_position.z};
+  game->player.look_at_pos = (vec3d){
+      .x = game->mario_position.x,
+      .y = game->mario_position.y,
+      .z = game->mario_position.z};
+
+  // Distance AFTER movement
+  float dx_after = marker_pos.x - game->mario_position.x;
+  float dy_after = marker_pos.y - game->mario_position.y;
+  float dist_after = sqrtf(dx_after * dx_after + dy_after * dy_after);
+
+  // ------------------------------------------------------
+  // Reward Calculation
+  // ------------------------------------------------------
 
   float reward = 0.0f;
-  vec3 marker_pos = game->marker[game->current_marker]->sprite_common.position;
 
-  float dx = marker_pos.x - game->mario_position.x;
-  float dy = marker_pos.y - game->mario_position.y;
-  float dist_sq = dx * dx + dy * dy;
+  // Forward progress reward
+  float progress = dist_before - dist_after;
+  reward += 0.05f * progress;
 
+  // Checkpoint detection
   const float checkpoint_radius = 20.0f;
-
-  if (dist_sq < checkpoint_radius * checkpoint_radius) {
-    reward += 50.0f;  // reward reaching checkpoint
-
+  if (dist_after < checkpoint_radius) {
+    reward += 50.0f;  // checkpoint reward
     game->current_marker++;
 
     if (game->current_marker >= 4) {
@@ -264,12 +288,14 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
       reward += 200.0f;  // lap bonus
       printf("Lap completed!\n");
 
-      game->timer = 0;  // reset timeout
+      game->timer = 0;
+      done = true;
     }
   }
 
   // Time penalty
-  reward -= 0.01f;
+  reward *= 0.01f;
+  reward -= 0.001f;
 
   vec3 next_marker = game->marker[game->current_marker]->sprite_common.position;
 
@@ -304,13 +330,13 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
   if (done) {
     game->timer = 0;
-    game->mario_position = (vec3){0.0f, 95.0f, 0.75f};
 
     game->mario_speed = 0.0f;
-    game->car_heading = M_PI / 2;
-    mat4 mario_rotation = MAT4_IDENTITY;
-
-    mario_rotation = mat4_rotate(mario_rotation, -M_PI / 2, (vec3){0.5f, 0.0f, 0.0f});
+    game->mario_position = (vec3){.x = 10.0f, .y = 95.0f, .z = 0.75};
+    game->mario->sprite_common.position = game->mario_position;
+    game->mario->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
+    game->car_heading = 0.0f;  // M_PI / 2.0f;  // facing down -Y
+    mat4 mario_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){0.5f, 0.0f, 0.0f});
     mario_rotation = mat4_rotate(mario_rotation, -game->car_heading + M_PI / 2, (vec3){0.0f, 1.0f, 0.0f});
     game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
 

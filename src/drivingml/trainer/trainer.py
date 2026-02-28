@@ -70,7 +70,6 @@ gamma = 0.99
 log_probs = []
 rewards = []
 values = []
-entropies = []
 episode = 0
 mean_raws = []      # NEW
 actions_taken = []  # NEW
@@ -110,29 +109,26 @@ while True:
     if data is None:
         break
 
-    x, y, speed, azimuth,reward, done = struct.unpack("<5fi", data)
+    dx, dy, speed, azimuth,reward, done = struct.unpack("<5fi", data)
     speed = np.tanh(speed / 50.0)
     azimuth = np.sin(azimuth), np.cos(azimuth)
 
-    state = torch.tensor([x, y, speed, azimuth[0], azimuth[1]], dtype=torch.float32)
+    state = torch.tensor([dx, dy, speed, azimuth[0], azimuth[1]], dtype=torch.float32)
 
-    mean_raw, value = model(state)
-    mean = 2.0 * torch.tanh(mean_raw / 2.0)
-
+    mean, value = model(state)          # mean is raw
     std = log_std.exp().expand_as(mean)
     base_dist = D.Normal(mean, std)
     dist = D.TransformedDistribution(base_dist, [D.transforms.TanhTransform(cache_size=1)])
-
     action = dist.rsample()
+
     log_prob = dist.log_prob(action).sum(-1)
 
     # Store debug info
-    mean_raws.append(mean_raw.detach())
+    mean_raws.append(mean.detach())
     actions_taken.append(action.detach())
     log_probs.append(log_prob)
     values.append(value)
     rewards.append(reward)
-    entropies.append(base_dist.entropy().sum(-1))
 
     # Send action back
     with torch.no_grad():
@@ -166,27 +162,16 @@ while True:
         # Stack tensors
         log_probs_tensor = torch.stack(log_probs)
         values_tensor = torch.stack(values).squeeze()
-        entropies_tensor = torch.stack(entropies)
-
-        # ----- Normalize value targets -----
-        ret_mean = returns.mean()
-        ret_std = returns.std().clamp_min(1e-8)
-        returns_tgt = (returns - ret_mean) / ret_std
 
         # ----- Advantages -----
-        advantages = returns_tgt - values_tensor.detach()
-
-        adv_mean = advantages.mean()
-        adv_std = advantages.std()
-
-        if adv_std > 1e-8:
-            advantages = (advantages - adv_mean) / adv_std
-        else:
-            advantages = advantages - adv_mean
+        advantages = returns - values_tensor.detach()
+        advantages = (advantages - advantages.mean()) / (advantages.std().clamp_min(1e-8))
+        
         # ----- Losses -----
         policy_loss = -(log_probs_tensor * advantages).mean()
-        value_loss = nn.SmoothL1Loss()(values_tensor, returns_tgt)
-        entropy_term = entropies_tensor.mean()
+        value_loss = nn.SmoothL1Loss()(values_tensor, returns)
+
+        entropy_term = (-log_probs_tensor).mean()
 
         loss = policy_loss + value_loss_coef * value_loss - entropy_coef * entropy_term
 
@@ -223,22 +208,20 @@ while True:
                 f"mean_std: {log_std.exp().mean().item():.4f}"
             )
 
-            if episode % 10 == 0:
-                checkpoint = {
-                    "model_state_dict": model.state_dict(),
-                    "log_std": log_std.detach().cpu(),
-                    "optimizer_state_dict": optimizer.state_dict(),
-                    "episode": episode
-                }
+            checkpoint = {
+                "model_state_dict": model.state_dict(),
+                "log_std": log_std.detach().cpu(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "episode": episode
+            }
 
-                torch.save(checkpoint, "checkpoints/latest_model.pt")
-                torch.save(checkpoint, f"checkpoints/model_ep_{episode}.pt")
-                print(f"Checkpoint saved at episode {episode}")
+            torch.save(checkpoint, "checkpoints/latest_model.pt")
+            torch.save(checkpoint, f"checkpoints/model_ep_{episode}.pt")
+            print(f"Checkpoint saved at episode {episode}")
 
         # ----- Clear rollout buffers -----
         log_probs.clear()
         rewards.clear()
-        entropies.clear()
         values.clear()
         mean_raws.clear()
         actions_taken.clear()

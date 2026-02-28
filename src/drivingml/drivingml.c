@@ -6,7 +6,7 @@ uint_fast8_t drivingml_init(struct DrivingML* drivingml) {
   main_window_renderer_settings.height = 720;
   main_window_renderer_settings.supersample_scale = 1;
   main_window_renderer_settings.msaa_samples = 2;
-  main_window_renderer_settings.vsync = false;
+  main_window_renderer_settings.vsync = true;
   main_window_renderer_settings.preferred_api_type = API_VULKAN;
 
   // TODO: Load preferred from file

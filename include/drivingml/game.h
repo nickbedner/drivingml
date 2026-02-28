@@ -48,7 +48,7 @@ struct Game {
   float last_action[2];
 
   int current_marker;
-  struct Sprite* marker[4];
+  struct Sprite* marker[];
 };
 
 void game_init(struct Game* game, struct Mana* mana, struct Window* window);
