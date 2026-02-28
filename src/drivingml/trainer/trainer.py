@@ -47,12 +47,14 @@ model = ActorCritic()
 #    # nn.Tanh()
 #)
 
-# Hyperparams / small sane defaults
+# Hyperparameters / small sane defaults
 entropy_coef = 0.02
 value_loss_coef = 0.5
 grad_clip_norm = 0.5
 lr = 3e-4   # more stable than 1e-3 for actor-critic
 gamma = 0.99
+rollout_length = 256
+update_count = 0
 
 log_std = nn.Parameter(torch.ones(2) * -1.0)  # std ~= 0.37
 
@@ -109,10 +111,6 @@ while True:
         break
 
     x, y, speed, azimuth,reward, done = struct.unpack("<5fi", data)
-
-    # Normalize state world coordinates to [-1, 1]
-    x = x / 25
-    y = y / 100
     speed = np.tanh(speed / 50.0)
     azimuth = np.sin(azimuth), np.cos(azimuth)
 
@@ -143,92 +141,101 @@ while True:
     conn.send(struct.pack("<2f", *action_np))
 
     # If episode finished the we train and save train
-    if done == 1:
-        episode += 1
+    # Trigger training on rollout or episode end
+    if done == 1 or len(rewards) >= rollout_length:
+        if done == 1:
+            episode += 1
 
-        # Compute discounted returns
+        # ----- Bootstrap value if not done -----
+        if done == 0:
+            with torch.no_grad():
+                _, next_value = model(state)
+            bootstrap_value = next_value.item()
+        else:
+            bootstrap_value = 0.0
+
+        # ----- Compute bootstrapped returns -----
         returns = []
-        G = 0.0
+        G = bootstrap_value
         for r in reversed(rewards):
             G = r + gamma * G
             returns.insert(0, G)
+
         returns = torch.tensor(returns, dtype=torch.float32)
 
-        # Safe normalize for advantage only (guard against zero std)
-        if returns.numel() > 1 and returns.std() > 1e-8:
-            returns_norm = (returns - returns.mean()) / (returns.std() + 1e-8)
-        else:
-            returns_norm = returns - returns.mean()
-
-        # Stack saved tensors
+        # Stack tensors
         log_probs_tensor = torch.stack(log_probs)
         values_tensor = torch.stack(values).squeeze()
         entropies_tensor = torch.stack(entropies)
 
-        # Policy gradient loss
-        advantages = returns - values_tensor.detach()
-
-        # normalize advantages (safe)
-        if advantages.numel() > 1 and advantages.std() > 1e-8:
-            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
-        else:
-            advantages = advantages - advantages.mean()
-
-        policy_loss = -(log_probs_tensor * advantages).mean()
-        # value_loss = nn.MSELoss()(values_tensor, returns)
+        # ----- Normalize value targets -----
         ret_mean = returns.mean()
         ret_std = returns.std().clamp_min(1e-8)
         returns_tgt = (returns - ret_mean) / ret_std
 
+        # ----- Advantages -----
         advantages = returns_tgt - values_tensor.detach()
-        advantages = (advantages - advantages.mean()) / advantages.std().clamp_min(1e-8)
 
+        adv_mean = advantages.mean()
+        adv_std = advantages.std()
+
+        if adv_std > 1e-8:
+            advantages = (advantages - adv_mean) / adv_std
+        else:
+            advantages = advantages - adv_mean
+        # ----- Losses -----
+        policy_loss = -(log_probs_tensor * advantages).mean()
         value_loss = nn.SmoothL1Loss()(values_tensor, returns_tgt)
-
-        mean_raw_tensor = torch.stack(mean_raws)
-        action_tensor = torch.stack(actions_taken)
-        returns_tensor = returns  # already tensor
-
-        print(
-            f"Episode {episode} | "
-            f"mean_raw_abs_mean: {mean_raw_tensor.abs().mean().item():.4f} | "
-            f"action_abs_mean: {action_tensor.abs().mean().item():.4f} | "
-            f"pct_action_sat: {(action_tensor.abs() > 0.95).float().mean().item():.4f} | "
-            f"returns_abs_mean: {returns_tensor.abs().mean().item():.4f} | "
-            f"value_loss: {value_loss.item():.4f}"
-)
-
         entropy_term = entropies_tensor.mean()
 
         loss = policy_loss + value_loss_coef * value_loss - entropy_coef * entropy_term
 
         optimizer.zero_grad()
         loss.backward()
-
-        torch.nn.utils.clip_grad_norm_(list(model.parameters()) + [log_std], max_norm=grad_clip_norm)
-
+        torch.nn.utils.clip_grad_norm_(list(model.parameters()) + [log_std], grad_clip_norm)
         optimizer.step()
+        update_count += 1
+        print(f"UPDATE {update_count} | steps={len(returns)} | done={done} | ep={episode}")
 
-        # Prevent std collapse (stops deterministic circling)
         with torch.no_grad():
             log_std.clamp_(min=-2.5, max=1.0)
 
-        print(f"Episode {episode} trained. Loss: {loss.item():.4f}, policy: {policy_loss.item():.4f}, value: {value_loss.item():.4f}, entropy: {entropy_term.item():.4f}, mean_std: {log_std.exp().mean().item():.4f}")
-        
-        # Save the model every 100 episodes
-        if episode % 10 == 0:
-            checkpoint = {
-                "model_state_dict": model.state_dict(),
-                "log_std": log_std.detach().cpu(),
-                "optimizer_state_dict": optimizer.state_dict(),
-                "episode": episode
-            }
+        # ----- Debug (only print at episode end) -----
+        if done == 1:
+            mean_raw_tensor = torch.stack(mean_raws)
+            action_tensor = torch.stack(actions_taken)
 
-            torch.save(checkpoint, "checkpoints/latest_model.pt")
-            torch.save(checkpoint, f"checkpoints/model_ep_{episode}.pt")
-            print(f"Checkpoint saved at episode {episode}")
+            print(
+                f"Episode {episode} | "
+                f"mean_raw_abs_mean: {mean_raw_tensor.abs().mean().item():.4f} | "
+                f"action_abs_mean: {action_tensor.abs().mean().item():.4f} | "
+                f"pct_action_sat: {(action_tensor.abs() > 0.95).float().mean().item():.4f} | "
+                f"returns_abs_mean: {returns.abs().mean().item():.4f} | "
+                f"value_loss: {value_loss.item():.4f}"
+            )
 
-        # Clear buffers
+            print(
+                f"Episode {episode} trained. "
+                f"Loss: {loss.item():.4f}, "
+                f"policy: {policy_loss.item():.4f}, "
+                f"value: {value_loss.item():.4f}, "
+                f"entropy: {entropy_term.item():.4f}, "
+                f"mean_std: {log_std.exp().mean().item():.4f}"
+            )
+
+            if episode % 10 == 0:
+                checkpoint = {
+                    "model_state_dict": model.state_dict(),
+                    "log_std": log_std.detach().cpu(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "episode": episode
+                }
+
+                torch.save(checkpoint, "checkpoints/latest_model.pt")
+                torch.save(checkpoint, f"checkpoints/model_ep_{episode}.pt")
+                print(f"Checkpoint saved at episode {episode}")
+
+        # ----- Clear rollout buffers -----
         log_probs.clear()
         rewards.clear()
         entropies.clear()

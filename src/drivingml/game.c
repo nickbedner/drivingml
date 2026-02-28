@@ -74,12 +74,32 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
 
   game->marker[0] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  game->marker[0]->sprite_common.position = (vec3){.x = 20.0f, .y = 20.0f, .z = 3.0f};
+  game->marker[0]->sprite_common.position = (vec3){.x = -75.0f, .y = 90.0f, .z = 2.35f};
   game->marker[0]->sprite_common.scale = (vec3){.x = 1.0f, .y = 1.0f, .z = 0.0f};
-  mat4 marker_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  marker_rotation = mat4_rotate(marker_rotation, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-  game->marker[0]->sprite_common.rotation = mat4_to_quaternion(marker_rotation);
+  mat4 marker_rotation_0 = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
+  marker_rotation_0 = mat4_rotate(marker_rotation_0, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+  game->marker[0]->sprite_common.rotation = mat4_to_quaternion(marker_rotation_0);
 
+  game->marker[1] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
+  game->marker[1]->sprite_common.position = (vec3){.x = -90.0f, .y = -90.0f, .z = 2.35f};
+  game->marker[1]->sprite_common.scale = (vec3){.x = 1.0f, .y = 1.0f, .z = 0.0f};
+  mat4 marker_rotation_1 = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
+  marker_rotation_1 = mat4_rotate(marker_rotation_1, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+  game->marker[1]->sprite_common.rotation = mat4_to_quaternion(marker_rotation_1);
+
+  game->marker[2] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
+  game->marker[2]->sprite_common.position = (vec3){.x = 90.0f, .y = -90.0f, .z = 2.35f};
+  game->marker[2]->sprite_common.scale = (vec3){.x = 1.0f, .y = 1.0f, .z = 0.0f};
+  mat4 marker_rotation_2 = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
+  marker_rotation_2 = mat4_rotate(marker_rotation_2, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+  game->marker[2]->sprite_common.rotation = mat4_to_quaternion(marker_rotation_2);
+
+  game->marker[3] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
+  game->marker[3]->sprite_common.position = (vec3){.x = 75.0f, .y = 90.0f, .z = 2.35f};
+  game->marker[3]->sprite_common.scale = (vec3){.x = 1.0f, .y = 1.0f, .z = 0.0f};
+  mat4 marker_rotation_3 = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
+  marker_rotation_3 = mat4_rotate(marker_rotation_3, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+  game->marker[3]->sprite_common.rotation = mat4_to_quaternion(marker_rotation_3);
   ///////////////////////////////////////
 
   WSADATA wsa;
@@ -115,6 +135,8 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->timer = 0;
 
   game->prev_y = game->mario_position.y;
+
+  game->current_marker = 0;
 }
 
 void game_delete(struct Game* game, struct Mana* mana) {
@@ -142,10 +164,9 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   if (delta_time > 0.05)
     delta_time = 0.05;
 
-  // Hardcoded to allow for 30 seconds
+  // Hardcoded to allow for 2 minutes to complete a lap
   game->timer++;
-  // if (game->timer > 4320) {
-  if (game->timer > 1800) {
+  if (game->timer > 75600) {
     printf("Episode timed out\n");
     done = true;
   }
@@ -197,10 +218,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   mat4 mario_rotation = MAT4_IDENTITY;
 
   // 1) Tilt upright (same as original working code)
-  mario_rotation = mat4_rotate(
-      mario_rotation,
-      -M_PI / 2,
-      (vec3){0.5f, 0.0f, 0.0f});
+  mario_rotation = mat4_rotate(mario_rotation, -M_PI / 2, (vec3){0.5f, 0.0f, 0.0f});
 
   // 2) Apply heading rotation
   mario_rotation = mat4_rotate(mario_rotation, -game->car_heading + M_PI / 2, (vec3){0.0f, 1.0f, 0.0f});
@@ -227,66 +245,49 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   game->player.look_at_pos = (vec3d){.x = game->mario_position.x, .y = game->mario_position.y, .z = game->mario_position.z};
 
   float reward = 0.0f;
+  vec3 marker_pos = game->marker[game->current_marker]->sprite_common.position;
 
-  const float track_half_width = 25.0f;
-  const float forward_limit = -100.0f;
+  float dx = marker_pos.x - game->mario_position.x;
+  float dy = marker_pos.y - game->mario_position.y;
+  float dist_sq = dx * dx + dy * dy;
 
-  // 1️⃣ Reward forward velocity directly
-  float forward_speed = -sinf(game->car_heading) * game->mario_speed;
-  reward += 0.5f * fmaxf(0.0f, forward_speed);
+  const float checkpoint_radius = 20.0f;
 
-  // 2️⃣ Penalize being far from center
-  float xnorm = fabsf(game->mario_position.x) / track_half_width;
-  reward -= 1.5f * xnorm * xnorm;
+  if (dist_sq < checkpoint_radius * checkpoint_radius) {
+    reward += 50.0f;  // reward reaching checkpoint
 
-  // 3️⃣ Penalize sharp turning (smoothness)
-  reward -= 0.2f * steer * steer;
+    game->current_marker++;
 
-  // 4️⃣ Small time penalty (encourage faster finish)
+    if (game->current_marker >= 4) {
+      game->current_marker = 0;
+
+      reward += 200.0f;  // lap bonus
+      printf("Lap completed!\n");
+
+      game->timer = 0;  // reset timeout
+    }
+  }
+
+  // Time penalty
   reward -= 0.01f;
 
-  if (fabsf(game->mario_position.x) > track_half_width) {
-    float side = (game->mario_position.x > 0.0f) ? 1.0f : -1.0f;
+  vec3 next_marker = game->marker[game->current_marker]->sprite_common.position;
 
-    // Clamp to boundary
-    game->mario_position.x = side * track_half_width;
-
-    // Kill outward velocity component
-    if ((side > 0.0f && game->mario_speed * -cosf(game->car_heading) > 0.0f) ||
-        (side < 0.0f && game->mario_speed * -cosf(game->car_heading) < 0.0f)) {
-      game->mario_speed = 0.0f;
-    }
-
-    // Continuous wall penalty (scaled by speed so slamming is worse)
-    reward -= 5.0f + 0.1f * fabsf(game->mario_speed);
-  }
-
-  const float backward_limit = 100.0f;
-
-  if (game->mario_position.y < forward_limit) {
-    done = true;
-    reward += 200.0f;  // strong success bonus
-  }
-
-  if (game->mario_position.y > backward_limit) {
-    reward -= 5.0f;
-    game->mario_position.y = backward_limit;
-    if (game->mario_speed > 0)
-      game->mario_speed = 0;
-  }
+  float dx_norm = (next_marker.x - game->mario_position.x) / 200.0f;
+  float dy_norm = (next_marker.y - game->mario_position.y) / 200.0f;
 
   struct Packet {
-    float x;
-    float y;
+    float dx;
+    float dy;
     float speed;
-    float azimuth;  // radians
+    float azimuth;
     float reward;
     int done;
   };
 
   struct Packet packet;
-  packet.x = game->mario_position.x;
-  packet.y = game->mario_position.y;
+  packet.dx = dx_norm;
+  packet.dy = dy_norm;
   packet.speed = game->mario_speed;
   packet.azimuth = heading;
   packet.reward = reward;
@@ -316,12 +317,16 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     game->last_action[0] = 0.0f;
     game->last_action[1] = 0.0f;
     game->prev_y = game->mario_position.y;
+
+    game->current_marker = 0;
   }
 
   // Make this always facing toward the camera
-  mat4 marker_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  marker_rotation = mat4_rotate(marker_rotation, M_PI / 2, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-  game->marker[0]->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(marker_rotation, -game->player.camera.look_at_azimuth, (vec3){0.0f, 1.0f, 0.0f}));
+  for (int marker_num = 0; marker_num < 4; marker_num++) {
+    mat4 marker_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
+    marker_rotation = mat4_rotate(marker_rotation, M_PI / 2, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+    game->marker[marker_num]->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(marker_rotation, -game->player.camera.look_at_azimuth, (vec3){0.0f, 1.0f, 0.0f}));
+  }
 
   window->gbuffer->gbuffer_common.projection_matrix = camera_get_projection_matrix(&(game->player.camera), window);
   window->gbuffer->gbuffer_common.view_matrix = camera_get_view_matrix(&(game->player.camera));

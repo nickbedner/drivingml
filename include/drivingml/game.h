@@ -47,6 +47,7 @@ struct Game {
 
   float last_action[2];
 
+  int current_marker;
   struct Sprite* marker[4];
 };
 
