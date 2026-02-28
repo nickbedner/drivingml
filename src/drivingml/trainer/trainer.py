@@ -118,22 +118,6 @@ while True:
 
     state = torch.tensor([x, y, speed, azimuth[0], azimuth[1]], dtype=torch.float32)
 
-    # Forward pass
-   #mean, value = model(state)
-   ## std = torch.full_like(mean, 0.3)
-   #std = log_std.exp().expand_as(mean)
-   ## dist = D.Normal(mean, std)   
-   #base_dist = D.Normal(mean, std)
-
-   ## Proper tanh squashing
-   #dist = D.TransformedDistribution(base_dist, [D.transforms.TanhTransform(cache_size=1)])
-   ##tanh_transform = D.transforms.TanhTransform(cache_size=1)
-   ##dist = D.TransformedDistribution(base_dist, [tanh_transform])
-
-   #action = dist.rsample()              # already in [-1, 1]
-   ##action = torch.clamp(action, -1, 1)
-   #log_prob = dist.log_prob(action).sum(-1)
-
     mean_raw, value = model(state)
     mean = 2.0 * torch.tanh(mean_raw / 2.0)
 
@@ -155,10 +139,7 @@ while True:
     # Send action back
     with torch.no_grad():
         action_np = action.cpu().numpy().astype("float32")
-    # TODO: Look more into this, might need to sign flip everything
-    # Match engine convention
-    #action_np[0] *= -1.0   # steer
-    #action_np[1] *= -1.0   # throttle
+
     conn.send(struct.pack("<2f", *action_np))
 
     # If episode finished the we train and save train
