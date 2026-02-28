@@ -293,6 +293,9 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     }
   }
 
+  if (game->mario_speed < 0.0f)
+    reward -= 0.01f;
+
   // Time penalty
   reward *= 0.01f;
   reward -= 0.001f;

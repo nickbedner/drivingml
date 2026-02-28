@@ -180,7 +180,7 @@ while True:
         torch.nn.utils.clip_grad_norm_(list(model.parameters()) + [log_std], grad_clip_norm)
         optimizer.step()
         update_count += 1
-        print(f"UPDATE {update_count} | steps={len(returns)} | done={done} | ep={episode}")
+        # print(f"UPDATE {update_count} | steps={len(returns)} | done={done} | ep={episode}")
 
         with torch.no_grad():
             log_std.clamp_(min=-2.5, max=1.0)
