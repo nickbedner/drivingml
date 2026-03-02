@@ -15,7 +15,7 @@ PORT = 5000
 # Create checkpoint directory to store trained models
 os.makedirs("checkpoints", exist_ok=True)
 
-# replace model with an actor-critic network
+# Model replaced with an actor-critic network
 class ActorCritic(nn.Module):
     def __init__(self):
         super().__init__()
@@ -25,7 +25,6 @@ class ActorCritic(nn.Module):
     def forward(self, x):
         h = self.shared(x)
         return self.actor(h), self.critic(h).squeeze(-1)
-
 model = ActorCritic()
 
 # This is the nueral network
@@ -56,7 +55,9 @@ gamma = 0.99
 rollout_length = 256
 update_count = 0
 
-log_std = nn.Parameter(torch.ones(2) * -1.0)  # std ~= 0.37
+# log_std = nn.Parameter(torch.ones(2) * -1.0)  # std ~= 0.37
+# We will reduce exploration just a bit
+log_std = nn.Parameter(torch.ones(2) * -1.5)  # std ~= 0.22
 
 # This is an Adam optimizer which stands for Adaptive Moment Estimation
 # model.parameters() are the weights to update
@@ -71,8 +72,8 @@ log_probs = []
 rewards = []
 values = []
 episode = 0
-mean_raws = []      # NEW
-actions_taken = []  # NEW
+mean_raws = []
+actions_taken = []
 
 # Resume training from the latest checkpoint if it exists
 checkpoint_path = "checkpoints/latest_model.pt"
@@ -115,7 +116,7 @@ while True:
 
     state = torch.tensor([dx, dy, speed, azimuth[0], azimuth[1]], dtype=torch.float32)
 
-    mean, value = model(state)          # mean is raw
+    mean, value = model(state)
     std = log_std.exp().expand_as(mean)
     base_dist = D.Normal(mean, std)
     dist = D.TransformedDistribution(base_dist, [D.transforms.TanhTransform(cache_size=1)])
@@ -142,7 +143,7 @@ while True:
         if done == 1:
             episode += 1
 
-        # ----- Bootstrap value if not done -----
+        # Bootstrap value if not done
         if done == 0:
             with torch.no_grad():
                 _, next_value = model(state)
@@ -150,7 +151,7 @@ while True:
         else:
             bootstrap_value = 0.0
 
-        # ----- Compute bootstrapped returns -----
+        # Compute bootstrapped returns
         returns = []
         G = bootstrap_value
         for r in reversed(rewards):
@@ -163,11 +164,11 @@ while True:
         log_probs_tensor = torch.stack(log_probs)
         values_tensor = torch.stack(values).squeeze()
 
-        # ----- Advantages -----
+        # Advantages
         advantages = returns - values_tensor.detach()
         advantages = (advantages - advantages.mean()) / (advantages.std().clamp_min(1e-8))
         
-        # ----- Losses -----
+        # Losses
         policy_loss = -(log_probs_tensor * advantages).mean()
         value_loss = nn.SmoothL1Loss()(values_tensor, returns)
 
@@ -180,10 +181,11 @@ while True:
         torch.nn.utils.clip_grad_norm_(list(model.parameters()) + [log_std], grad_clip_norm)
         optimizer.step()
         update_count += 1
-        # print(f"UPDATE {update_count} | steps={len(returns)} | done={done} | ep={episode}")
 
         with torch.no_grad():
-            log_std.clamp_(min=-2.5, max=1.0)
+            # Reducing exploration just a bit
+            # log_std.clamp_(min=-2.5, max=1.0)
+            log_std.clamp_(min=-2.0, max=0.5)
 
         # ----- Debug (only print at episode end) -----
         if done == 1:

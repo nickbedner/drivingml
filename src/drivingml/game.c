@@ -232,21 +232,21 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     game->mario_speed = -20.0f;
 
   // ------------------------------------------------------
-  // Movement + Forward Progress Reward
+  // Movement + Progress-Based Reward
   // ------------------------------------------------------
 
   float heading = game->car_heading;
   vec3 forward_vel = {-cosf(heading), -sinf(heading), 0.0f};
 
-  // Get current marker position
+  // Current marker position
   vec3 marker_pos = game->marker[game->current_marker]->sprite_common.position;
 
-  // Distance BEFORE movement
+  // ----- Distance BEFORE movement -----
   float dx_before = marker_pos.x - game->mario_position.x;
   float dy_before = marker_pos.y - game->mario_position.y;
   float dist_before = sqrtf(dx_before * dx_before + dy_before * dy_before);
 
-  // Move car
+  // ----- Move car -----
   game->mario_position.x += forward_vel.x * game->mario_speed * delta_time;
   game->mario_position.y += forward_vel.y * game->mario_speed * delta_time;
 
@@ -261,43 +261,43 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
       .y = game->mario_position.y,
       .z = game->mario_position.z};
 
-  // Distance AFTER movement
+  // ----- Distance AFTER movement -----
   float dx_after = marker_pos.x - game->mario_position.x;
   float dy_after = marker_pos.y - game->mario_position.y;
   float dist_after = sqrtf(dx_after * dx_after + dy_after * dy_after);
 
   // ------------------------------------------------------
-  // Reward Calculation
+  // Reward Calculation (Progress Only)
   // ------------------------------------------------------
 
   float reward = 0.0f;
 
-  // Forward progress reward
+  // Main dense signal: reward distance reduction
   float progress = dist_before - dist_after;
-  reward += 0.05f * progress;
+  reward += 0.1f * progress;
 
-  // Checkpoint detection
+  // ----- Checkpoint reward -----
   const float checkpoint_radius = 20.0f;
+
   if (dist_after < checkpoint_radius) {
-    reward += 50.0f;  // checkpoint reward
+    reward += 2.0f;  // checkpoint bonus
+
     game->current_marker++;
 
     if (game->current_marker >= 4) {
       game->current_marker = 0;
-
-      reward += 200.0f;  // lap bonus
-      printf("Lap completed!\n");
-
-      game->timer = 0;
+      reward += 5.0f;  // lap bonus
       done = true;
+      game->timer = 0;
     }
   }
 
-  if (game->mario_speed < 0.0f)
-    reward -= 0.01f;
+  // ----- Penalize reversing -----
+  if (game->mario_speed < 0.0f) {
+    reward -= 0.05f;
+  }
 
-  // Time penalty
-  reward *= 0.01f;
+  // ----- Small time penalty -----
   reward -= 0.001f;
 
   vec3 next_marker = game->marker[game->current_marker]->sprite_common.position;
