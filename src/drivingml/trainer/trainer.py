@@ -29,9 +29,15 @@ def tanh_correction(a, eps=1e-6):
 class ActorCritic(nn.Module):
     def __init__(self):
         super().__init__()
-        self.shared = nn.Sequential(nn.Linear(5, 64), nn.ReLU())
-        self.actor = nn.Linear(64, 2) 
-        self.critic = nn.Linear(64, 1)
+        self.shared = nn.Sequential(
+            nn.Linear(5, 128),
+            nn.ReLU(),
+            nn.Linear(128, 128),
+            nn.ReLU()
+        )
+        self.actor = nn.Linear(128, 2)
+        self.critic = nn.Linear(128, 1)
+
     def forward(self, x):
         h = self.shared(x)
         return self.actor(h), self.critic(h).squeeze(-1)
@@ -57,12 +63,12 @@ model = ActorCritic()
 #)
 
 # Hyperparameters / small sane defaults
-entropy_coef = 0.001
+entropy_coef = 0.005
 value_loss_coef = 0.5
 grad_clip_norm = 0.5
-lr = 3e-4   # more stable than 1e-3 for actor-critic
+lr = 1e-4
 gamma = 0.99
-rollout_length = 256
+rollout_length = 512
 update_count = 0
 
 # log_std = nn.Parameter(torch.ones(2) * -1.0)  # std ~= 0.37
@@ -172,6 +178,14 @@ while True:
         values_tensor = torch.stack(values).squeeze(-1)
         us_tensor = torch.stack(us)
 
+        if len(rewards) < 2:
+            states.clear()
+            old_log_probs.clear()
+            values.clear()
+            rewards.clear()
+            us.clear()
+            continue
+
         # Compute returns once
         returns = []
         G = bootstrap_value
@@ -182,8 +196,14 @@ while True:
 
         # Compute advantages
         advantages = (returns - values_tensor).detach()
-        advantages = (advantages - advantages.mean()) / (advantages.std().clamp_min(1e-8))
 
+        if advantages.numel() > 1:
+            adv_std = advantages.std(unbiased=False).clamp_min(1e-8)
+            advantages = (advantages - advantages.mean()) / adv_std
+        else:
+            # If only 1 step in rollout, skip normalization
+            advantages = advantages * 0.0
+        
         # PPO hyperparameters
         clip_eps = 0.2
         ppo_epochs = 4
@@ -200,6 +220,7 @@ while True:
             new_log_probs = gaussian_log_prob(u_fixed, mean, log_std_exp) - tanh_correction(a_fixed)
 
             ratio = torch.exp(new_log_probs - old_log_probs_tensor)
+            ratio = torch.clamp(ratio, 0.0, 5.0)
             clipped_ratio = torch.clamp(ratio, 1.0 - clip_eps, 1.0 + clip_eps)
 
             policy_loss = -torch.min(ratio * advantages, clipped_ratio * advantages).mean()

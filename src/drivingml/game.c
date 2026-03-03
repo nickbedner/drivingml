@@ -166,7 +166,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
   // Hardcoded to allow for 30 seconds to complete a lap
   game->timer++;
-  if (game->timer > 1800) {
+  if (game->timer > 3600) {
     printf("Episode timed out\n");
     done = true;
   }
