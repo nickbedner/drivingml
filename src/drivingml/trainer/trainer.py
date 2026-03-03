@@ -15,6 +15,16 @@ PORT = 5000
 # Create checkpoint directory to store trained models
 os.makedirs("checkpoints", exist_ok=True)
 
+def gaussian_log_prob(u, mean, log_std):
+    # u, mean, log_std: [..., act_dim]
+    std = log_std.exp()
+    base = D.Normal(mean, std)
+    return base.log_prob(u).sum(-1)
+
+def tanh_correction(a, eps=1e-6):
+    # a is tanh(u) in [-1,1]
+    return torch.log(1 - a * a + eps).sum(-1)
+
 # Model replaced with an actor-critic network
 class ActorCritic(nn.Module):
     def __init__(self):
@@ -47,7 +57,7 @@ model = ActorCritic()
 #)
 
 # Hyperparameters / small sane defaults
-entropy_coef = 0.02
+entropy_coef = 0.001
 value_loss_coef = 0.5
 grad_clip_norm = 0.5
 lr = 3e-4   # more stable than 1e-3 for actor-critic
@@ -68,12 +78,13 @@ optimizer = optim.Adam(list(model.parameters()) + [log_std], lr=lr)
 
 # We use a large gamma close to 1 to prioritize long term rewards and avoid immediate rewards so it doesn't become greedy
 gamma = 0.99
-log_probs = []
+# Buffers
 rewards = []
 values = []
 episode = 0
-mean_raws = []
-actions_taken = []
+states = []
+old_log_probs = []
+us = []
 
 # Resume training from the latest checkpoint if it exists
 checkpoint_path = "checkpoints/latest_model.pt"
@@ -117,24 +128,28 @@ while True:
     state = torch.tensor([dx, dy, speed, azimuth[0], azimuth[1]], dtype=torch.float32)
 
     mean, value = model(state)
-    std = log_std.exp().expand_as(mean)
-    base_dist = D.Normal(mean, std)
-    dist = D.TransformedDistribution(base_dist, [D.transforms.TanhTransform(cache_size=1)])
-    action = dist.rsample()
+    log_std_exp = log_std.expand_as(mean)
+    std = log_std_exp.exp()
 
-    log_prob = dist.log_prob(action).sum(-1)
+    # ----- Sample pre-tanh -----
+    u = mean + std * torch.randn_like(mean)
+    a = torch.tanh(u)  # true squashed action in (-1, 1)
 
-    # Store debug info
-    mean_raws.append(mean.detach())
-    actions_taken.append(action.detach())
-    log_probs.append(log_prob)
-    values.append(value)
+    # log prob uses the true tanh transform
+    log_prob = gaussian_log_prob(u, mean, log_std_exp) - tanh_correction(a)
+
+    # clamp ONLY for env safety / numeric reasons
+    eps = 1e-6
+    a_env = a.clamp(-1 + eps, 1 - eps)
+
+    states.append(state.detach())
+    us.append(u.detach())
+    old_log_probs.append(log_prob.detach())
+    values.append(value.detach())
     rewards.append(reward)
 
-    # Send action back
-    with torch.no_grad():
-        action_np = action.cpu().numpy().astype("float32")
-
+    # send clipped action to game
+    action_np = a_env.detach().cpu().numpy().astype("float32")
     conn.send(struct.pack("<2f", *action_np))
 
     # If episode finished the we train and save train
@@ -150,36 +165,55 @@ while True:
             bootstrap_value = next_value.item()
         else:
             bootstrap_value = 0.0
+        
+        # Convert rollout to tensors
+        states_tensor = torch.stack(states)
+        old_log_probs_tensor = torch.stack(old_log_probs)
+        values_tensor = torch.stack(values).squeeze(-1)
+        us_tensor = torch.stack(us)
 
-        # Compute bootstrapped returns
+        # Compute returns once
         returns = []
         G = bootstrap_value
         for r in reversed(rewards):
             G = r + gamma * G
             returns.insert(0, G)
+        returns = torch.tensor(returns, dtype=torch.float32, device=values_tensor.device)
 
-        returns = torch.tensor(returns, dtype=torch.float32)
-
-        # Stack tensors
-        log_probs_tensor = torch.stack(log_probs)
-        values_tensor = torch.stack(values).squeeze()
-
-        # Advantages
-        advantages = returns - values_tensor.detach()
+        # Compute advantages
+        advantages = (returns - values_tensor).detach()
         advantages = (advantages - advantages.mean()) / (advantages.std().clamp_min(1e-8))
-        
-        # Losses
-        policy_loss = -(log_probs_tensor * advantages).mean()
-        value_loss = nn.SmoothL1Loss()(values_tensor, returns)
 
-        entropy_term = (-log_probs_tensor).mean()
+        # PPO hyperparameters
+        clip_eps = 0.2
+        ppo_epochs = 4
 
-        loss = policy_loss + value_loss_coef * value_loss - entropy_coef * entropy_term
+        for _ in range(ppo_epochs):
+            mean, new_values = model(states_tensor)
 
-        optimizer.zero_grad()
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(list(model.parameters()) + [log_std], grad_clip_norm)
-        optimizer.step()
+            log_std_exp = log_std.expand_as(mean)
+            std = log_std_exp.exp()
+
+            u_fixed = us_tensor  # fixed rollout sample
+            a_fixed = torch.tanh(u_fixed)
+
+            new_log_probs = gaussian_log_prob(u_fixed, mean, log_std_exp) - tanh_correction(a_fixed)
+
+            ratio = torch.exp(new_log_probs - old_log_probs_tensor)
+            clipped_ratio = torch.clamp(ratio, 1.0 - clip_eps, 1.0 + clip_eps)
+
+            policy_loss = -torch.min(ratio * advantages, clipped_ratio * advantages).mean()
+            value_loss = nn.SmoothL1Loss()(new_values.squeeze(-1), returns)
+
+            base_entropy = D.Normal(mean, std).entropy().sum(-1).mean()
+
+            loss = policy_loss + value_loss_coef * value_loss - entropy_coef * base_entropy
+
+            optimizer.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(list(model.parameters()) + [log_std], grad_clip_norm)
+            optimizer.step()
+
         update_count += 1
 
         with torch.no_grad():
@@ -189,14 +223,8 @@ while True:
 
         # ----- Debug (only print at episode end) -----
         if done == 1:
-            mean_raw_tensor = torch.stack(mean_raws)
-            action_tensor = torch.stack(actions_taken)
-
             print(
                 f"Episode {episode} | "
-                f"mean_raw_abs_mean: {mean_raw_tensor.abs().mean().item():.4f} | "
-                f"action_abs_mean: {action_tensor.abs().mean().item():.4f} | "
-                f"pct_action_sat: {(action_tensor.abs() > 0.95).float().mean().item():.4f} | "
                 f"returns_abs_mean: {returns.abs().mean().item():.4f} | "
                 f"value_loss: {value_loss.item():.4f}"
             )
@@ -206,7 +234,7 @@ while True:
                 f"Loss: {loss.item():.4f}, "
                 f"policy: {policy_loss.item():.4f}, "
                 f"value: {value_loss.item():.4f}, "
-                f"entropy: {entropy_term.item():.4f}, "
+                f"entropy: {base_entropy.item():.4f}, "
                 f"mean_std: {log_std.exp().mean().item():.4f}"
             )
 
@@ -222,10 +250,10 @@ while True:
             print(f"Checkpoint saved at episode {episode}")
 
         # ----- Clear rollout buffers -----
-        log_probs.clear()
-        rewards.clear()
+        states.clear()
+        old_log_probs.clear()
         values.clear()
-        mean_raws.clear()
-        actions_taken.clear()
+        rewards.clear()
+        us.clear()
 
 conn.close()
