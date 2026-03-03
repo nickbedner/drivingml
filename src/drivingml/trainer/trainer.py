@@ -131,7 +131,7 @@ while True:
     log_std_exp = log_std.expand_as(mean)
     std = log_std_exp.exp()
 
-    # ----- Sample pre-tanh -----
+    # Sample pre-tanh
     u = mean + std * torch.randn_like(mean)
     a = torch.tanh(u)  # true squashed action in (-1, 1)
 
@@ -221,7 +221,7 @@ while True:
             # log_std.clamp_(min=-2.5, max=1.0)
             log_std.clamp_(min=-2.0, max=0.5)
 
-        # ----- Debug (only print at episode end) -----
+        # Debug (only print at episode end)
         if done == 1:
             print(
                 f"Episode {episode} | "
@@ -249,7 +249,7 @@ while True:
             torch.save(checkpoint, f"checkpoints/model_ep_{episode}.pt")
             print(f"Checkpoint saved at episode {episode}")
 
-        # ----- Clear rollout buffers -----
+        # Clear rollout buffers
         states.clear()
         old_log_probs.clear()
         values.clear()
