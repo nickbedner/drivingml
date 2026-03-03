@@ -62,7 +62,7 @@ struct Camera {
   mat3d look_at_fixed_to_local_rotation;
 };
 
-static inline void camera_init(struct Camera *camera, double max_radius) {
+static inline void camera_init(struct Camera* camera, double max_radius) {
   camera->camera_state = CAMERA_FLY;
 
   camera->eye = (vec3d){.x = 0.0, .y = -1.0, .z = 0.0};
@@ -115,7 +115,7 @@ static inline void camera_init(struct Camera *camera, double max_radius) {
 //   camera->lerp_up = lerp_up;
 // }
 
-static inline void camera_update(struct Camera *camera) {
+static inline void camera_update(struct Camera* camera) {
   // if (camera->is_interpoliating == 1) {
   //   // if (fabs(camera->zoom - camera->lerp_zoom) < 0.1)
   //   //   camera->is_interpoliating = 0;
@@ -140,58 +140,58 @@ static inline void camera_update(struct Camera *camera) {
   //}
 }
 
-static inline vec3d camera_get_pos(struct Camera *camera) {
+static inline vec3d camera_get_pos(struct Camera* camera) {
   return camera->eye;
 }
 
-static inline mat4 camera_get_projection_matrix(struct Camera *camera, struct Window *window) {
+static inline mat4 camera_get_projection_matrix(struct Camera* camera, struct Window* window) {
   float f = 1.0f / (float)tan(degree_to_radian_d(camera->zoom) / 2.0);
   mat4 dest = MAT4_ZERO;
   dest.vecs[0].data[0] = f / ((float)window->renderer.renderer_settings.width / (float)window->renderer.renderer_settings.height);
-  dest.vecs[1].data[1] = f;
+  dest.vecs[1].data[1] = -f;
   dest.vecs[2].data[3] = -1.0f;
   dest.vecs[3].data[2] = Z_NEAR;
 
   return dest;
 }
 
-static inline mat4 camera_get_view_matrix(struct Camera *camera) {
+static inline mat4 camera_get_view_matrix(struct Camera* camera) {
   return mat4d_to_mat4(mat4d_look_at(camera->eye, camera->target, camera->up));
 }
 
-static inline vec3d camera_forward(struct Camera *camera) {
+static inline vec3d camera_forward(struct Camera* camera) {
   return vec3d_normalise(vec3d_sub(camera->fly_target, camera->fly_eye));
 }
 
-static inline vec3d camera_right(struct Camera *camera) {
+static inline vec3d camera_right(struct Camera* camera) {
   return vec3d_normalise(vec3d_cross_product(camera_forward(camera), camera->fly_up));
 }
 
-static inline void camera_fly_move_forward(struct Camera *camera, double seconds) {
+static inline void camera_fly_move_forward(struct Camera* camera, double seconds) {
   camera->fly_pos = vec3d_add(camera->fly_pos, vec3d_scale(camera_forward(camera), camera->fly_movement_rate * seconds));
 }
 
-static inline void camera_fly_move_backward(struct Camera *camera, double seconds) {
+static inline void camera_fly_move_backward(struct Camera* camera, double seconds) {
   camera->fly_pos = vec3d_sub(camera->fly_pos, vec3d_scale(camera_forward(camera), camera->fly_movement_rate * seconds));
 }
 
-static inline void camera_fly_move_left(struct Camera *camera, double seconds) {
+static inline void camera_fly_move_left(struct Camera* camera, double seconds) {
   camera->fly_pos = vec3d_sub(camera->fly_pos, vec3d_scale(vec3d_cross_product(camera_forward(camera), camera->fly_up), camera->fly_movement_rate * seconds));
 }
 
-static inline void camera_fly_move_right(struct Camera *camera, double seconds) {
+static inline void camera_fly_move_right(struct Camera* camera, double seconds) {
   camera->fly_pos = vec3d_add(camera->fly_pos, vec3d_scale(vec3d_cross_product(camera_forward(camera), camera->fly_up), camera->fly_movement_rate * seconds));
 }
 
-static inline void camera_fly_move_up(struct Camera *camera, double seconds) {
+static inline void camera_fly_move_up(struct Camera* camera, double seconds) {
   camera->fly_pos = vec3d_add(camera->fly_pos, vec3d_scale(camera->fly_up, camera->fly_movement_rate * seconds));
 }
 
-static inline void camera_fly_move_down(struct Camera *camera, double seconds) {
+static inline void camera_fly_move_down(struct Camera* camera, double seconds) {
   camera->fly_pos = vec3d_sub(camera->fly_pos, vec3d_scale(camera->fly_up, camera->fly_movement_rate * seconds));
 }
 
-static inline void camera_fly_roll_left(struct Camera *camera, double seconds) {
+static inline void camera_fly_roll_left(struct Camera* camera, double seconds) {
   camera->fly_up = vec3d_transform(camera->fly_up, quaterniond_create_from_axix_angle(camera->fly_look, (camera->fly_movement_rate / 25.0) * seconds));
   camera->fly_right = vec3d_cross_product(camera->fly_look, camera->fly_up);
 
@@ -199,7 +199,7 @@ static inline void camera_fly_roll_left(struct Camera *camera, double seconds) {
   camera->fly_right = vec3d_normalise(camera->fly_right);
 }
 
-static inline void camera_fly_roll_right(struct Camera *camera, double seconds) {
+static inline void camera_fly_roll_right(struct Camera* camera, double seconds) {
   camera->fly_up = vec3d_transform(camera->fly_up, quaterniond_create_from_axix_angle(camera->fly_look, (camera->fly_movement_rate / 25.0) * -seconds));
   camera->fly_right = vec3d_cross_product(camera->fly_look, camera->fly_up);
 
@@ -207,11 +207,11 @@ static inline void camera_fly_roll_right(struct Camera *camera, double seconds) 
   camera->fly_right = vec3d_normalise(camera->fly_right);
 }
 
-static inline double camera_field_of_view_x(struct Camera *camera) {
+static inline double camera_field_of_view_x(struct Camera* camera) {
   return (2.0 * atan(camera->aspect_ratio * tan(camera->field_of_view_y * 0.5)));
 }
 
-static inline void camera_zoom_to_target(struct Camera *camera, double radius) {
+static inline void camera_zoom_to_target(struct Camera* camera, double radius) {
   vec3d to_eye = vec3d_normalise(vec3d_sub(camera->look_at_eye, camera->look_at_target));
 
   double sin_val = sin(MIN(camera_field_of_view_x(camera), camera->field_of_view_y) * 0.5);
@@ -219,7 +219,7 @@ static inline void camera_zoom_to_target(struct Camera *camera, double radius) {
   camera->look_at_eye = vec3d_add(camera->look_at_target, vec3d_scale(to_eye, distance));
 }
 
-static inline void camera_rotate(struct Camera *camera, int width, int height, int window_width, int window_height) {
+static inline void camera_rotate(struct Camera* camera, int width, int height, int window_width, int window_height) {
   if (camera->camera_state == CAMERA_FLY) {
     double horizontal_window_ratio = (double)width / (double)window_width;
     double vertical_window_ratio = (double)height / (double)window_height;
@@ -261,7 +261,7 @@ static inline void camera_rotate(struct Camera *camera, int width, int height, i
   }
 }
 
-static inline void camera_update_parameters_from_camera(struct Camera *camera) {
+static inline void camera_update_parameters_from_camera(struct Camera* camera) {
   // Fly
   camera->fly_pos = camera->fly_eye;
   camera->fly_look = camera_forward(camera);
@@ -283,7 +283,7 @@ static inline void camera_update_parameters_from_camera(struct Camera *camera) {
     camera->look_at_azimuth = atan2(eye_position.y, eye_position.x);
 }
 
-static inline void camera_update_camera_from_parameters(struct Camera *camera) {
+static inline void camera_update_camera_from_parameters(struct Camera* camera) {
   // Fly
   camera->fly_eye = camera->fly_pos;
   camera->fly_target = vec3d_add(camera->fly_pos, camera->fly_look);
@@ -306,7 +306,7 @@ static inline void camera_update_camera_from_parameters(struct Camera *camera) {
   camera->look_at_up = mat3d_transform_transpose(local_to_fixed, camera->look_at_up);
 }
 
-static inline void camera_look_at_view_point(struct Camera *camera, float longitude, float latitude, vec3d center_point) {
+static inline void camera_look_at_view_point(struct Camera* camera, float longitude, float latitude, vec3d center_point) {
   camera->look_at_center_point = center_point;
 
   double cos_lon = cos((double)longitude);
@@ -318,7 +318,7 @@ static inline void camera_look_at_view_point(struct Camera *camera, float longit
   camera_update_camera_from_parameters(camera);
 }
 
-static inline void camera_look_at_zoom(struct Camera *camera, double amount, uint_fast32_t window_height) {
+static inline void camera_look_at_zoom(struct Camera* camera, double amount, uint_fast32_t window_height) {
   if (camera->camera_state == CAMERA_LOOK_AT) {
     double zoom_rate = camera->look_at_zoom_factor * (camera->look_at_range - camera->look_at_zoom_rate_range_adjustment);
     if (zoom_rate > camera->look_at_maximum_zoom_rate)

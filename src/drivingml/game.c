@@ -43,7 +43,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 
   game->mario_speed = 0.0f;
 
-  game->track = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/circuit.png");
+  game->track = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/map.png");
   game->track->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = 0};
   game->track->sprite_common.scale = (vec3){.x = 25.0f, .y = 25.0f, .z = 0.0f};
 
@@ -164,7 +164,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   if (delta_time > 0.05)
     delta_time = 0.05;
 
-  // Hardcoded to allow for 30 seconds to complete a lap
+  // Hardcoded to allow for 60 seconds to complete a lap
   game->timer++;
   if (game->timer > 3600) {
     printf("Episode timed out\n");
