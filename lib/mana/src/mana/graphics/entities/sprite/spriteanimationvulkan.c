@@ -1,6 +1,6 @@
 #include "mana/graphics/entities/sprite/spriteanimationvulkan.h"
 
-uint_fast8_t sprite_animation_vulkan_init(struct SpriteAnimationCommon *sprite_animation_common, struct APICommon *api_common, struct Shader *shader, struct Texture *texture) {
+uint_fast8_t sprite_animation_vulkan_init(struct SpriteAnimationCommon* sprite_animation_common, struct APICommon* api_common, struct Shader* shader, struct Texture* texture) {
   vulkan_graphics_utils_setup_vertex_buffer(&api_common->vulkan_api, sprite_animation_common->image_mesh->mesh_common.vertices, &sprite_animation_common->sprite_animation_vulkan.vertex_buffer, &sprite_animation_common->sprite_animation_vulkan.vertex_buffer_memory);
   vulkan_graphics_utils_setup_index_buffer(&api_common->vulkan_api, sprite_animation_common->image_mesh->mesh_common.indices, &sprite_animation_common->sprite_animation_vulkan.index_buffer, &sprite_animation_common->sprite_animation_vulkan.index_buffer_memory);
   vulkan_graphics_utils_setup_uniform_buffer(&api_common->vulkan_api, sizeof(struct SpriteAnimationUniformBufferObject), &(sprite_animation_common->sprite_animation_vulkan.uniform_buffer), &(sprite_animation_common->sprite_animation_vulkan.uniform_buffers_memory));
@@ -13,7 +13,7 @@ uint_fast8_t sprite_animation_vulkan_init(struct SpriteAnimationCommon *sprite_a
   return 0;
 }
 
-void sprite_animation_vulkan_delete(struct SpriteAnimationCommon *sprite_animation_common, struct APICommon *api_common) {
+void sprite_animation_vulkan_delete(struct SpriteAnimationCommon* sprite_animation_common, struct APICommon* api_common) {
   vkDestroyBuffer(api_common->vulkan_api.device, sprite_animation_common->sprite_animation_vulkan.index_buffer, NULL);
   vkFreeMemory(api_common->vulkan_api.device, sprite_animation_common->sprite_animation_vulkan.index_buffer_memory, NULL);
 
@@ -24,7 +24,7 @@ void sprite_animation_vulkan_delete(struct SpriteAnimationCommon *sprite_animati
   vkFreeMemory(api_common->vulkan_api.device, sprite_animation_common->sprite_animation_vulkan.uniform_buffers_memory, NULL);
 }
 
-void sprite_animation_vulkan_render(struct SpriteAnimationCommon *sprite_animation_common, struct GBufferCommon *gbuffer_common) {
+void sprite_animation_vulkan_render(struct SpriteAnimationCommon* sprite_animation_common, struct GBufferCommon* gbuffer_common) {
   vkCmdBindPipeline(gbuffer_common->gbuffer_vulkan.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sprite_animation_common->shader->shader_common.shader_vulkan.graphics_pipeline);
 
   VkBuffer vertex_buffers[] = {sprite_animation_common->sprite_animation_vulkan.vertex_buffer};
@@ -37,11 +37,9 @@ void sprite_animation_vulkan_render(struct SpriteAnimationCommon *sprite_animati
   vkCmdDrawIndexed(gbuffer_common->gbuffer_vulkan.command_buffer, (uint32_t)sprite_animation_common->image_mesh->mesh_common.indices->size, 1, 0, 0, 0);
 }
 
-void sprite_animation_vulkan_update_uniforms(struct SpriteAnimationCommon *sprite_animation_common, struct APICommon *api_common, struct GBufferCommon *gbuffer_common) {
+void sprite_animation_vulkan_update_uniforms(struct SpriteAnimationCommon* sprite_animation_common, struct APICommon* api_common, struct GBufferCommon* gbuffer_common) {
   struct SpriteAnimationUniformBufferObject ubos = {0};
   ubos.proj = gbuffer_common->projection_matrix;
-  ubos.proj.vecs[1].data[1] *= -1;
-
   ubos.view = gbuffer_common->view_matrix;
 
   ubos.model = mat4_translate(MAT4_IDENTITY, sprite_animation_common->position);
@@ -53,7 +51,7 @@ void sprite_animation_vulkan_update_uniforms(struct SpriteAnimationCommon *sprit
   ubos.frame_pos_xy_direction_z.z = sprite_animation_common->direction;
   ubos.frame_pos_xy_direction_z.w = sprite_animation_common->padding;
 
-  void *data;
+  void* data;
   vkMapMemory(api_common->vulkan_api.device, sprite_animation_common->sprite_animation_vulkan.uniform_buffers_memory, 0, sizeof(struct SpriteAnimationUniformBufferObject), 0, &data);
   memcpy(data, &ubos, sizeof(struct SpriteAnimationUniformBufferObject));
   vkUnmapMemory(api_common->vulkan_api.device, sprite_animation_common->sprite_animation_vulkan.uniform_buffers_memory);

@@ -46,11 +46,14 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->track = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/map.png");
   game->track->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = 0};
   game->track->sprite_common.scale = (vec3){.x = 25.0f, .y = 25.0f, .z = 0.0f};
+  mat4 track_rotation = mat4_rotate(MAT4_IDENTITY, M_PI, (vec3){.x = 0.0, .y = 0.5, .z = 0.0});
+  game->track->sprite_common.rotation = mat4_to_quaternion(track_rotation);
 
   game->start = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/startfinish.png");
   game->start->sprite_common.position = (vec3){.x = 0, .y = 100.0f, .z = 0.01f};
   game->start->sprite_common.scale = (vec3){.x = 10.0f, .y = 10.0f, .z = 0.0f};
-  mat4 start_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.0, .y = 0.0, .z = 0.5});
+  mat4 start_rotation = mat4_rotate(MAT4_IDENTITY, M_PI, (vec3){.x = 0.0, .y = 0.5, .z = 0.0});
+  start_rotation = mat4_rotate(start_rotation, -M_PI / 2, (vec3){.x = 0.0, .y = 0.0, .z = 0.5});
   game->start->sprite_common.rotation = mat4_to_quaternion(start_rotation);
 
   // game->finish = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/startfinish.png");
@@ -69,9 +72,15 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->mario->sprite_common.position = game->mario_position;
   game->mario->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
   game->car_heading = 0.0f;  // M_PI / 2.0f;  // facing down -Y
-  mat4 mario_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){0.5f, 0.0f, 0.0f});
-  mario_rotation = mat4_rotate(mario_rotation, -game->car_heading + M_PI / 2, (vec3){0.0f, 1.0f, 0.0f});
-  game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
+  // mat4 mario_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){0.5f, 0.0f, 0.0f});
+  // mario_rotation = mat4_rotate(mario_rotation, -game->car_heading + M_PI / 2, (vec3){0.0f, 1.0f, 0.0f});
+  // game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
+  //
+  ////
+  // mat4 marker_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
+  // marker_rotation = mat4_rotate(marker_rotation, M_PI / 2, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+  // game->marker[marker_num]->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(marker_rotation, -game->player.camera.look_at_azimuth, (vec3){0.0f, 1.0f, 0.0f}));
+  ////
 
   game->marker[0] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
   game->marker[0]->sprite_common.position = (vec3){.x = -75.0f, .y = 90.0f, .z = 2.35f};
@@ -212,16 +221,8 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   // Update car heading
   game->car_heading += angle;
   game->player.camera.look_at_azimuth = game->car_heading + M_PI;
-
-  // Update sprite rotation from heading
-  // Start from identity
-  mat4 mario_rotation = MAT4_IDENTITY;
-
-  // 1) Tilt upright (same as original working code)
-  mario_rotation = mat4_rotate(mario_rotation, -M_PI / 2, (vec3){0.5f, 0.0f, 0.0f});
-
-  // 2) Apply heading rotation
-  mario_rotation = mat4_rotate(mario_rotation, -game->car_heading + M_PI / 2, (vec3){0.0f, 1.0f, 0.0f});
+  mat4 mario_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){0.5f, 0.0f, 0.0f});
+  mario_rotation = mat4_rotate(mario_rotation, -game->car_heading - M_PI / 2, (vec3){0.0f, 1.0f, 0.0f});
   game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
   game->mario_speed += throttle * move_speed * delta_time;
 

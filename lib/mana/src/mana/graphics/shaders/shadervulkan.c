@@ -1,6 +1,6 @@
 #include "mana/graphics/shaders/shadervulkan.h"
 
-static VkShaderModule shader_create_shader_module(struct APICommon *api_common, const uint32_t *code, uint_fast64_t length) {
+static VkShaderModule shader_create_shader_module(struct APICommon* api_common, const uint32_t* code, uint_fast64_t length) {
   VkShaderModuleCreateInfo create_info = {0};
   create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
   create_info.codeSize = length;
@@ -13,7 +13,7 @@ static VkShaderModule shader_create_shader_module(struct APICommon *api_common, 
   return shader_module;
 }
 
-uint_fast8_t shader_vulkan_init(struct ShaderCommon *shader_common, struct APICommon *api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale) {
+uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale) {
   if (shader_common->shader_settings.descriptors > 0) {
     VkDescriptorSetLayoutBinding bindings[SHADER_ATTACHMENT_LIMIT * 2];
     memset(bindings, 0, sizeof(VkDescriptorSetLayoutBinding) * SHADER_ATTACHMENT_LIMIT * 2);
@@ -135,8 +135,8 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon *shader_common, struct APICo
   size_t fragment_path_size = wcslen(base_path) + wcslen(shader_common->shader_settings.fragment_shader) + strlen(".frag.spv") + 1;
 
   // Allocate memory for the file paths
-  wchar_t *vertex_shader_path = (wchar_t *)malloc(vertex_path_size * sizeof(wchar_t));
-  wchar_t *fragment_shader_path = (wchar_t *)malloc(fragment_path_size * sizeof(wchar_t));
+  wchar_t* vertex_shader_path = (wchar_t*)malloc(vertex_path_size * sizeof(wchar_t));
+  wchar_t* fragment_shader_path = (wchar_t*)malloc(fragment_path_size * sizeof(wchar_t));
 
   // Format the vertex and fragment shader paths using _snwprintf_s (use %ls for wide strings)
   _snwprintf_s(vertex_shader_path, vertex_path_size, MAX_LENGTH_OF_PATH, L"%ls%ls.vert.spv", base_path, shader_common->shader_settings.vertex_shader);
@@ -145,8 +145,8 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon *shader_common, struct APICo
   uint_fast64_t vertex_code_length = 0;
   uint_fast64_t fragment_code_length = 0;
 
-  uint32_t *vertex_shader_code = read_shader_file(vertex_shader_path, &vertex_code_length);
-  uint32_t *fragment_shader_code = read_shader_file(fragment_shader_path, &fragment_code_length);
+  uint32_t* vertex_shader_code = read_shader_file(vertex_shader_path, &vertex_code_length);
+  uint32_t* fragment_shader_code = read_shader_file(fragment_shader_path, &fragment_code_length);
 
   free(vertex_shader_path);
   free(fragment_shader_path);
@@ -278,10 +278,10 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon *shader_common, struct APICo
   return 0;
 }
 
-uint_fast8_t shader_compute_vulkan_init(struct ShaderCommon *shader, struct APICommon *api_common) {
+uint_fast8_t shader_compute_vulkan_init(struct ShaderCommon* shader, struct APICommon* api_common) {
   uint_fast64_t compute_length = 0;
 
-  uint32_t *compute_shader_code = read_shader_file(shader->shader_settings_compute.compute_shader, &compute_length);
+  uint32_t* compute_shader_code = read_shader_file(shader->shader_settings_compute.compute_shader, &compute_length);
 
   VkShaderModule comp_shader_module = shader_create_shader_module(api_common, compute_shader_code, compute_length);
 
@@ -314,24 +314,24 @@ uint_fast8_t shader_compute_vulkan_init(struct ShaderCommon *shader, struct APIC
   return 0;
 }
 
-void shader_vulkan_delete(struct ShaderCommon *shader_common, struct APICommon *api_common) {
+void shader_vulkan_delete(struct ShaderCommon* shader_common, struct APICommon* api_common) {
   vkDestroyDescriptorPool(api_common->vulkan_api.device, shader_common->shader_vulkan.descriptor_pool, NULL);
   vkDestroyPipeline(api_common->vulkan_api.device, shader_common->shader_vulkan.graphics_pipeline, NULL);
   vkDestroyPipelineLayout(api_common->vulkan_api.device, shader_common->shader_vulkan.pipeline_layout, NULL);
   vkDestroyDescriptorSetLayout(api_common->vulkan_api.device, shader_common->shader_vulkan.descriptor_set_layout, NULL);
 }
 
-void shader_vulkan_resize(struct ShaderCommon *shader_common, struct APICommon *api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale) {
+void shader_vulkan_resize(struct ShaderCommon* shader_common, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale) {
   shader_common->shader_vulkan.viewport.x = 0.0f;
-  shader_common->shader_vulkan.viewport.y = 0.0f;
+  shader_common->shader_vulkan.viewport.y = (float)height;
   shader_common->shader_vulkan.viewport.minDepth = 0.0f;
   shader_common->shader_vulkan.viewport.maxDepth = 1.0f;
   if (shader_common->shader_settings.supersampled) {
     shader_common->shader_vulkan.viewport.width = (float)width * supersample_scale;
-    shader_common->shader_vulkan.viewport.height = (float)height * supersample_scale;
+    shader_common->shader_vulkan.viewport.height = -(float)height * supersample_scale;
   } else {
     shader_common->shader_vulkan.viewport.width = (float)width;
-    shader_common->shader_vulkan.viewport.height = (float)height;
+    shader_common->shader_vulkan.viewport.height = -(float)height;
   }
 
   shader_common->shader_vulkan.scissor.offset.x = 0;

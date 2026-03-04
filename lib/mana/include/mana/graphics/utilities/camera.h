@@ -148,7 +148,7 @@ static inline mat4 camera_get_projection_matrix(struct Camera* camera, struct Wi
   float f = 1.0f / (float)tan(degree_to_radian_d(camera->zoom) / 2.0);
   mat4 dest = MAT4_ZERO;
   dest.vecs[0].data[0] = f / ((float)window->renderer.renderer_settings.width / (float)window->renderer.renderer_settings.height);
-  dest.vecs[1].data[1] = -f;
+  dest.vecs[1].data[1] = f;
   dest.vecs[2].data[3] = -1.0f;
   dest.vecs[3].data[2] = Z_NEAR;
 
