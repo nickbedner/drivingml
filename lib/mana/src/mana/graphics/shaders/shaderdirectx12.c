@@ -1,8 +1,8 @@
 #include "mana/graphics/shaders/shaderdirectx12.h"
 
-static HRESULT __stdcall shader_directx_12_open(ID3DInclude *this, D3D_INCLUDE_TYPE include_type, LPCSTR p_file_name, LPCVOID p_parent_data, LPCVOID *pp_data, UINT *p_bytes) {
+static HRESULT __stdcall shader_directx_12_open(ID3DInclude* this, D3D_INCLUDE_TYPE include_type, LPCSTR p_file_name, LPCVOID p_parent_data, LPCVOID* pp_data, UINT* p_bytes) {
   char full_path[MAX_PATH_LENGTH];
-  FILE *file;
+  FILE* file;
   errno_t err;
 
   // First, try to open the file using the provided name
@@ -23,7 +23,7 @@ static HRESULT __stdcall shader_directx_12_open(ID3DInclude *this, D3D_INCLUDE_T
   int64_t file_size = ftell(file);
   fseek(file, 0, SEEK_SET);
 
-  char *buffer = (char *)malloc((size_t)file_size);
+  char* buffer = (char*)malloc((size_t)file_size);
   fread(buffer, 1, (size_t)file_size, file);
   fclose(file);
 
@@ -33,18 +33,18 @@ static HRESULT __stdcall shader_directx_12_open(ID3DInclude *this, D3D_INCLUDE_T
   return S_OK;
 }
 
-static HRESULT __stdcall shader_directx_12_close(ID3DInclude *this, LPCVOID p_data) {
+static HRESULT __stdcall shader_directx_12_close(ID3DInclude* this, LPCVOID p_data) {
   // Note: This silences a warning about casting away const
-  free((void *)(uintptr_t)p_data);
+  free((void*)(uintptr_t)p_data);
   return S_OK;
 }
 
-uint_fast8_t shader_directx_12_init(struct ShaderCommon *shader_common, struct APICommon *api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale) {
+uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale) {
   // Define the vtable and structure inside the function
   ID3DIncludeVtbl v_table_c = {shader_directx_12_open, shader_directx_12_close};
 
   struct D3DIncludeC {
-    ID3DIncludeVtbl *lp_vtbl;
+    ID3DIncludeVtbl* lp_vtbl;
   };
 
   struct D3DIncludeC include_handler_c = {&v_table_c};
@@ -52,42 +52,43 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon *shader_common, struct A
   wchar_t base_path[MAX_LENGTH_OF_PATH] = {0};
 
   // Convert "/shaders/hlsl/" to a wide string
-  const wchar_t *additional_path = L"/shaders/hlsl/";
+  const wchar_t* additional_path = L"/shaders/hlsl/";
 
   // Convert char* to wchar_t*
   size_t converted_chars = 0;
-  mbstowcs_s(&converted_chars, base_path, MAX_LENGTH_OF_PATH, api_common->asset_directory, _TRUNCATE);
+  // mbstowcs_s(&converted_chars, base_path, MAX_LENGTH_OF_PATH, api_common->asset_directory, _TRUNCATE);
+  wcsncpy_s(base_path, MAX_LENGTH_OF_PATH, api_common->asset_directory, _TRUNCATE);
 
   // Append additional path
   wcscat_s(base_path, MAX_LENGTH_OF_PATH, additional_path);
 
-  size_t vertex_path_size = wcslen(base_path) + strlen(shader_common->shader_settings.vertex_shader) + wcslen(L".hlsl") + 1;
-  size_t fragment_path_size = wcslen(base_path) + strlen(shader_common->shader_settings.fragment_shader) + wcslen(L".hlsl") + 1;
+  size_t vertex_path_size = wcslen(base_path) + wcslen(shader_common->shader_settings.vertex_shader) + wcslen(L".hlsl") + 1;
+  size_t fragment_path_size = wcslen(base_path) + wcslen(shader_common->shader_settings.fragment_shader) + wcslen(L".hlsl") + 1;
 
-  wchar_t *vertex_shader_path = (wchar_t *)malloc(vertex_path_size * sizeof(wchar_t));
-  wchar_t *fragment_shader_path = (wchar_t *)malloc(fragment_path_size * sizeof(wchar_t));
+  wchar_t* vertex_shader_path = (wchar_t*)malloc(vertex_path_size * sizeof(wchar_t));
+  wchar_t* fragment_shader_path = (wchar_t*)malloc(fragment_path_size * sizeof(wchar_t));
 
   swprintf(vertex_shader_path, vertex_path_size, L"%ls%hs.hlsl", base_path, shader_common->shader_settings.vertex_shader);
   swprintf(fragment_shader_path, fragment_path_size, L"%ls%hs.hlsl", base_path, shader_common->shader_settings.fragment_shader);
 
-  ID3DBlob *vertex_compilation_message_blob;
-  ID3DBlob *fragment_compilation_message_blob;
+  ID3DBlob* vertex_compilation_message_blob;
+  ID3DBlob* fragment_compilation_message_blob;
 
-  HRESULT vertex_result = D3DCompileFromFile(vertex_shader_path, NULL, (ID3DInclude *)&include_handler_c, "VS_main", "vs_5_0", 0, 0, &(shader_common->shader_directx12.vertex_shader_blob), &vertex_compilation_message_blob);
-  HRESULT fragment_result = D3DCompileFromFile(fragment_shader_path, NULL, (ID3DInclude *)&include_handler_c, "PS_main", "ps_5_0", 0, 0, &(shader_common->shader_directx12.fragment_shader_blob), &fragment_compilation_message_blob);
+  HRESULT vertex_result = D3DCompileFromFile(vertex_shader_path, NULL, (ID3DInclude*)&include_handler_c, "VS_main", "vs_5_0", 0, 0, &(shader_common->shader_directx12.vertex_shader_blob), &vertex_compilation_message_blob);
+  HRESULT fragment_result = D3DCompileFromFile(fragment_shader_path, NULL, (ID3DInclude*)&include_handler_c, "PS_main", "ps_5_0", 0, 0, &(shader_common->shader_directx12.fragment_shader_blob), &fragment_compilation_message_blob);
 
   free(vertex_shader_path);
   free(fragment_shader_path);
 
   if (FAILED(vertex_result) || FAILED(fragment_result)) {
     if (vertex_compilation_message_blob) {
-      char *err_msg = (char *)vertex_compilation_message_blob->lpVtbl->GetBufferPointer(vertex_compilation_message_blob);
+      char* err_msg = (char*)vertex_compilation_message_blob->lpVtbl->GetBufferPointer(vertex_compilation_message_blob);
       log_message(LOG_SEVERITY_ERROR, "Vertex Shader Compilation Messages:\n%s\n", err_msg);
       vertex_compilation_message_blob->lpVtbl->Release(vertex_compilation_message_blob);
     }
 
     if (fragment_compilation_message_blob) {
-      char *err_msg = (char *)fragment_compilation_message_blob->lpVtbl->GetBufferPointer(fragment_compilation_message_blob);
+      char* err_msg = (char*)fragment_compilation_message_blob->lpVtbl->GetBufferPointer(fragment_compilation_message_blob);
       log_message(LOG_SEVERITY_ERROR, "Fragment Shader Compilation Messages:\n%s\n", err_msg);
       fragment_compilation_message_blob->lpVtbl->Release(fragment_compilation_message_blob);
     }
@@ -216,18 +217,18 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon *shader_common, struct A
   root_signature_desc.pStaticSamplers = NULL;
   root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-  ID3DBlob *serialized_root_sig = NULL;
-  ID3DBlob *error_blob = NULL;
+  ID3DBlob* serialized_root_sig = NULL;
+  ID3DBlob* error_blob = NULL;
   D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1, &serialized_root_sig, &error_blob);
 
   if (error_blob) {
     // Handle error - use the errorBlob's data to get a string error message
-    char *err_msg = (char *)error_blob->lpVtbl->GetBufferPointer(vertex_compilation_message_blob);
+    char* err_msg = (char*)error_blob->lpVtbl->GetBufferPointer(vertex_compilation_message_blob);
     log_message(LOG_SEVERITY_ERROR, "Root Signature Compilation Messages:\n%s\n", err_msg);
     error_blob->lpVtbl->Release(vertex_compilation_message_blob);
   }
 
-  api_common->directx_12_api.device->lpVtbl->CreateRootSignature(api_common->directx_12_api.device, 0, serialized_root_sig->lpVtbl->GetBufferPointer(serialized_root_sig), serialized_root_sig->lpVtbl->GetBufferSize(serialized_root_sig), &IID_ID3D12RootSignature, (void **)&(shader_common->shader_directx12.root_signature));
+  api_common->directx_12_api.device->lpVtbl->CreateRootSignature(api_common->directx_12_api.device, 0, serialized_root_sig->lpVtbl->GetBufferPointer(serialized_root_sig), serialized_root_sig->lpVtbl->GetBufferSize(serialized_root_sig), &IID_ID3D12RootSignature, (void**)&(shader_common->shader_directx12.root_signature));
 
   if (serialized_root_sig)
     serialized_root_sig->lpVtbl->Release(serialized_root_sig);
@@ -315,14 +316,14 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon *shader_common, struct A
     pso_desc.SampleDesc.Quality = max_quality_level;
   }
 
-  api_common->directx_12_api.device->lpVtbl->CreateGraphicsPipelineState(api_common->directx_12_api.device, &pso_desc, &IID_ID3D12PipelineState, (void **)&(shader_common->shader_directx12.pipeline_state));
+  api_common->directx_12_api.device->lpVtbl->CreateGraphicsPipelineState(api_common->directx_12_api.device, &pso_desc, &IID_ID3D12PipelineState, (void**)&(shader_common->shader_directx12.pipeline_state));
   /////////////////////////////////////////////////////////////////////////////
   D3D12_DESCRIPTOR_HEAP_DESC sampler_heap_desc = {0};
   sampler_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
   sampler_heap_desc.NumDescriptors = 1;  // Adjust this number as per your requirement.
   sampler_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
-  HRESULT result = api_common->directx_12_api.device->lpVtbl->CreateDescriptorHeap(api_common->directx_12_api.device, &sampler_heap_desc, &IID_ID3D12DescriptorHeap, (void **)&(shader_common->shader_directx12.sampler_heap));
+  HRESULT result = api_common->directx_12_api.device->lpVtbl->CreateDescriptorHeap(api_common->directx_12_api.device, &sampler_heap_desc, &IID_ID3D12DescriptorHeap, (void**)&(shader_common->shader_directx12.sampler_heap));
   if (result != S_OK)
     return 1;
 
@@ -415,11 +416,11 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon *shader_common, struct A
   return 0;
 }
 
-uint_fast8_t shader_compute_directx_12_init(struct ShaderCommon *shader, struct APICommon *api_common) {
+uint_fast8_t shader_compute_directx_12_init(struct ShaderCommon* shader, struct APICommon* api_common) {
   return 0;
 }
 
-void shader_directx_12_delete(struct ShaderCommon *shader_common, struct APICommon *api_common) {
+void shader_directx_12_delete(struct ShaderCommon* shader_common, struct APICommon* api_common) {
   // Release the pipeline state
   if (shader_common->shader_directx12.pipeline_state) {
     shader_common->shader_directx12.pipeline_state->lpVtbl->Release(shader_common->shader_directx12.pipeline_state);
@@ -455,7 +456,7 @@ void shader_directx_12_delete(struct ShaderCommon *shader_common, struct APIComm
   // shader_common->shader_directx12.srv_gpu_handle = (D3D12_GPU_DESCRIPTOR_HANDLE){0};
 }
 
-void shader_directx_12_resize(struct ShaderCommon *shader_common, struct APICommon *api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale) {
+void shader_directx_12_resize(struct ShaderCommon* shader_common, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale) {
   shader_common->shader_directx12.viewport.TopLeftX = 0.0f;
   shader_common->shader_directx12.viewport.TopLeftY = 0.0f;
   if (shader_common->shader_settings.supersampled) {
