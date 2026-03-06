@@ -11,7 +11,6 @@
 #include "mana/graphics/utilities/mesh/mesh.h"
 #include "mana/utilities/fileio.h"
 
-
 #define MAX_PATH_LENGTH 2048
 
 #define SHADER_ATTACHMENT_LIMIT 8
@@ -49,13 +48,14 @@ struct ShaderAttributeSettings {
 
 struct ShaderSettings {
   uint_fast32_t descriptors;
-  wchar_t *vertex_shader;
-  wchar_t *fragment_shader;
+  wchar_t* vertex_shader;
+  wchar_t* fragment_shader;
   bool depth_test;
+  bool depth_write;
   bool supersampled;
   bool blend;
   uint32_t mesh_memory_size;
-  uint_fast32_t num_msaa_samples;  // Multisampling
+  uint_fast32_t num_msaa_samples;
   uint_fast8_t color_attachments;
   uint_fast8_t vertex_attributes;
   uint_fast8_t uniforms_constants;
@@ -67,12 +67,12 @@ struct ShaderSettings {
   enum SHADER_FRONT_FACE front_face;
   enum SHADER_CULL_MODE cull_mode;
   enum MESH_TYPE mesh_type;
-  void *extra_data;
+  void* extra_data;
 };
 
 struct ShaderSettingsCompute {
-  wchar_t *compute_shader;
-  void *render_pass;
+  wchar_t* compute_shader;
+  void* render_pass;
 };
 
 #ifdef VULKAN_API_SUPPORTED
@@ -88,11 +88,11 @@ struct ShaderVulkan {
 
 #ifdef DIRECTX_12_API_SUPPORTED
 struct ShaderDirectX12 {
-  ID3D12PipelineState *pipeline_state;
-  ID3D12RootSignature *root_signature;
-  ID3DBlob *vertex_shader_blob;
-  ID3DBlob *fragment_shader_blob;
-  ID3D12DescriptorHeap *sampler_heap;
+  ID3D12PipelineState* pipeline_state;
+  ID3D12RootSignature* root_signature;
+  ID3DBlob* vertex_shader_blob;
+  ID3DBlob* fragment_shader_blob;
+  ID3D12DescriptorHeap* sampler_heap;
   D3D12_CPU_DESCRIPTOR_HANDLE sampler_handle_cpu;
   D3D12_GPU_DESCRIPTOR_HANDLE sampler_handle_gpu;
   D3D12_VIEWPORT viewport;

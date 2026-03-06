@@ -1,6 +1,6 @@
 #include "mana/graphics/utilities/spritemanager/spritemanager.h"
 
-void sprite_manager_init(struct SpriteManager *sprite_manager, struct TextureManager *texture_manager, struct APICommon *api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, struct GBufferCommon *gbuffer_common, uint_fast8_t msaa_samples, uint_fast32_t descriptors) {
+void sprite_manager_init(struct SpriteManager* sprite_manager, struct TextureManager* texture_manager, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, struct GBufferCommon* gbuffer_common, uint_fast8_t msaa_samples, uint_fast32_t descriptors) {
 #ifdef VULKAN_API_SUPPORTED
   if (api_common->api_type == API_VULKAN)
     sprite_manager->sprite_manager_func = VULKAN_SPRITE_MANAGER;
@@ -10,7 +10,7 @@ void sprite_manager_init(struct SpriteManager *sprite_manager, struct TextureMan
     sprite_manager->sprite_manager_func = DIRECTX_12_SPRITE_MANAGER;
 #endif
 
-  sprite_shader_init(&(sprite_manager->sprite_manager_common.sprite_shader), api_common, width, height, supersample_scale, gbuffer_common, true, msaa_samples, descriptors);
+  sprite_shader_init(&(sprite_manager->sprite_manager_common.sprite_shader), api_common, width, height, supersample_scale, gbuffer_common, true, false, msaa_samples, descriptors);
   sprite_animation_shader_init(&(sprite_manager->sprite_manager_common.sprite_animation_shader), api_common, width, height, supersample_scale, gbuffer_common, true, msaa_samples, descriptors);
 
   array_list_init(&(sprite_manager->sprite_manager_common.sprites));
@@ -22,15 +22,15 @@ void sprite_manager_init(struct SpriteManager *sprite_manager, struct TextureMan
   sprite_manager->sprite_manager_func.sprite_manager_init_sprite_animation_pool(&(sprite_manager->sprite_manager_common), api_common, width, height, supersample_scale, gbuffer_common, msaa_samples, descriptors);
 }
 
-void sprite_manager_delete(struct SpriteManager *sprite_manager, struct APICommon *api_common) {
+void sprite_manager_delete(struct SpriteManager* sprite_manager, struct APICommon* api_common) {
   for (size_t sprite_num = 0; sprite_num < array_list_size(&(sprite_manager->sprite_manager_common.sprites)); sprite_num++) {
-    struct Sprite *sprite = array_list_get(&(sprite_manager->sprite_manager_common.sprites), sprite_num);
+    struct Sprite* sprite = array_list_get(&(sprite_manager->sprite_manager_common.sprites), sprite_num);
     sprite_delete(sprite, api_common);
     free(sprite);
   }
 
   for (size_t sprite_animation_num = 0; sprite_animation_num < array_list_size(&(sprite_manager->sprite_manager_common.sprites_animations)); sprite_animation_num++) {
-    struct SpriteAnimation *sprite_animation = array_list_get(&(sprite_manager->sprite_manager_common.sprites_animations), sprite_animation_num);
+    struct SpriteAnimation* sprite_animation = array_list_get(&(sprite_manager->sprite_manager_common.sprites_animations), sprite_animation_num);
     sprite_animation_delete(sprite_animation, api_common);
     free(sprite_animation);
   }
@@ -45,13 +45,13 @@ void sprite_manager_delete(struct SpriteManager *sprite_manager, struct APICommo
   sprite_manager->sprite_manager_func.sprite_manager_delete_sprite_animation(&(sprite_manager->sprite_manager_common), api_common);
 }
 
-void sprite_manager_resize(struct SpriteManager *sprite_manager, struct APICommon *api_common, uint_fast32_t width, uint_fast32_t height, uint_fast8_t supersample_scale) {
+void sprite_manager_resize(struct SpriteManager* sprite_manager, struct APICommon* api_common, uint_fast32_t width, uint_fast32_t height, uint_fast8_t supersample_scale) {
   shader_resize(&(sprite_manager->sprite_manager_common.sprite_shader.shader), api_common, width, height, supersample_scale);
 }
 
-struct Sprite *sprite_manager_add_sprite(struct SpriteManager *sprite_manager, struct APICommon *api_common, wchar_t *texture_name) {
+struct Sprite* sprite_manager_add_sprite(struct SpriteManager* sprite_manager, struct APICommon* api_common, wchar_t* texture_name) {
   // Note: These would be pooled and preallocated I'm guessing
-  struct Sprite *sprite = calloc(1, sizeof(struct Sprite));
+  struct Sprite* sprite = calloc(1, sizeof(struct Sprite));
   size_t sprite_num = array_list_size(&(sprite_manager->sprite_manager_common.sprites));
   sprite_manager->sprite_manager_func.sprite_manager_add_sprite(&(sprite_manager->sprite_manager_common), api_common, sprite, sprite_num);
   sprite_init(sprite, api_common, &(sprite_manager->sprite_manager_common.sprite_shader.shader), texture_manager_get(sprite_manager->sprite_manager_common.texture_manager, texture_name), sprite_num);
@@ -61,8 +61,8 @@ struct Sprite *sprite_manager_add_sprite(struct SpriteManager *sprite_manager, s
   return sprite;
 }
 
-struct SpriteAnimation *sprite_manager_add_sprite_animation(struct SpriteManager *sprite_manager, struct APICommon *api_common, wchar_t *texture_name, size_t frames, float frame_length, uint8_t padding) {
-  struct SpriteAnimation *sprite_animation = calloc(1, sizeof(struct SpriteAnimation));
+struct SpriteAnimation* sprite_manager_add_sprite_animation(struct SpriteManager* sprite_manager, struct APICommon* api_common, wchar_t* texture_name, size_t frames, float frame_length, uint8_t padding) {
+  struct SpriteAnimation* sprite_animation = calloc(1, sizeof(struct SpriteAnimation));
   size_t sprite_num = array_list_size(&(sprite_manager->sprite_manager_common.sprites_animations));
   sprite_manager->sprite_manager_func.sprite_manager_add_sprite_animation(&(sprite_manager->sprite_manager_common), api_common, sprite_animation, sprite_num);
   sprite_animation_init(sprite_animation, api_common, &(sprite_manager->sprite_manager_common.sprite_animation_shader.shader), texture_manager_get(sprite_manager->sprite_manager_common.texture_manager, texture_name), sprite_num, frames, frame_length, padding);
@@ -72,15 +72,15 @@ struct SpriteAnimation *sprite_manager_add_sprite_animation(struct SpriteManager
   return sprite_animation;
 }
 
-void sprite_manager_remove(struct SpriteManager *sprite_manager, struct APICommon *api_common, size_t sprite_num) {
-  struct Sprite *moved_sprite = array_list_get(&(sprite_manager->sprite_manager_common.sprites), array_list_size(&(sprite_manager->sprite_manager_common.sprites)) - 1);
+void sprite_manager_remove(struct SpriteManager* sprite_manager, struct APICommon* api_common, size_t sprite_num) {
+  struct Sprite* moved_sprite = array_list_get(&(sprite_manager->sprite_manager_common.sprites), array_list_size(&(sprite_manager->sprite_manager_common.sprites)) - 1);
   moved_sprite->sprite_common.sprite_num = sprite_num;
   array_list_swap(&(sprite_manager->sprite_manager_common.sprites), sprite_num, array_list_size(&(sprite_manager->sprite_manager_common.sprites)) - 1);
-  struct Sprite *old_sprite = array_list_pop_back(&(sprite_manager->sprite_manager_common.sprites));
+  struct Sprite* old_sprite = array_list_pop_back(&(sprite_manager->sprite_manager_common.sprites));
   sprite_delete(old_sprite, api_common);
 }
 
-void sprite_manager_update_uniforms(struct SpriteManager *sprite_manager, struct APICommon *api_common, struct GBufferCommon *gbuffer_common) {
+void sprite_manager_update_uniforms(struct SpriteManager* sprite_manager, struct APICommon* api_common, struct GBufferCommon* gbuffer_common) {
   for (size_t entity_num = 0; entity_num < array_list_size(&(sprite_manager->sprite_manager_common.sprites)); entity_num++)
     sprite_update_uniforms(array_list_get(&(sprite_manager->sprite_manager_common.sprites), entity_num), api_common, gbuffer_common);
 
@@ -88,15 +88,50 @@ void sprite_manager_update_uniforms(struct SpriteManager *sprite_manager, struct
     sprite_animation_update_uniforms(array_list_get(&(sprite_manager->sprite_manager_common.sprites_animations), entity_num), api_common, gbuffer_common);
 }
 
-void sprite_manager_render(struct SpriteManager *sprite_manager, struct GBufferCommon *gbuffer_common) {
-  for (size_t sprite_num = 0; sprite_num < array_list_size(&(sprite_manager->sprite_manager_common.sprites)); sprite_num++)
-    sprite_render(array_list_get(&(sprite_manager->sprite_manager_common.sprites), sprite_num), gbuffer_common);
-
-  for (size_t sprite_animation_num = 0; sprite_animation_num < array_list_size(&(sprite_manager->sprite_manager_common.sprites_animations)); sprite_animation_num++)
-    sprite_animation_render(array_list_get(&(sprite_manager->sprite_manager_common.sprites_animations), sprite_animation_num), gbuffer_common);
+static inline double sprite_depth(const struct Sprite* sprite, vec4d sort_key) {
+  vec3d p = vec3_to_vec3d(sprite->sprite_common.position);
+  return p.x * sort_key.x + p.y * sort_key.y + p.z * sort_key.z + sort_key.w;
 }
 
-void sprite_manager_update(struct SpriteManager *sprite_manager, double delta_time) {
+static void sprite_insertion_sort(struct Sprite** sprites, size_t count, vec4d sort_key) {
+  for (size_t i = 1; i < count; i++) {
+    struct Sprite* key = sprites[i];
+    double key_depth = sprite_depth(key, sort_key);
+
+    size_t j = i;
+
+    while (j > 0) {
+      double prev_depth = sprite_depth(sprites[j - 1], sort_key);
+
+      /* Back → Front (larger depth first) */
+      if (prev_depth < key_depth) {
+        sprites[j] = sprites[j - 1];
+        j--;
+      } else
+        break;
+    }
+
+    sprites[j] = key;
+  }
+}
+
+void sprite_manager_render(struct SpriteManager* sprite_manager, struct GBufferCommon* gbuffer_common, vec4d sort_key) {
+  struct Sprite* ordered_sprites[128] = {0};
+  for (size_t i = 0; i < array_list_size(&(sprite_manager->sprite_manager_common.sprites)); i++)
+    ordered_sprites[i] = array_list_get(&sprite_manager->sprite_manager_common.sprites, i);
+
+  sprite_insertion_sort(ordered_sprites + 2, array_list_size(&(sprite_manager->sprite_manager_common.sprites)) - 2, sort_key);
+  for (size_t i = 0; i < array_list_size(&(sprite_manager->sprite_manager_common.sprites)); i++)
+    sprite_render(ordered_sprites[i], gbuffer_common);
+
+  // for (size_t sprite_num = 0; sprite_num < array_list_size(&(sprite_manager->sprite_manager_common.sprites)); sprite_num++)
+  //   sprite_render(array_list_get(&(sprite_manager->sprite_manager_common.sprites), sprite_num), gbuffer_common);
+  //
+  // for (size_t sprite_animation_num = 0; sprite_animation_num < array_list_size(&(sprite_manager->sprite_manager_common.sprites_animations)); sprite_animation_num++)
+  //  sprite_animation_render(array_list_get(&(sprite_manager->sprite_manager_common.sprites_animations), sprite_animation_num), gbuffer_common);
+}
+
+void sprite_manager_update(struct SpriteManager* sprite_manager, double delta_time) {
   for (size_t sprite_animation_num = 0; sprite_animation_num < array_list_size(&(sprite_manager->sprite_manager_common.sprites_animations)); sprite_animation_num++)
     sprite_animation_update(array_list_get(&(sprite_manager->sprite_manager_common.sprites_animations), sprite_animation_num), delta_time);
 }

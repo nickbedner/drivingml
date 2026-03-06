@@ -195,6 +195,10 @@ static inline vec3 vec3d_to_vec3(vec3d vec) {
   return (vec3){.x = (float)vec.x, .y = (float)vec.y, .z = (float)vec.z};
 }
 
+static inline vec3d vec3_to_vec3d(vec3 vec) {
+  return (vec3d){.x = (double)vec.x, .y = (double)vec.y, .z = (double)vec.z};
+}
+
 static inline mat4 mat4d_to_mat4(mat4d mat) {
   return (mat4){.m00 = (float)mat.m00,
                 .m01 = (float)mat.m01,

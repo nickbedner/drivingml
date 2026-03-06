@@ -19,6 +19,14 @@ static int recv_all(SOCKET sock, char* buffer, int size) {
   return total;
 }
 
+static inline void place_marker(struct Sprite* marker, float x, float y) {
+  marker->sprite_common.position = (vec3){.x = x, .y = y, .z = 2.35f};
+  marker->sprite_common.scale = (vec3){.x = 1.0f, .y = 1.0f, .z = 0.0f};
+  mat4 marker_rotation_0 = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
+  marker_rotation_0 = mat4_rotate(marker_rotation_0, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+  marker->sprite_common.rotation = mat4_to_quaternion(marker_rotation_0);
+}
+
 void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->window = window;
 
@@ -31,7 +39,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/spritesheet.png");
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/water.png");
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/map.png");
-  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/mario.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/rb.png");
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/whispy.png");
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/track.png");
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/circuit.png");
@@ -56,10 +64,6 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   start_rotation = mat4_rotate(start_rotation, -M_PI / 2, (vec3){.x = 0.0, .y = 0.0, .z = 0.5});
   game->start->sprite_common.rotation = mat4_to_quaternion(start_rotation);
 
-  // game->finish = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/startfinish.png");
-  // game->finish->sprite_common.position = (vec3){.x = 0, .y = -90.0f, .z = 0.01f};
-  // game->finish->sprite_common.scale = (vec3){.x = 10.0f, .y = 10.0f, .z = 0.0f};
-
   game->fence = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/fence.png");
   game->fence->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = 2.5f};
   game->fence->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
@@ -67,48 +71,31 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   fence_rotation = mat4_rotate(fence_rotation, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
   game->fence->sprite_common.rotation = mat4_to_quaternion(fence_rotation);
 
-  game->mario = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/mario.png");
+  game->mario = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/rb.png");
   game->mario_position = (vec3){.x = 10.0f, .y = 95.0f, .z = 0.75};
   game->mario->sprite_common.position = game->mario_position;
   game->mario->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
   game->car_heading = 0.0f;  // M_PI / 2.0f;  // facing down -Y
-  // mat4 mario_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){0.5f, 0.0f, 0.0f});
-  // mario_rotation = mat4_rotate(mario_rotation, -game->car_heading + M_PI / 2, (vec3){0.0f, 1.0f, 0.0f});
-  // game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
-  //
-  ////
-  // mat4 marker_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  // marker_rotation = mat4_rotate(marker_rotation, M_PI / 2, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-  // game->marker[marker_num]->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(marker_rotation, -game->player.camera.look_at_azimuth, (vec3){0.0f, 1.0f, 0.0f}));
-  ////
 
+  game->total_markers = 9;
   game->marker[0] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  game->marker[0]->sprite_common.position = (vec3){.x = -75.0f, .y = 90.0f, .z = 2.35f};
-  game->marker[0]->sprite_common.scale = (vec3){.x = 1.0f, .y = 1.0f, .z = 0.0f};
-  mat4 marker_rotation_0 = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  marker_rotation_0 = mat4_rotate(marker_rotation_0, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-  game->marker[0]->sprite_common.rotation = mat4_to_quaternion(marker_rotation_0);
-
+  place_marker(game->marker[0], -95.0f, 100.0f);
   game->marker[1] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  game->marker[1]->sprite_common.position = (vec3){.x = -90.0f, .y = -90.0f, .z = 2.35f};
-  game->marker[1]->sprite_common.scale = (vec3){.x = 1.0f, .y = 1.0f, .z = 0.0f};
-  mat4 marker_rotation_1 = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  marker_rotation_1 = mat4_rotate(marker_rotation_1, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-  game->marker[1]->sprite_common.rotation = mat4_to_quaternion(marker_rotation_1);
-
+  place_marker(game->marker[1], -95.0f, 50.0f);
   game->marker[2] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  game->marker[2]->sprite_common.position = (vec3){.x = 90.0f, .y = -90.0f, .z = 2.35f};
-  game->marker[2]->sprite_common.scale = (vec3){.x = 1.0f, .y = 1.0f, .z = 0.0f};
-  mat4 marker_rotation_2 = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  marker_rotation_2 = mat4_rotate(marker_rotation_2, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-  game->marker[2]->sprite_common.rotation = mat4_to_quaternion(marker_rotation_2);
-
+  place_marker(game->marker[2], -20.0f, 50.0f);
   game->marker[3] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  game->marker[3]->sprite_common.position = (vec3){.x = 75.0f, .y = 90.0f, .z = 2.35f};
-  game->marker[3]->sprite_common.scale = (vec3){.x = 1.0f, .y = 1.0f, .z = 0.0f};
-  mat4 marker_rotation_3 = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  marker_rotation_3 = mat4_rotate(marker_rotation_3, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-  game->marker[3]->sprite_common.rotation = mat4_to_quaternion(marker_rotation_3);
+  place_marker(game->marker[3], -95.0f, 20.0f);
+  game->marker[4] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
+  place_marker(game->marker[4], -95.0f, -20.0f);
+  game->marker[5] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
+  place_marker(game->marker[5], -25.0f, -20.0f);
+  game->marker[6] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
+  place_marker(game->marker[6], -95.0f, -50.0f);
+  game->marker[7] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
+  place_marker(game->marker[7], -95.0f, -90.0f);
+  game->marker[8] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
+  place_marker(game->marker[8], 130.0f, -90.0f);
   ///////////////////////////////////////
 
   WSADATA wsa;
@@ -285,7 +272,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
     game->current_marker++;
 
-    if (game->current_marker >= 4) {
+    if (game->current_marker >= game->total_markers) {
       game->current_marker = 0;
       reward += 5.0f;  // lap bonus
       done = true;
@@ -352,7 +339,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   }
 
   // Make this always facing toward the camera
-  for (int marker_num = 0; marker_num < 4; marker_num++) {
+  for (int marker_num = 0; marker_num < game->total_markers; marker_num++) {
     mat4 marker_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
     marker_rotation = mat4_rotate(marker_rotation, M_PI / 2, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
     game->marker[marker_num]->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(marker_rotation, -game->player.camera.look_at_azimuth, (vec3){0.0f, 1.0f, 0.0f}));
@@ -378,7 +365,14 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     gbuffer_start(window->gbuffer, &(window->swap_chain->swap_chain_common), window->renderer.renderer_settings.msaa_samples);
 
     // Transparent sprites
-    sprite_manager_render(&(game->sprite_manager), &(window->gbuffer->gbuffer_common));
+    vec3d cam_pos = camera_get_pos(&game->player.camera);
+    vec3d cam_forward = vec3d_normalise(vec3d_sub(game->player.camera.target, game->player.camera.eye));
+    vec4d sort_key;
+    sort_key.x = cam_forward.x;
+    sort_key.y = cam_forward.y;
+    sort_key.z = cam_forward.z;
+    sort_key.w = -vec3d_dot(cam_forward, cam_pos);
+    sprite_manager_render(&(game->sprite_manager), &(window->gbuffer->gbuffer_common), sort_key);
 
     gbuffer_stop(window->gbuffer, api_common, window->renderer.renderer_settings.msaa_samples);
 

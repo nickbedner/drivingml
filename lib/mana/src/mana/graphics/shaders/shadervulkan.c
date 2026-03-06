@@ -228,10 +228,14 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
   if (shader_common->shader_settings.depth_test)
     depth_test = VK_TRUE;
 
+  VkBool32 depth_write = VK_FALSE;
+  if (shader_common->shader_settings.depth_write)
+    depth_write = VK_TRUE;
+
   VkPipelineDepthStencilStateCreateInfo depth_stencil = {0};
   depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
   depth_stencil.depthTestEnable = depth_test;
-  depth_stencil.depthWriteEnable = depth_test;
+  depth_stencil.depthWriteEnable = depth_write;
   depth_stencil.depthCompareOp = VK_COMPARE_OP_GREATER_OR_EQUAL;
   depth_stencil.depthBoundsTestEnable = VK_FALSE;
   depth_stencil.stencilTestEnable = VK_FALSE;
