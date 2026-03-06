@@ -24,6 +24,7 @@
 #include <direct.h>
 #include <initguid.h>
 #include <intrin.h>
+#include <tchar.h>
 #include <windowsx.h>
 #else
 #include <unistd.h>
@@ -50,8 +51,8 @@ enum log_severity_t {
   LOG_SEVERITY_CRITICAL
 };
 
-void log_message(enum log_severity_t severity, const char *format, ...);
+void log_message(enum log_severity_t severity, const char* format, ...);
 int32_t log_delete(void);
 
 double get_high_resolution_time(void);
-void mana_search_for_assets_directory(wchar_t *asset_directory);
+void mana_search_for_assets_directory(wchar_t* asset_directory);
