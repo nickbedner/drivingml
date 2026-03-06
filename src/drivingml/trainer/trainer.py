@@ -12,6 +12,9 @@ import os
 HOST = "127.0.0.1"
 PORT = 5000
 
+# Set to False to resume training
+EVAL_MODE = False
+
 # Create checkpoint directory to store trained models
 os.makedirs("checkpoints", exist_ok=True)
 
@@ -138,8 +141,17 @@ while True:
     std = log_std_exp.exp()
 
     # Sample pre-tanh
-    u = mean + std * torch.randn_like(mean)
-    a = torch.tanh(u)  # true squashed action in (-1, 1)
+    mean, value = model(state)
+
+    if EVAL_MODE:
+        # Deterministic action
+        u = mean
+    else:
+        log_std_exp = log_std.expand_as(mean)
+        std = log_std_exp.exp()
+        u = mean + std * torch.randn_like(mean)
+
+    a = torch.tanh(u)
 
     # log prob uses the true tanh transform
     log_prob = gaussian_log_prob(u, mean, log_std_exp) - tanh_correction(a)
@@ -148,11 +160,12 @@ while True:
     eps = 1e-6
     a_env = a.clamp(-1 + eps, 1 - eps)
 
-    states.append(state.detach())
-    us.append(u.detach())
-    old_log_probs.append(log_prob.detach())
-    values.append(value.detach())
-    rewards.append(reward)
+    if not EVAL_MODE:
+        states.append(state.detach())
+        us.append(u.detach())
+        old_log_probs.append(log_prob.detach())
+        values.append(value.detach())
+        rewards.append(reward)
 
     # send clipped action to game
     action_np = a_env.detach().cpu().numpy().astype("float32")
@@ -160,7 +173,7 @@ while True:
 
     # If episode finished the we train and save train
     # Trigger training on rollout or episode end
-    if done == 1 or len(rewards) >= rollout_length:
+    if not EVAL_MODE and (done == 1 or len(rewards) >= rollout_length):
         if done == 1:
             episode += 1
 

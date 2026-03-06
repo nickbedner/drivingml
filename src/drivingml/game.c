@@ -77,7 +77,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->mario->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
   game->car_heading = 0.0f;  // M_PI / 2.0f;  // facing down -Y
 
-  game->total_markers = 9;
+  game->total_markers = 15;
   game->marker[0] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
   place_marker(game->marker[0], -95.0f, 100.0f);
   game->marker[1] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
@@ -95,7 +95,19 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->marker[7] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
   place_marker(game->marker[7], -95.0f, -90.0f);
   game->marker[8] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  place_marker(game->marker[8], 130.0f, -90.0f);
+  place_marker(game->marker[8], 140.0f, -90.0f);
+  game->marker[9] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
+  place_marker(game->marker[9], 130.0f, -30.0f);
+  game->marker[10] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
+  place_marker(game->marker[10], 65.0f, -30.0f);
+  game->marker[11] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
+  place_marker(game->marker[11], 50.0f, 20.0f);
+  game->marker[12] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
+  place_marker(game->marker[12], 65.0f, 60.0f);
+  game->marker[13] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
+  place_marker(game->marker[13], 110.0f, 65.0f);
+  game->marker[14] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
+  place_marker(game->marker[14], 110.0f, 100.0f);
   ///////////////////////////////////////
 
   WSADATA wsa;
@@ -160,9 +172,9 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   if (delta_time > 0.05)
     delta_time = 0.05;
 
-  // Hardcoded to allow for 60 seconds to complete a lap
+  // Hardcoded to episode length of 1 minute before timeout
   game->timer++;
-  if (game->timer > 3600) {
+  if (game->timer > 3600 && !EVAL_MODE) {
     printf("Episode timed out\n");
     done = true;
   }
@@ -213,7 +225,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
   game->mario_speed += throttle * move_speed * delta_time;
 
-  // Clamp speed (important!)
+  // Clamp speed
   if (game->mario_speed > 50.0f)
     game->mario_speed = 50.0f;
   if (game->mario_speed < -20.0f)
@@ -256,7 +268,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   reward += 0.1f * progress;
 
   //  Checkpoint reward
-  const float checkpoint_radius = 20.0f;
+  const float checkpoint_radius = 10.0f;
 
   if (dist_after < checkpoint_radius) {
     reward += 2.0f;  // checkpoint bonus
@@ -266,7 +278,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     if (game->current_marker >= game->total_markers) {
       game->current_marker = 0;
       reward += 5.0f;  // lap bonus
-      done = true;
+      // done = true;
       game->timer = 0;
     }
   }
@@ -355,6 +367,8 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     mat4 marker_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
     marker_rotation = mat4_rotate(marker_rotation, M_PI / 2, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
     game->marker[marker_num]->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(marker_rotation, -game->player.camera.look_at_azimuth, (vec3){0.0f, 1.0f, 0.0f}));
+    if (EVAL_MODE)
+      game->marker[marker_num]->sprite_common.position.z = -10000.0f;
   }
 
   window->gbuffer->gbuffer_common.projection_matrix = camera_get_projection_matrix(&(game->player.camera), window);
