@@ -119,7 +119,7 @@ static bool SendHIDReport(WINUSB_INTERFACE_HANDLE winusbHandle) {
   }
 }
 
-static uint_fast8_t gamecube_controller_initialize_winusb(WINUSB_INTERFACE_HANDLE *winusb_handle, UCHAR *read_pipe_id, UCHAR *write_pipe_id) {
+static uint_fast8_t gamecube_controller_initialize_winusb(WINUSB_INTERFACE_HANDLE* winusb_handle, UCHAR* read_pipe_id, UCHAR* write_pipe_id) {
   // HDEVINFO hDevInfo = SetupDiGetClassDevs(NULL, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE | DIGCF_ALLCLASSES);
   HDEVINFO h_dev_info = SetupDiGetClassDevs(NULL, NULL, NULL, DIGCF_DEVICEINTERFACE | DIGCF_ALLCLASSES);
 
@@ -132,7 +132,7 @@ static uint_fast8_t gamecube_controller_initialize_winusb(WINUSB_INTERFACE_HANDL
   dev_info_data.cbSize = sizeof(SP_DEVINFO_DATA);
   BOOL found = FALSE;
 
-  for (DWORD i = 0; SetupDiEnumDeviceInfo(h_dev_info, i, &dev_info_data) && !found; i++) {
+  /*for (DWORD i = 0; SetupDiEnumDeviceInfo(h_dev_info, i, &dev_info_data) && !found; i++) {
     TCHAR device_iD[MAX_DEVICE_ID_LEN];
     if (CM_Get_Device_ID(dev_info_data.DevInst, device_iD, MAX_DEVICE_ID_LEN, 0) == CR_SUCCESS) {
       // Check if this is the device we are looking for
@@ -189,7 +189,7 @@ static uint_fast8_t gamecube_controller_initialize_winusb(WINUSB_INTERFACE_HANDL
           printf("Failed to get device interface detail. Error: %lu\n", GetLastError());
       }
     }
-  }
+  }*/
 
   if (!found) {
     printf("Device not found.\n");
@@ -233,7 +233,7 @@ static uint_fast8_t gamecube_controller_initialize_winusb(WINUSB_INTERFACE_HANDL
 }
 #endif
 
-uint_fast8_t gamecube_controller_init(struct ControllerCommon *controller_common) {
+uint_fast8_t gamecube_controller_init(struct ControllerCommon* controller_common) {
   // controller_common->gamecube_controller.first_read = true;
 #ifdef _WIN64
   // Initialize WinUSB
@@ -254,16 +254,16 @@ uint_fast8_t gamecube_controller_init(struct ControllerCommon *controller_common
   return 0;
 }
 
-void gamecube_controller_delete(struct ControllerCommon *controller_common) {
+void gamecube_controller_delete(struct ControllerCommon* controller_common) {
 #ifdef _WIN64
   CloseHandle(controller_common->gamecube_controller.overlapped.hEvent);
   WinUsb_Free(controller_common->gamecube_controller.winusb_handle);
 #endif
 }
 
-static void add_gc_action(struct ControllerCommon *controller_common, uint_fast8_t button, bool pressed, bool held, bool released, float value) {
+static void add_gc_action(struct ControllerCommon* controller_common, uint_fast8_t button, bool pressed, bool held, bool released, float value) {
   if (controller_common->controller_action_list_size < 16) {
-    struct ControllerAction *controller_action = &(controller_common->controller_action_list[controller_common->controller_action_list_size]);
+    struct ControllerAction* controller_action = &(controller_common->controller_action_list[controller_common->controller_action_list_size]);
     controller_action->button = button;
     controller_action->pressed = pressed;
     controller_action->held = held;
@@ -273,7 +273,7 @@ static void add_gc_action(struct ControllerCommon *controller_common, uint_fast8
   }
 }
 
-static void gamecube_controller_process_controller_data(struct ControllerCommon *controller_common) {
+static void gamecube_controller_process_controller_data(struct ControllerCommon* controller_common) {
   memset(controller_common->controller_action_list, 0, sizeof(controller_common->controller_action_list));
   controller_common->controller_action_list_size = 0;
 #ifdef _WIN64
@@ -337,7 +337,7 @@ static void gamecube_controller_process_controller_data(struct ControllerCommon 
 #endif
 }
 
-void gamecube_controller_process_input(struct ControllerCommon *controller_common) {
+void gamecube_controller_process_input(struct ControllerCommon* controller_common) {
 #if defined(_WIN64)
   //  (enable ? 0x01 : 0x00)
   // UCHAR rumbleCommand[] = {0x11, 0x01, 0x00, 0x00, 0x00}; // Example command to enable rumble

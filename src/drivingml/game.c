@@ -219,22 +219,19 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   if (game->mario_speed < -20.0f)
     game->mario_speed = -20.0f;
 
-  // ------------------------------------------------------
   // Movement + Progress-Based Reward
-  // ------------------------------------------------------
-
   float heading = game->car_heading;
   vec3 forward_vel = {-cosf(heading), -sinf(heading), 0.0f};
 
   // Current marker position
   vec3 marker_pos = game->marker[game->current_marker]->sprite_common.position;
 
-  // ----- Distance BEFORE movement -----
+  // Distance BEFORE movement
   float dx_before = marker_pos.x - game->mario_position.x;
   float dy_before = marker_pos.y - game->mario_position.y;
   float dist_before = sqrtf(dx_before * dx_before + dy_before * dy_before);
 
-  // ----- Move car -----
+  //  Move car
   game->mario_position.x += forward_vel.x * game->mario_speed * delta_time;
   game->mario_position.y += forward_vel.y * game->mario_speed * delta_time;
 
@@ -244,27 +241,21 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
   // Update sprite + camera
   game->mario->sprite_common.position = game->mario_position;
-  game->player.look_at_pos = (vec3d){
-      .x = game->mario_position.x,
-      .y = game->mario_position.y,
-      .z = game->mario_position.z};
+  game->player.look_at_pos = (vec3d){.x = game->mario_position.x, .y = game->mario_position.y, .z = game->mario_position.z};
 
-  // ----- Distance AFTER movement -----
+  //  Distance AFTER movement
   float dx_after = marker_pos.x - game->mario_position.x;
   float dy_after = marker_pos.y - game->mario_position.y;
   float dist_after = sqrtf(dx_after * dx_after + dy_after * dy_after);
 
-  // ------------------------------------------------------
-  // Reward Calculation (Progress Only)
-  // ------------------------------------------------------
-
+  // Reward Calculation
   float reward = 0.0f;
 
   // Main dense signal: reward distance reduction
   float progress = dist_before - dist_after;
   reward += 0.1f * progress;
 
-  // ----- Checkpoint reward -----
+  //  Checkpoint reward
   const float checkpoint_radius = 20.0f;
 
   if (dist_after < checkpoint_radius) {
@@ -280,18 +271,38 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     }
   }
 
-  // ----- Penalize reversing -----
+  // Penalize reversing
   if (game->mario_speed < 0.0f) {
     reward -= 0.05f;
   }
 
-  // ----- Small time penalty -----
-  reward -= 0.001f;
+  // Small time penalty
+  reward -= 0.005f;
+
+  // Steering penalty
+  reward -= 0.01f * steer * steer;
+  reward -= 0.02f * fabsf(angle);
 
   vec3 next_marker = game->marker[game->current_marker]->sprite_common.position;
 
-  float dx_norm = (next_marker.x - game->mario_position.x) / 200.0f;
-  float dy_norm = (next_marker.y - game->mario_position.y) / 200.0f;
+  // World delta
+  float dxw = next_marker.x - game->mario_position.x;
+  float dyw = next_marker.y - game->mario_position.y;
+
+  // Car forward
+  float fx = -cosf(game->car_heading);
+  float fy = -sinf(game->car_heading);
+
+  // Car right
+  float rx = fy;
+  float ry = -fx;
+
+  // Project to car frame
+  float forward_err = dxw * fx + dyw * fy;
+  float right_err = dxw * rx + dyw * ry;
+
+  // Better normalization for 100x100 map
+  const float norm = 150.0f;
 
   struct Packet {
     float dx;
@@ -303,8 +314,9 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   };
 
   struct Packet packet;
-  packet.dx = dx_norm;
-  packet.dy = dy_norm;
+  // Normalize to roughly [-1,1]
+  packet.dx = forward_err / norm;
+  packet.dy = right_err / norm;
   packet.speed = game->mario_speed;
   packet.azimuth = heading;
   packet.reward = reward;

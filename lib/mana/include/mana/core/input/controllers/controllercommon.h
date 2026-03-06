@@ -257,7 +257,7 @@ struct ControllerAction {
   bool held;
   bool released;
   // Note: For pressure sensitive buttons and normalized joystick values?
-  float value
+  float value;
 };
 
 struct ControllerCommon {
