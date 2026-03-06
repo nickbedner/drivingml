@@ -132,11 +132,11 @@ static uint_fast8_t gamecube_controller_initialize_winusb(WINUSB_INTERFACE_HANDL
   dev_info_data.cbSize = sizeof(SP_DEVINFO_DATA);
   BOOL found = FALSE;
 
-  /*for (DWORD i = 0; SetupDiEnumDeviceInfo(h_dev_info, i, &dev_info_data) && !found; i++) {
+  for (DWORD i = 0; SetupDiEnumDeviceInfo(h_dev_info, i, &dev_info_data) && !found; i++) {
     TCHAR device_iD[MAX_DEVICE_ID_LEN];
     if (CM_Get_Device_ID(dev_info_data.DevInst, device_iD, MAX_DEVICE_ID_LEN, 0) == CR_SUCCESS) {
       // Check if this is the device we are looking for
-      if (_tcsstr(device_iD, TEXT("VID_057E&PID_0337"))) {
+      if (wcsstr(device_iD, L"VID_057E&PID_0337")) {
         found = TRUE;
         SP_DEVICE_INTERFACE_DATA interfaceData = {0};
         interfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
@@ -189,7 +189,7 @@ static uint_fast8_t gamecube_controller_initialize_winusb(WINUSB_INTERFACE_HANDL
           printf("Failed to get device interface detail. Error: %lu\n", GetLastError());
       }
     }
-  }*/
+  }
 
   if (!found) {
     printf("Device not found.\n");

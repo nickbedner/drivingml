@@ -24,7 +24,7 @@
 #include <direct.h>
 #include <initguid.h>
 #include <intrin.h>
-#include <tchar.h>
+#include <wchar.h>
 #include <windowsx.h>
 #else
 #include <unistd.h>
