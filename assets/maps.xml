@@ -1,0 +1,31 @@
+<game>
+	<map name="track1">
+		<track texture="/textures/map.png" x="0" y="0" scale="25"/>
+		<markers>
+			<marker x="-95" y="100"/>
+			<marker x="-95" y="50"/>
+			<marker x="-20" y="50"/>
+			<marker x="-95" y="20"/>
+			<marker x="-95" y="-20"/>
+			<marker x="-25" y="-20"/>
+			<marker x="-95" y="-50"/>
+			<marker x="-95" y="-90"/>
+			<marker x="140" y="-90"/>
+			<marker x="130" y="-30"/>
+			<marker x="65" y="-30"/>
+			<marker x="50" y="20"/>
+			<marker x="65" y="60"/>
+			<marker x="110" y="65"/>
+			<marker x="110" y="100"/>
+		</markers>
+	</map>
+	<map name="track2">
+		<track texture="/textures/circuit.png" x="0" y="0" scale="20"/>
+		<markers>
+			<marker x="-75" y="90"/>
+			<marker x="-90" y="-90"/>
+			<marker x="90" y="-90"/>
+			<marker x="75" y="90"/>
+		</markers>
+	</map>
+</game>

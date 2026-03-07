@@ -27,6 +27,78 @@ static inline void place_marker(struct Sprite* marker, float x, float y) {
   marker->sprite_common.rotation = mat4_to_quaternion(marker_rotation_0);
 }
 
+static void load_map_from_xml(struct Game* game, struct Mana* mana, const char* xml_path, const char* map_name) {
+  struct XmlNode* root = xml_parser_load_xml_file((char*)xml_path);
+  if (!root)
+    return;
+
+  struct XmlNode* map_node = xml_node_get_child_with_attribute(root, "map", "name", (char*)map_name);
+
+  if (!map_node) {
+    xml_parser_delete(root);
+    return;
+  }
+  // Track
+  struct XmlNode* track_node = xml_node_get_child(map_node, "track");
+  if (!track_node) {
+    xml_parser_delete(root);
+    return;
+  }
+
+  char* tex = xml_node_get_attribute(track_node, "texture");
+  char* sx = xml_node_get_attribute(track_node, "scale");
+  char* px = xml_node_get_attribute(track_node, "x");
+  char* py = xml_node_get_attribute(track_node, "y");
+  if (tex) {
+    wchar_t wtex[256];
+    mbstowcs(wtex, tex, 256);
+
+    game->track = sprite_manager_add_sprite(
+        &(game->sprite_manager),
+        &(mana->api.api_common),
+        wtex);
+
+    float scale = sx ? (float)atof(sx) : 25.0f;
+    float x = px ? (float)atof(px) : 0.0f;
+    float y = py ? (float)atof(py) : 0.0f;
+
+    game->track->sprite_common.position = (vec3){x, y, 0};
+    game->track->sprite_common.scale = (vec3){scale, scale, 0};
+
+    mat4 rot = mat4_rotate(MAT4_IDENTITY, M_PI, (vec3){0.0, 0.5, 0.0});
+    game->track->sprite_common.rotation = mat4_to_quaternion(rot);
+  }
+
+  // Markers
+  struct XmlNode* markers_node = xml_node_get_child(map_node, "markers");
+
+  if (markers_node) {
+    struct ArrayList* marker_list = xml_node_get_children(markers_node, "marker");
+
+    if (marker_list) {
+      size_t count = array_list_size(marker_list);
+      game->total_markers = (int)count;
+
+      for (size_t i = 0; i < count; i++) {
+        struct XmlNode* marker = (struct XmlNode*)array_list_get(marker_list, i);
+
+        char* x_str = xml_node_get_attribute(marker, "x");
+        char* y_str = xml_node_get_attribute(marker, "y");
+
+        if (!x_str || !y_str) continue;
+
+        float x = (float)atof(x_str);
+        float y = (float)atof(y_str);
+
+        game->marker[i] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
+        place_marker(game->marker[i], x, y);
+      }
+    }
+  }
+
+  xml_parser_delete(root);
+}
+
 void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->window = window;
 
@@ -49,20 +121,11 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 
   sprite_manager_init(&(game->sprite_manager), &(game->texture_manager), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 128);
 
-  game->mario_speed = 0.0f;
-
-  game->track = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/map.png");
-  game->track->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = 0};
-  game->track->sprite_common.scale = (vec3){.x = 25.0f, .y = 25.0f, .z = 0.0f};
-  mat4 track_rotation = mat4_rotate(MAT4_IDENTITY, M_PI, (vec3){.x = 0.0, .y = 0.5, .z = 0.0});
-  game->track->sprite_common.rotation = mat4_to_quaternion(track_rotation);
-
-  game->start = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/startfinish.png");
-  game->start->sprite_common.position = (vec3){.x = 0, .y = 100.0f, .z = 0.01f};
-  game->start->sprite_common.scale = (vec3){.x = 10.0f, .y = 10.0f, .z = 0.0f};
-  mat4 start_rotation = mat4_rotate(MAT4_IDENTITY, M_PI, (vec3){.x = 0.0, .y = 0.5, .z = 0.0});
-  start_rotation = mat4_rotate(start_rotation, -M_PI / 2, (vec3){.x = 0.0, .y = 0.0, .z = 0.5});
-  game->start->sprite_common.rotation = mat4_to_quaternion(start_rotation);
+  wchar_t wpath[MAX_LENGTH_OF_PATH] = {0};
+  swprintf(wpath, MAX_LENGTH_OF_PATH, L"%ls/maps.xml", mana->api.api_common.asset_directory);
+  char path[MAX_LENGTH_OF_PATH] = {0};
+  wcstombs(path, wpath, MAX_LENGTH_OF_PATH);
+  load_map_from_xml(game, mana, path, "track1");
 
   game->fence = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/fence.png");
   game->fence->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = 2.5f};
@@ -71,80 +134,60 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   fence_rotation = mat4_rotate(fence_rotation, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
   game->fence->sprite_common.rotation = mat4_to_quaternion(fence_rotation);
 
-  game->mario = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/rb.png");
-  game->mario_position = (vec3){.x = 10.0f, .y = 95.0f, .z = 0.75};
-  game->mario->sprite_common.position = game->mario_position;
-  game->mario->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
-  game->car_heading = 0.0f;  // M_PI / 2.0f;  // facing down -Y
+  // game->mario = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/rb.png");
+  // game->mario_position = (vec3){.x = 10.0f, .y = 95.0f, .z = 0.75};
+  // game->mario->sprite_common.position = game->mario_position;
+  // game->mario->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
+  // game->car_heading = 0.0f;  // M_PI / 2.0f;  // facing down -Y
 
-  game->total_markers = 15;
-  game->marker[0] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  place_marker(game->marker[0], -95.0f, 100.0f);
-  game->marker[1] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  place_marker(game->marker[1], -95.0f, 50.0f);
-  game->marker[2] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  place_marker(game->marker[2], -20.0f, 50.0f);
-  game->marker[3] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  place_marker(game->marker[3], -95.0f, 20.0f);
-  game->marker[4] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  place_marker(game->marker[4], -95.0f, -20.0f);
-  game->marker[5] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  place_marker(game->marker[5], -25.0f, -20.0f);
-  game->marker[6] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  place_marker(game->marker[6], -95.0f, -50.0f);
-  game->marker[7] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  place_marker(game->marker[7], -95.0f, -90.0f);
-  game->marker[8] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  place_marker(game->marker[8], 140.0f, -90.0f);
-  game->marker[9] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  place_marker(game->marker[9], 130.0f, -30.0f);
-  game->marker[10] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  place_marker(game->marker[10], 65.0f, -30.0f);
-  game->marker[11] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  place_marker(game->marker[11], 50.0f, 20.0f);
-  game->marker[12] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  place_marker(game->marker[12], 65.0f, 60.0f);
-  game->marker[13] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  place_marker(game->marker[13], 110.0f, 65.0f);
-  game->marker[14] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
-  place_marker(game->marker[14], 110.0f, 100.0f);
-  ///////////////////////////////////////
+  if (!EVAL_MODE) {
+    WSADATA wsa;
+    struct sockaddr_in server;
 
-  WSADATA wsa;
-  struct sockaddr_in server;
+    // Initialize Winsock
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+      printf("WSAStartup failed\n");
+      return;
+    }
 
-  // Initialize Winsock
-  if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
-    printf("WSAStartup failed\n");
-    return;
+    game->sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (game->sock == INVALID_SOCKET) {
+      printf("Socket creation failed\n");
+      WSACleanup();
+      return;
+    }
+
+    server.sin_family = AF_INET;
+    server.sin_port = htons(5000);
+    inet_pton(AF_INET, "127.0.0.1", &server.sin_addr);
+
+    if (connect(game->sock, (struct sockaddr*)&server, sizeof(server)) < 0) {
+      printf("Connection failed\n");
+      closesocket(game->sock);
+      WSACleanup();
+    }
   }
-
-  game->sock = socket(AF_INET, SOCK_STREAM, 0);
-  if (game->sock == INVALID_SOCKET) {
-    printf("Socket creation failed\n");
-    WSACleanup();
-    return;
-  }
-
-  server.sin_family = AF_INET;
-  server.sin_port = htons(5000);
-  inet_pton(AF_INET, "127.0.0.1", &server.sin_addr);
-
-  if (connect(game->sock, (struct sockaddr*)&server, sizeof(server)) < 0) {
-    printf("Connection failed\n");
-    closesocket(game->sock);
-    WSACleanup();
-    return;
-  }
-
-  game->last_action[0] = 0.0f;
-  game->last_action[1] = 0.0f;
 
   game->timer = 0;
+  game->start_timer = 0;
 
-  game->prev_y = game->mario_position.y;
-
-  game->current_marker = 0;
+  if (EVAL_MODE)
+    game->current_npcs += MAX_NPCS;
+  else
+    game->current_npcs += 1;
+  for (int npc_num = 0; npc_num < game->current_npcs; npc_num++) {
+    game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/rb.png");
+    game->npcs[npc_num].speed = 0.0f;
+    game->npcs[npc_num].position = (vec3){.x = 10.0f + (npc_num * 10), .y = 95.0f + ((npc_num % 4) * 3.0f), .z = 0.75};
+    game->npcs[npc_num].sprite->sprite_common.position = game->npcs[npc_num].position;
+    game->npcs[npc_num].sprite->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
+    game->npcs[npc_num].heading = 0.0f;  // M_PI / 2.0f;  // facing down -Y
+    game->npcs[npc_num].current_marker = 0;
+    game->npcs[npc_num].last_action[0] = 0.0f;
+    game->npcs[npc_num].last_action[1] = 0.0f;
+    game->npcs[npc_num].prev_y = game->npcs[npc_num].position.y;
+    load_ac_model("checkpoints/ac_weights.bin", &(game->npcs[npc_num].model));
+  }
 }
 
 void game_delete(struct Game* game, struct Mana* mana) {
@@ -179,188 +222,206 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     done = true;
   }
 
-  float steer = game->last_action[0];
-  float throttle = game->last_action[1];
-
-  if (steer > 1.0f)
-    steer = 1.0f;
-  if (steer < -1.0f)
-    steer = -1.0f;
-  if (throttle > 1.0f)
-    throttle = 1.0f;
-  if (throttle < -1.0f)
-    throttle = -1.0f;
-
-  // printf("Steer: %f, Throttle: %f\n", steer, throttle);
+  game->start_timer++;
+  bool start = false;
+  if (game->start_timer > 180)
+    start = true;
 
   float move_speed = 30.0f;
   float rotation_speed = 1.5f;  // - game->mario_speed / 50.0f;
 
-  for (size_t i = 0; i < input_manager->controllers.size; i++) {
-    struct Controller* controller = array_list_get(&(input_manager->controllers), i);
-    if (controller->controller_common.controller_type == CONTROLLER_KEYBOARD_MOUSE) {
-      struct KeyboardMouseController* keyboard_mouse_controller = &(controller->controller_common.keyboard_mouse_controller);
-      if (keyboard_mouse_controller->keys[KEY_W].state == PRESSED) {
-        throttle = 1.0f;
-      }
-      if (keyboard_mouse_controller->keys[KEY_S].state == PRESSED) {
-        throttle = -1.0f;
-      }
-      if (keyboard_mouse_controller->keys[KEY_A].state == PRESSED) {
-        steer = -1.0f;
-      }
-      if (keyboard_mouse_controller->keys[KEY_D].state == PRESSED) {
-        steer = 1.0f;
+  for (int ai_num = 0; ai_num < game->current_npcs; ai_num++) {
+    float steer = game->npcs[ai_num].last_action[0];
+    float throttle = game->npcs[ai_num].last_action[1];
+
+    if (steer > 1.0f)
+      steer = 1.0f;
+    if (steer < -1.0f)
+      steer = -1.0f;
+    if (throttle > 1.0f)
+      throttle = 1.0f;
+    if (throttle < -1.0f)
+      throttle = -1.0f;
+
+    // printf("Steer: %f, Throttle: %f\n", steer, throttle);
+
+    for (size_t i = 0; i < input_manager->controllers.size; i++) {
+      struct Controller* controller = array_list_get(&(input_manager->controllers), i);
+      if (controller->controller_common.controller_type == CONTROLLER_KEYBOARD_MOUSE) {
+        struct KeyboardMouseController* keyboard_mouse_controller = &(controller->controller_common.keyboard_mouse_controller);
+        if (keyboard_mouse_controller->keys[KEY_W].state == PRESSED) {
+          throttle = 1.0f;
+        }
+        if (keyboard_mouse_controller->keys[KEY_S].state == PRESSED) {
+          throttle = -1.0f;
+        }
+        if (keyboard_mouse_controller->keys[KEY_A].state == PRESSED) {
+          steer = -1.0f;
+        }
+        if (keyboard_mouse_controller->keys[KEY_D].state == PRESSED) {
+          steer = 1.0f;
+        }
       }
     }
-  }
 
-  float angle = -rotation_speed * delta_time * steer;
+    float angle = -rotation_speed * delta_time * steer;
 
-  // Update car heading
-  game->car_heading += angle;
-  game->player.camera.look_at_azimuth = game->car_heading + M_PI;
-  mat4 mario_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){0.5f, 0.0f, 0.0f});
-  mario_rotation = mat4_rotate(mario_rotation, -game->car_heading - M_PI / 2, (vec3){0.0f, 1.0f, 0.0f});
-  game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
-  game->mario_speed += throttle * move_speed * delta_time;
-
-  // Clamp speed
-  if (game->mario_speed > 50.0f)
-    game->mario_speed = 50.0f;
-  if (game->mario_speed < -20.0f)
-    game->mario_speed = -20.0f;
-
-  // Movement + Progress-Based Reward
-  float heading = game->car_heading;
-  vec3 forward_vel = {-cosf(heading), -sinf(heading), 0.0f};
-
-  // Current marker position
-  vec3 marker_pos = game->marker[game->current_marker]->sprite_common.position;
-
-  // Distance BEFORE movement
-  float dx_before = marker_pos.x - game->mario_position.x;
-  float dy_before = marker_pos.y - game->mario_position.y;
-  float dist_before = sqrtf(dx_before * dx_before + dy_before * dy_before);
-
-  //  Move car
-  game->mario_position.x += forward_vel.x * game->mario_speed * delta_time;
-  game->mario_position.y += forward_vel.y * game->mario_speed * delta_time;
-
-  // Apply damping
-  float damping = 2.0f;
-  game->mario_speed *= expf(-damping * delta_time);
-
-  // Update sprite + camera
-  game->mario->sprite_common.position = game->mario_position;
-  game->player.look_at_pos = (vec3d){.x = game->mario_position.x, .y = game->mario_position.y, .z = game->mario_position.z};
-
-  //  Distance AFTER movement
-  float dx_after = marker_pos.x - game->mario_position.x;
-  float dy_after = marker_pos.y - game->mario_position.y;
-  float dist_after = sqrtf(dx_after * dx_after + dy_after * dy_after);
-
-  // Reward Calculation
-  float reward = 0.0f;
-
-  // Main dense signal: reward distance reduction
-  float progress = dist_before - dist_after;
-  reward += 0.1f * progress;
-
-  //  Checkpoint reward
-  const float checkpoint_radius = 10.0f;
-
-  if (dist_after < checkpoint_radius) {
-    reward += 2.0f;  // checkpoint bonus
-
-    game->current_marker++;
-
-    if (game->current_marker >= game->total_markers) {
-      game->current_marker = 0;
-      reward += 5.0f;  // lap bonus
-      // done = true;
-      game->timer = 0;
-    }
-  }
-
-  // Penalize reversing
-  if (game->mario_speed < 0.0f) {
-    reward -= 0.05f;
-  }
-
-  // Small time penalty
-  reward -= 0.005f;
-
-  // Steering penalty
-  reward -= 0.01f * steer * steer;
-  reward -= 0.02f * fabsf(angle);
-
-  vec3 next_marker = game->marker[game->current_marker]->sprite_common.position;
-
-  // World delta
-  float dxw = next_marker.x - game->mario_position.x;
-  float dyw = next_marker.y - game->mario_position.y;
-
-  // Car forward
-  float fx = -cosf(game->car_heading);
-  float fy = -sinf(game->car_heading);
-
-  // Car right
-  float rx = fy;
-  float ry = -fx;
-
-  // Project to car frame
-  float forward_err = dxw * fx + dyw * fy;
-  float right_err = dxw * rx + dyw * ry;
-
-  // Better normalization for 100x100 map
-  const float norm = 150.0f;
-
-  struct Packet {
-    float dx;
-    float dy;
-    float speed;
-    float azimuth;
-    float reward;
-    int done;
-  };
-
-  struct Packet packet;
-  // Normalize to roughly [-1,1]
-  packet.dx = forward_err / norm;
-  packet.dy = right_err / norm;
-  packet.speed = game->mario_speed;
-  packet.azimuth = heading;
-  packet.reward = reward;
-  packet.done = done;
-
-  send(game->sock, (char*)&packet, sizeof(packet), 0);
-
-  if (recv_all(game->sock, (char*)game->last_action, sizeof(game->last_action)) <= 0) {
-    game->last_action[0] = 0.0f;
-    game->last_action[1] = 0.0f;
-  }
-
-  player_update(&(game->player), input_manager_get_controller_actions(input_manager), input_manager_get_controller_action_list_length(input_manager));
-
-  if (done) {
-    game->timer = 0;
-
-    game->mario_speed = 0.0f;
-    game->mario_position = (vec3){.x = 10.0f, .y = 95.0f, .z = 0.75};
-    game->mario->sprite_common.position = game->mario_position;
-    game->mario->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
-    game->car_heading = 0.0f;  // M_PI / 2.0f;  // facing down -Y
+    // Update car heading
+    game->npcs[ai_num].heading += angle;
+    game->player.camera.look_at_azimuth = game->npcs[ai_num].heading + M_PI;
     mat4 mario_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){0.5f, 0.0f, 0.0f});
-    mario_rotation = mat4_rotate(mario_rotation, -game->car_heading + M_PI / 2, (vec3){0.0f, 1.0f, 0.0f});
-    game->mario->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
+    mario_rotation = mat4_rotate(mario_rotation, -game->npcs[ai_num].heading - M_PI / 2, (vec3){0.0f, 1.0f, 0.0f});
+    game->npcs[ai_num].sprite->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
+    game->npcs[ai_num].speed += throttle * move_speed * delta_time;
 
-    game->last_action[0] = 0.0f;
-    game->last_action[1] = 0.0f;
-    game->prev_y = game->mario_position.y;
+    // Clamp speed
+    if (game->npcs[ai_num].speed > 50.0f)
+      game->npcs[ai_num].speed = 50.0f;
+    if (game->npcs[ai_num].speed < -20.0f)
+      game->npcs[ai_num].speed = -20.0f;
 
-    game->current_marker = 0;
+    // Movement + Progress-Based Reward
+    float heading = game->npcs[ai_num].heading;
+    vec3 forward_vel = {-cosf(heading), -sinf(heading), 0.0f};
+
+    // Current marker position
+    vec3 marker_pos = game->marker[game->npcs[ai_num].current_marker]->sprite_common.position;
+
+    // Distance BEFORE movement
+    float dx_before = marker_pos.x - game->npcs[ai_num].position.x;
+    float dy_before = marker_pos.y - game->npcs[ai_num].position.y;
+    float dist_before = sqrtf(dx_before * dx_before + dy_before * dy_before);
+
+    //  Move car
+    game->npcs[ai_num].position.x += forward_vel.x * game->npcs[ai_num].speed * delta_time;
+    game->npcs[ai_num].position.y += forward_vel.y * game->npcs[ai_num].speed * delta_time;
+
+    // Apply damping
+    float damping = 2.0f;
+    game->npcs[ai_num].speed *= expf(-damping * delta_time);
+
+    // Update sprite + camera
+    game->npcs[ai_num].sprite->sprite_common.position = game->npcs[ai_num].position;
+    game->player.look_at_pos = (vec3d){.x = game->npcs[ai_num].position.x, .y = game->npcs[ai_num].position.y, .z = game->npcs[ai_num].position.z};
+
+    //  Distance AFTER movement
+    float dx_after = marker_pos.x - game->npcs[ai_num].position.x;
+    float dy_after = marker_pos.y - game->npcs[ai_num].position.y;
+    float dist_after = sqrtf(dx_after * dx_after + dy_after * dy_after);
+
+    // Reward Calculation
+    float reward = 0.0f;
+
+    // Main dense signal: reward distance reduction
+    float progress = dist_before - dist_after;
+    reward += 0.1f * progress;
+
+    //  Checkpoint reward
+    const float checkpoint_radius = 15.0f;
+
+    if (dist_after < checkpoint_radius) {
+      reward += 2.0f;  // checkpoint bonus
+
+      game->npcs[ai_num].current_marker++;
+
+      if (game->npcs[ai_num].current_marker >= game->total_markers) {
+        game->npcs[ai_num].current_marker = 0;
+        reward += 5.0f;  // lap bonus
+        // done = true;
+        game->timer = 0;
+      }
+    }
+
+    // Penalize reversing
+    if (game->npcs[ai_num].speed < 0.0f) {
+      reward -= 0.05f;
+    }
+
+    // Small time penalty
+    reward -= 0.005f;
+
+    // Steering penalty
+    reward -= 0.01f * steer * steer;
+    reward -= 0.02f * fabsf(angle);
+
+    vec3 next_marker = game->marker[game->npcs[ai_num].current_marker]->sprite_common.position;
+
+    // World delta
+    float dxw = next_marker.x - game->npcs[ai_num].position.x;
+    float dyw = next_marker.y - game->npcs[ai_num].position.y;
+
+    // Car forward
+    float fx = -cosf(game->npcs[ai_num].heading);
+    float fy = -sinf(game->npcs[ai_num].heading);
+
+    // Car right
+    float rx = fy;
+    float ry = -fx;
+
+    // Project to car frame
+    float forward_err = dxw * fx + dyw * fy;
+    float right_err = dxw * rx + dyw * ry;
+
+    // Better normalization for 100x100 map
+    const float norm = 150.0f;
+
+    if (!EVAL_MODE) {
+      struct Packet {
+        float dx;
+        float dy;
+        float speed;
+        float azimuth;
+        float reward;
+        int done;
+      };
+
+      struct Packet packet;
+      // Normalize to roughly [-1,1]
+      packet.dx = forward_err / norm;
+      packet.dy = right_err / norm;
+      packet.speed = game->npcs[ai_num].speed;
+      packet.azimuth = heading;
+      packet.reward = reward;
+      packet.done = done;
+
+      send(game->sock, (char*)&packet, sizeof(packet), 0);
+
+      if (recv_all(game->sock, (char*)game->npcs[ai_num].last_action, sizeof(game->npcs[ai_num].last_action)) <= 0) {
+        game->npcs[ai_num].last_action[0] = 0.0f;
+        game->npcs[ai_num].last_action[1] = 0.0f;
+      }
+
+      if (done) {
+        game->timer = 0;
+
+        game->npcs[ai_num].speed = 0.0f;
+        game->npcs[ai_num].position = (vec3){.x = 10.0f, .y = 95.0f, .z = 0.75};
+        game->npcs[ai_num].sprite->sprite_common.position = game->npcs[ai_num].position;
+        game->npcs[ai_num].sprite->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
+        game->npcs[ai_num].heading = 0.0f;  // M_PI / 2.0f;  // facing down -Y
+        mat4 mario_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){0.5f, 0.0f, 0.0f});
+        mario_rotation = mat4_rotate(mario_rotation, -game->npcs[ai_num].heading + M_PI / 2, (vec3){0.0f, 1.0f, 0.0f});
+        game->npcs[ai_num].sprite->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
+
+        game->npcs[ai_num].last_action[0] = 0.0f;
+        game->npcs[ai_num].last_action[1] = 0.0f;
+        game->npcs[ai_num].prev_y = game->npcs[ai_num].position.y;
+
+        game->npcs[ai_num].current_marker = 0;
+      }
+    } else {
+      if (start == true) {
+        float value;
+        // Match Python preprocessing exactly:
+        // speed = tanh(speed / 50.0)
+        // azimuth -> (sin, cos)
+        float speed_norm = tanhf(game->npcs[ai_num].speed / 50.0f);
+        float game_state[5] = {forward_err / norm, right_err / norm, speed_norm, sinf(heading), cosf(heading)};
+        ac_forward(&(game->npcs[ai_num].model), game_state, game->npcs[ai_num].last_action, &value);
+      }
+    }
   }
+  player_update(&(game->player), input_manager_get_controller_actions(input_manager), input_manager_get_controller_action_list_length(input_manager));
 
   // Make this always facing toward the camera
   for (int marker_num = 0; marker_num < game->total_markers; marker_num++) {

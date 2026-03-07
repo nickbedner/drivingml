@@ -14,9 +14,14 @@ PORT = 5000
 
 # Set to False to resume training
 EVAL_MODE = False
+# If True: overwrite single checkpoint
+SAVE_ONLY_LATEST = True
+# Export .bin weights for C engine
+EXPORT_WEIGHTS = True
+EXPORT_PATH = "build/checkpoints"
 
 # Create checkpoint directory to store trained models
-os.makedirs("checkpoints", exist_ok=True)
+os.makedirs(EXPORT_PATH, exist_ok=True)
 
 def gaussian_log_prob(u, mean, log_std):
     # u, mean, log_std: [..., act_dim]
@@ -27,6 +32,41 @@ def gaussian_log_prob(u, mean, log_std):
 def tanh_correction(a, eps=1e-6):
     # a is tanh(u) in [-1,1]
     return torch.log(1 - a * a + eps).sum(-1)
+
+def export_weights_bin(model, log_std, path):
+    """
+    Export model weights to a simple float32 binary format
+    readable from pure C with fread().
+    """
+    sd = model.state_dict()
+
+    def write_tensor(f, t):
+        t = t.detach().cpu().contiguous().view(-1).to(torch.float32)
+        f.write(struct.pack("<%sf" % t.numel(), *t.numpy().tolist()))
+
+    with open(path, "wb") as f:
+        # magic + dims(for sanity checking in C)
+        f.write(b"ACv1")
+        f.write(struct.pack("<5i", 5, 128, 128, 2, 1))
+
+        # shared layers
+        write_tensor(f, sd["shared.0.weight"])
+        write_tensor(f, sd["shared.0.bias"])
+        write_tensor(f, sd["shared.2.weight"])
+        write_tensor(f, sd["shared.2.bias"])
+
+        # actor
+        write_tensor(f, sd["actor.weight"])
+        write_tensor(f, sd["actor.bias"])
+
+        # critic
+        write_tensor(f, sd["critic.weight"])
+        write_tensor(f, sd["critic.bias"])
+
+        # log_std (optional but useful if you later want stochastic eval)
+        write_tensor(f, log_std)
+
+    print(f"[EXPORT] Weights exported to {path}")
 
 # Model replaced with an actor-critic network
 class ActorCritic(nn.Module):
@@ -96,7 +136,7 @@ old_log_probs = []
 us = []
 
 # Resume training from the latest checkpoint if it exists
-checkpoint_path = "checkpoints/latest_model.pt"
+checkpoint_path = EXPORT_PATH + "/latest_model.pt"
 
 if os.path.exists(checkpoint_path):
     checkpoint = torch.load(checkpoint_path)
@@ -279,9 +319,18 @@ while True:
                 "episode": episode
             }
 
-            torch.save(checkpoint, "checkpoints/latest_model.pt")
-            torch.save(checkpoint, f"checkpoints/model_ep_{episode}.pt")
-            print(f"Checkpoint saved at episode {episode}")
+            # Always update latest checkpoint
+            torch.save(checkpoint, EXPORT_PATH + "/latest_model.pt")
+
+            # Optionally also save per-episode snapshots
+            if not SAVE_ONLY_LATEST:
+                torch.save(checkpoint, EXPORT_PATH + f"/model_ep_{episode}.pt")
+
+            print(f"Checkpoint updated at episode {episode}")
+
+            # Export weights for C engine
+            if EXPORT_WEIGHTS:
+                export_weights_bin(model, log_std.detach().cpu(), EXPORT_PATH + "/ac_weights.bin")
 
         # Clear rollout buffers
         states.clear()
