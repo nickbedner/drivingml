@@ -13,7 +13,7 @@
 #include "drivingml/core/ac_model.h"
 #include "drivingml/core/player.h"
 
-#define EVAL_MODE false
+#define EVAL_MODE true
 
 #define MAX_MARKERS 32
 #define MAX_NPCS 8

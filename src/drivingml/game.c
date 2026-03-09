@@ -125,7 +125,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   swprintf(wpath, MAX_LENGTH_OF_PATH, L"%ls/maps.xml", mana->api.api_common.asset_directory);
   char path[MAX_LENGTH_OF_PATH] = {0};
   wcstombs(path, wpath, MAX_LENGTH_OF_PATH);
-  load_map_from_xml(game, mana, path, "track1");
+  load_map_from_xml(game, mana, path, "track2");
 
   game->fence = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/fence.png");
   game->fence->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = 2.5f};
@@ -280,7 +280,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     if (game->npcs[ai_num].speed < -20.0f)
       game->npcs[ai_num].speed = -20.0f;
 
-    // Movement + Progress-Based Reward
+    // Movement + progress based reward
     float heading = game->npcs[ai_num].heading;
     vec3 forward_vel = {-cosf(heading), -sinf(heading), 0.0f};
 

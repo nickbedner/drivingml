@@ -41,11 +41,7 @@ int load_ac_model(const char* path, ACModel* m) {
   return 1;
 }
 
-void linear(
-    const float* W, const float* b,
-    int in, int out,
-    const float* x,
-    float* y) {
+void linear(const float* W, const float* b, int in, int out, const float* x, float* y) {
   for (int o = 0; o < out; o++) {
     float sum = b[o];
     const float* row = W + o * in;
@@ -60,11 +56,7 @@ void relu(float* x, int n) {
     if (x[i] < 0.0f) x[i] = 0.0f;
 }
 
-void ac_forward(
-    const ACModel* m,
-    const float state[5],
-    float action_out[2],
-    float* value_out) {
+void ac_forward(const ACModel* m, const float state[5], float action_out[2], float* value_out) {
   float h1[H1];
   float h2[H2];
   float mean[ACT];
@@ -83,7 +75,7 @@ void ac_forward(
   for (int i = 0; i < ACT; i++) {
     action_out[i] = tanhf(mean[i]);
 
-    // same clamp as python
+    // Same clamp as python
     const float eps = 1e-6f;
     if (action_out[i] < -1.0f + eps) action_out[i] = -1.0f + eps;
     if (action_out[i] > 1.0f - eps) action_out[i] = 1.0f - eps;
