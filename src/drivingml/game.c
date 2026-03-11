@@ -125,7 +125,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   swprintf(wpath, MAX_LENGTH_OF_PATH, L"%ls/maps.xml", mana->api.api_common.asset_directory);
   char path[MAX_LENGTH_OF_PATH] = {0};
   wcstombs(path, wpath, MAX_LENGTH_OF_PATH);
-  load_map_from_xml(game, mana, path, "track2");
+  load_map_from_xml(game, mana, path, "track1");
 
   game->fence = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/fence.png");
   game->fence->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = 2.5f};

@@ -114,10 +114,13 @@ lr = 1e-4
 # Discount factor, higher places bigger importance on future rewards vs immediate, 1 is very high, 0 is very low
 gamma = 0.99
 # How many state steps to experience before updating the nueral network
+# A rollout is when the agent runs in the environment and collects experience
+# Take actions, observe states, get rewards, and store them
+# After the rollout is finished, the model trains using that collected data.
 rollout_length = 512
 # Counter to track how many updates we've done
 update_count = 0
-# Coutner to track episode num
+# Counter to track episode num
 episode = 0
 # Buffers
 # Past reward values
@@ -282,40 +285,53 @@ while True:
         # Checks how much the new policy changed from the old one and limits the change to keep learning stable
         # Then it updates the actor and critic
         for _ in range(ppo_epochs):
-            # TODO: Doc this
+            # Get action from actor and new_values from critic
             mean, new_values = model(states_tensor)
-
+            # Shape matching and convert into the real standard deviation for the Gaussian
             log_std_exp = log_std.expand_as(mean)
             std = log_std_exp.exp()
 
-            u_fixed = us_tensor  # fixed rollout sample
+            # Actions taken during rollout
+            u_fixed = us_tensor
+            # Squash action into -1 to 1 range
             a_fixed = torch.tanh(u_fixed)
 
+            # Recompute how past actions would be under current policy
             new_log_probs = gaussian_log_prob(u_fixed, mean, log_std_exp) - tanh_correction(a_fixed)
 
+            # Measures how new policy has changed compared to old ones with the same actions
             ratio = torch.exp(new_log_probs - old_log_probs_tensor)
+            # Prevents exploding from extreme values
             ratio = torch.clamp(ratio, 0.0, 5.0)
+            # Limits the amount of change
             clipped_ratio = torch.clamp(ratio, 1.0 - clip_eps, 1.0 + clip_eps)
 
+            # Update actor using PPO clipped rules
             policy_loss = -torch.min(ratio * advantages, clipped_ratio * advantages).mean()
+            # Trains critic to match true returns
             value_loss = nn.SmoothL1Loss()(new_values.squeeze(-1), returns)
 
+            # Encourage randomness so agent keeps exploring
             base_entropy = D.Normal(mean, std).entropy().sum(-1).mean()
 
+            # All parts are combined into a singular loss
             loss = policy_loss + value_loss_coef * value_loss - entropy_coef * base_entropy
 
+            # Zeroes our aka clears old gradients from the previous update
             optimizer.zero_grad()
+            # Computes how each parameter should change to limit loss
             loss.backward()
+            # Limits update size for stability
             torch.nn.utils.clip_grad_norm_(list(model.parameters()) + [log_std], grad_clip_norm)
+            # Applies update and changes models weights
             optimizer.step()
-
         update_count += 1
 
         # This keeps log_std within a safe range, stops the randomness from getting too big or too small
         with torch.no_grad():
             log_std.clamp_(min=-2.0, max=0.5)
 
-        # Debug (only print at episode end)
+        # Print at episode end
         if done == 1:
             print(
                 f"Episode {episode} | "
