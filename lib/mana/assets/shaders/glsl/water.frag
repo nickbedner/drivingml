@@ -19,8 +19,8 @@ void main() {
 
   vec2 baseUV = frag_uv * tiling;
 
-  vec2 uv1 = baseUV + vec2(time * 0.05, time * 0.03);
-  vec2 uv2 = baseUV + vec2(-time * 0.08, time * 0.02);
+  vec2 uv1 = baseUV + vec2(time * 0.05, time * 0.05);
+  vec2 uv2 = baseUV + vec2(0.0, time * 0.05);
 
   //float s1 = texture(wave_tex, uv1, 0.0).r;
   //float s2 = texture(wave_tex, uv2, -0.75).r;
@@ -30,16 +30,16 @@ void main() {
   //v /= 3.0;
   ////v = 1.0 - v;
 
-  float s1 = textureLod(wave_tex, uv1, 2.0).a;
+  float s1 = textureLod(wave_tex, uv1, 2.0).r;
   s1 *= s1;
-  float s2 = textureLod(wave_tex, uv2, 2.0).a;
+  float s2 = textureLod(wave_tex, uv2, 2.0).r;
   s2 *= s2;
+  float v = s1 + (s2 * (1.0 - s1));
+ //float v = s1 + s2 * 2.0;
+ //v /= 2.0;
+ //v = mod(v, 1.0);   // wrap instead of clamp
 
-  float v = s1 + s2 * 2.0;
-  //v = 1.0 - v;
-
-  v /= 2.0;
-
-  out_color = vec4(v, v, v, 1.0);
+  //out_color = vec4(1.0, 1.0, 1.0, v);
+  out_color = vec4(s1, s1, s1, 1.0);
   out_normal = vec4(0.0);
 }
