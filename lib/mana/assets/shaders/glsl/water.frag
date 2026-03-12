@@ -40,6 +40,6 @@ void main() {
  //v = mod(v, 1.0);   // wrap instead of clamp
 
   //out_color = vec4(1.0, 1.0, 1.0, v);
-  out_color = vec4(s1, s1, s1, 1.0);
+  out_color = vec4(v, v, v, 1.0);
   out_normal = vec4(0.0);
 }
