@@ -121,7 +121,7 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
     color_blend_attachment[pipeline_attachment_num].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     color_blend_attachment[pipeline_attachment_num].blendEnable = should_blend;
 
-    color_blend_attachment[pipeline_attachment_num].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    color_blend_attachment[pipeline_attachment_num].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
     color_blend_attachment[pipeline_attachment_num].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
     color_blend_attachment[pipeline_attachment_num].colorBlendOp = VK_BLEND_OP_ADD;
 

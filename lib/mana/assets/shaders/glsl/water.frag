@@ -15,7 +15,7 @@ layout(location = 1) out vec4 out_normal;
 
 void main() {
   float time = wp.params0.x;
-  float tiling = 8.0;
+  float tiling = 32.0;
 
   vec2 baseUV = frag_uv * tiling;
 
@@ -30,16 +30,32 @@ void main() {
   //v /= 3.0;
   ////v = 1.0 - v;
 
-  float s1 = textureLod(wave_tex, uv1, 2.0).r;
-  s1 *= s1;
-  float s2 = textureLod(wave_tex, uv2, 2.0).r;
-  s2 *= s2;
-  float v = s1 + (s2 * (1.0 - s1));
- //float v = s1 + s2 * 2.0;
- //v /= 2.0;
- //v = mod(v, 1.0);   // wrap instead of clamp
+//////////////////////////
+//  float s1 = textureLod(wave_tex, uv1, 2.0).r;
+//  s1 *= s1;
+//  float s2 = textureLod(wave_tex, uv2, 2.0).r;
+//  s2 *= s2;
+//  float v = s1 + (s2 * (1.0 - s1)) * 1.33333; // blend the two layers together, giving more weight to the second layer where the first layer is weaker
+// //float v = s1 + s2 * 2.0;
+// //v /= 2.0;
+//  v = mod(v, 1.0);   // wrap instead of clamp
+//
+//  //out_color = vec4(1.0, 1.0, 1.0, v);
+//  out_color = vec4(v, v, v, 1.0);
+//  out_normal = vec4(0.0);
+//
+///////////////////////
 
-  //out_color = vec4(1.0, 1.0, 1.0, v);
-  out_color = vec4(v, v, v, 1.0);
+  float s1 = texture(wave_tex, uv1).r;
+  float s2 = texture(wave_tex, uv2).r;
+  float v = s1 + s2 * 2;
+
+// Adjust overall intensity
+  v *= 0.42;
+
+ // Wrap instead of clamp
+  v = fract(v);
+
+  out_color = vec4(v, v, v, v);
   out_normal = vec4(0.0);
 }
