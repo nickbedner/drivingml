@@ -15,7 +15,7 @@ layout(location = 1) out vec4 out_normal;
 
 void main() {
   float time = wp.params0.x;
-  float tiling = 16.0;
+  float tiling = 8.0;
 
   vec2 baseUV = frag_uv * tiling;
 
@@ -31,13 +31,15 @@ void main() {
   ////v = 1.0 - v;
 
   float s1 = textureLod(wave_tex, uv1, 2.0).a;
-  //float s2 = textureLod(wave_tex, uv2, 3.0).r;
+  s1 *= s1;
+  float s2 = textureLod(wave_tex, uv2, 2.0).a;
+  s2 *= s2;
 
-  float v = s1;//+ s2 * 2.0;
+  float v = s1 + s2 * 2.0;
   //v = 1.0 - v;
 
-  //v /= 2.0;
+  v /= 2.0;
 
-  out_color = vec4(v * v, v * v, v * v, 1.0);
+  out_color = vec4(v, v, v, 1.0);
   out_normal = vec4(0.0);
 }
