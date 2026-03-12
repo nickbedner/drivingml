@@ -25,8 +25,11 @@ void main() {
   float s1 = textureLod(wave_tex, uv1, 2.0).r;
   float s2 = textureLod(wave_tex, uv2, 2.0).r;
 
-  float v = (s1 + s2) * 0.5;
+  float v = s1 + s2 * 2.0;
 
-  out_color = vec4(v, v, v, 1.0);
+  v /= 2.0;
+  v = 1.0 - v;
+
+  out_color = vec4(1.0, 1.0, 1.0, v);
   out_normal = vec4(0.0);
 }
