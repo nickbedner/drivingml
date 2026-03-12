@@ -190,8 +190,8 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 
   water_shader_init(&(game->water_shader), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 3);
   water_init(&(game->water), &(mana->api.api_common), &(game->water_shader.shader), texture_manager_get(game->sprite_manager.sprite_manager_common.texture_manager, L"/textures/waterm1.png"));
-  game->water.water_common.position = (vec3){0.0f, 0.0f, 0.0f};
-  game->water.water_common.scale = (vec3){256.0f, 256.0f, 1.0f};
+  game->water.water_common.position = (vec3){0.0f, 0.0f, -5.0f};
+  game->water.water_common.scale = (vec3){1024.0f, 1024.0f, 1.0f};
 }
 
 void game_delete(struct Game* game, struct Mana* mana) {

@@ -15,7 +15,7 @@ layout(location = 1) out vec4 out_normal;
 
 void main() {
   float time = wp.params0.x;
-  float tiling = 32.0;
+  float tiling = 128.0;
 
   vec2 baseUV = frag_uv * tiling;
 
@@ -46,15 +46,23 @@ void main() {
 //
 ///////////////////////
 
-  float s1 = texture(wave_tex, uv1).r;
-  float s2 = texture(wave_tex, uv2).r;
+  // Pass it in from CPU
+  float bias = wp.params1.x;
+
+  float s1 = texture(wave_tex, uv1, bias).r;
+  float s2 = texture(wave_tex, uv2, bias - 0.75).r;
+
   float v = s1 + s2 * 2;
 
-// Adjust overall intensity
-  v *= 0.42;
+  // Adjust overall intensity
+  v *= 0.5;
 
  // Wrap instead of clamp
   v = fract(v);
+
+  // Final alpha test
+  if(v > 0.13 && v < 0.92)
+    discard;
 
   out_color = vec4(v, v, v, v);
   out_normal = vec4(0.0);

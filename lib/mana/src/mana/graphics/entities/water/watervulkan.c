@@ -70,7 +70,9 @@ void water_vulkan_update_uniforms(struct WaterCommon* water_common, struct APICo
   frag_ubo.params0.z = 0.0f;  // unused
   frag_ubo.params0.w = 0.0f;  // unused
   frag_ubo.params1 = (vec4){0};
-  frag_ubo.params1.x = 3.0f;
+  float base_height = 548.0f;
+  float bias = log2f((float)height / base_height);
+  frag_ubo.params1.x = bias;
 
   vkMapMemory(device, water_common->water_vulkan.fragment_uniform_memory, 0, sizeof(frag_ubo), 0, &data);
   memcpy(data, &frag_ubo, sizeof(frag_ubo));
