@@ -17,7 +17,7 @@ static unsigned char paeth_predictor(int a, int b, int c) {
 }
 
 // Function to reverse PNG filtering for a single scanline
-static void unfilter_scanline(uint8_t *recon, const uint8_t *scanline, const uint8_t *prev, size_t bytewidth, size_t length, uint8_t filter_type) {
+static void unfilter_scanline(uint8_t* recon, const uint8_t* scanline, const uint8_t* prev, size_t bytewidth, size_t length, uint8_t filter_type) {
   size_t i;
 
   switch (filter_type) {
@@ -79,12 +79,12 @@ static void unfilter_scanline(uint8_t *recon, const uint8_t *scanline, const uin
 }
 
 // Main function to reverse PNG filtering for the whole image
-static uint8_t *reverse_png_filtering(uint8_t *data, uint32_t width, uint32_t height, uint32_t bpp, uint8_t color_type) {
+static uint8_t* reverse_png_filtering(uint8_t* data, uint32_t width, uint32_t height, uint32_t bpp, uint8_t color_type) {
   size_t linebytes = width * bpp;
 
-  uint8_t *prev_line = NULL;
-  uint8_t *pixels = calloc(1, linebytes * height);
-  uint8_t *start_pos = pixels;
+  uint8_t* prev_line = NULL;
+  uint8_t* pixels = calloc(1, linebytes * height);
+  uint8_t* start_pos = pixels;
   if (!pixels) {
     fprintf(stderr, "Memory allocation failed\n");
     exit(EXIT_FAILURE);
@@ -123,8 +123,8 @@ static uint8_t *reverse_png_filtering(uint8_t *data, uint32_t width, uint32_t he
   //   pixels = new_pixels_start_pos;
   // } else if (color_type == 2) {
   if (color_type == 2) {
-    uint8_t *new_pixels = calloc(1, width * height * 4);
-    uint8_t *new_pixels_start_pos = new_pixels;
+    uint8_t* new_pixels = calloc(1, width * height * 4);
+    uint8_t* new_pixels_start_pos = new_pixels;
     for (uint32_t y = 0; y < height; y++) {
       for (uint32_t x = 0; x < width; x++) {
         new_pixels[0] = pixels[0];
@@ -181,7 +181,7 @@ static uint16_t calculate_wrap_around(uint16_t val1, uint16_t val2, uint8_t byte
 }
 
 // Function to reverse PNG filtering for a single scanline
-static void unfilter_scanline_16bit(uint16_t *recon, const uint16_t *scanline, const uint16_t *prev, const uint8_t *prev_byte_line, uint8_t *byte_pixels, uint8_t *byte_data, size_t shortwidth, size_t length, uint8_t filter_type) {
+static void unfilter_scanline_16bit(uint16_t* recon, const uint16_t* scanline, const uint16_t* prev, const uint8_t* prev_byte_line, uint8_t* byte_pixels, uint8_t* byte_data, size_t shortwidth, size_t length, uint8_t filter_type) {
   size_t i;
 
   switch (filter_type) {
@@ -264,33 +264,33 @@ static void unfilter_scanline_16bit(uint16_t *recon, const uint16_t *scanline, c
   }
 }
 
-static uint16_t *reverse_png_filtering_16bit(uint8_t *data, uint32_t width, uint32_t height, uint32_t bpp, uint8_t color_type) {
+static uint16_t* reverse_png_filtering_16bit(uint8_t* data, uint32_t width, uint32_t height, uint32_t bpp, uint8_t color_type) {
   size_t linebytes = width * bpp;  // Bytes per line
 
-  uint16_t *prev_line = NULL;
-  uint8_t *prev_byte_line = NULL;
+  uint16_t* prev_line = NULL;
+  uint8_t* prev_byte_line = NULL;
   // uint16_t *pixels = calloc(1, linebytes * height);
   // uint16_t *pixels = (uint16_t *)_aligned_malloc(linebytes * height, alignof(uint16_t));
   // uint16_t *aligned_data = (uint16_t *)_aligned_malloc(linebytes * height, alignof(uint16_t));
   // uint8_t *byte_pixels = (uint8_t *)_aligned_malloc((linebytes * height) / 2, alignof(uint8_t));
   // uint8_t *byte_data = (uint8_t *)_aligned_malloc((linebytes * height) / 2, alignof(uint8_t));
-  uint16_t *pixels = (uint16_t *)malloc(linebytes * height);
-  uint16_t *aligned_data = (uint16_t *)malloc(linebytes * height);
-  uint8_t *byte_pixels = (uint8_t *)malloc((linebytes * height) / 2);
-  uint8_t *byte_data = (uint8_t *)malloc((linebytes * height) / 2);
-  uint16_t *start_pos = pixels;
-  uint16_t *data_start_pos = aligned_data;
-  uint8_t *byte_pixels_start_pos = byte_pixels;
-  uint8_t *byte_data_start_pos = byte_data;
+  uint16_t* pixels = (uint16_t*)malloc(linebytes * height);
+  uint16_t* aligned_data = (uint16_t*)malloc(linebytes * height);
+  uint8_t* byte_pixels = (uint8_t*)malloc((linebytes * height) / 2);
+  uint8_t* byte_data = (uint8_t*)malloc((linebytes * height) / 2);
+  uint16_t* start_pos = pixels;
+  uint16_t* data_start_pos = aligned_data;
+  uint8_t* byte_pixels_start_pos = byte_pixels;
+  uint8_t* byte_data_start_pos = byte_data;
 
   // memset(pixels, 0, linebytes * height);
   // memset(aligned_data, 0, linebytes * height);
   // memset(byte_data, 0, (linebytes * height) / 2);
   // memset(byte_pixels, 0, (linebytes * height) / 2);
 
-  uint8_t *data_start = data;
+  uint8_t* data_start = data;
   for (uint32_t y = 0; y < height; y++) {
-    uint8_t *pixel_data = data_start + 1;
+    uint8_t* pixel_data = data_start + 1;
 
     for (uint32_t i = 0; i < width * bpp / 2; i++) {
       uint8_t high_byte, low_byte;
@@ -332,8 +332,8 @@ static uint16_t *reverse_png_filtering_16bit(uint8_t *data, uint32_t width, uint
   pixels = start_pos;
 
   if (color_type == 0) {
-    uint16_t *new_pixels = calloc(1, width * height * 8);
-    uint16_t *new_pixels_start_pos = new_pixels;
+    uint16_t* new_pixels = calloc(1, width * height * 8);
+    uint16_t* new_pixels_start_pos = new_pixels;
     for (uint32_t y = 0; y < height; y++) {
       for (uint32_t x = 0; x < width; x++) {
         new_pixels[0] = *pixels;
@@ -347,8 +347,8 @@ static uint16_t *reverse_png_filtering_16bit(uint8_t *data, uint32_t width, uint
     free(start_pos);
     pixels = new_pixels_start_pos;
   } else if (color_type == 2) {
-    uint16_t *new_pixels = calloc(1, width * height * 8);
-    uint16_t *new_pixels_start_pos = new_pixels;
+    uint16_t* new_pixels = calloc(1, width * height * 8);
+    uint16_t* new_pixels_start_pos = new_pixels;
     for (uint32_t y = 0; y < height; y++) {
       for (uint32_t x = 0; x < width; x++) {
         new_pixels[0] = pixels[0];
@@ -379,9 +379,9 @@ static uint32_t swap_uint32(uint32_t val) {
 }
 
 // Function to concatenate IDAT chunks
-static unsigned char *concatenate_idat_chunks(FILE *fp, unsigned int *total_length) {
+static unsigned char* concatenate_idat_chunks(FILE* fp, unsigned int* total_length) {
   unsigned int buffer_size = 1024;  // Initial buffer size
-  unsigned char *buffer = malloc(buffer_size);
+  unsigned char* buffer = malloc(buffer_size);
   if (buffer == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
     exit(EXIT_FAILURE);
@@ -402,7 +402,7 @@ static unsigned char *concatenate_idat_chunks(FILE *fp, unsigned int *total_leng
     // Read the chunk type
     fread(type, 1, 4, fp);
 
-    if (strncmp((const char *)type, "IDAT", 4) == 0) {
+    if (strncmp((const char*)type, "IDAT", 4) == 0) {
       // Resize buffer if needed
       if (*total_length + length > buffer_size) {
         buffer_size = *total_length + length;
@@ -429,7 +429,7 @@ static unsigned char *concatenate_idat_chunks(FILE *fp, unsigned int *total_leng
 }
 
 // Function to read and check PNG signature
-static int check_png_signature(FILE *fp) {
+static int check_png_signature(FILE* fp) {
   unsigned char signature[PNG_SIGNATURE_SIZE];
   fread(signature, 1, PNG_SIGNATURE_SIZE, fp);
 
@@ -460,7 +460,7 @@ static uint32_t get_png_color_type_channels(uint8_t color_type) {
   }
 }
 
-static void process_IHDR(const unsigned char *ihdr_data, uint32_t *tex_width, uint32_t *tex_height, uint32_t *tex_channels, uint8_t *bit_depth, uint8_t *color_type) {
+static void process_IHDR(const unsigned char* ihdr_data, uint32_t* tex_width, uint32_t* tex_height, uint32_t* tex_channels, uint8_t* bit_depth, uint8_t* color_type) {
   unsigned char compression_method, filter_method, interlace_method;
 
   // Extract width and height (each 4 bytes)
@@ -488,7 +488,7 @@ static void process_IHDR(const unsigned char *ihdr_data, uint32_t *tex_width, ui
   *tex_channels = get_png_color_type_channels(*color_type);
 }
 
-static int read_chunk(FILE *fp, unsigned char **idat_concatenated, unsigned int *idat_length, unsigned int *idat_buffer_size, uint32_t *tex_width, uint32_t *tex_height, uint32_t *tex_channels, uint8_t *bit_depth, uint8_t *color_type) {
+static int read_chunk(FILE* fp, unsigned char** idat_concatenated, unsigned int* idat_length, unsigned int* idat_buffer_size, uint32_t* tex_width, uint32_t* tex_height, uint32_t* tex_channels, uint8_t* bit_depth, uint8_t* color_type) {
   uint32_t length;
   unsigned char type[4];
   uint32_t crc;
@@ -504,7 +504,7 @@ static int read_chunk(FILE *fp, unsigned char **idat_concatenated, unsigned int 
     return 1;  // Return 0 if failed to read chunk type
 
   // Check if the chunk is an IDAT chunk
-  if (strncmp((const char *)type, "IDAT", 4) == 0) {
+  if (strncmp((const char*)type, "IDAT", 4) == 0) {
     // Resize the buffer if needed
     if (*idat_length + length > *idat_buffer_size) {
       *idat_buffer_size = *idat_length + length;
@@ -520,7 +520,7 @@ static int read_chunk(FILE *fp, unsigned char **idat_concatenated, unsigned int 
     *idat_length += length;
   } else {
     // For non-IDAT chunks
-    unsigned char *data = (unsigned char *)malloc(length);
+    unsigned char* data = (unsigned char*)malloc(length);
     if (data == NULL) {
       fprintf(stderr, "Memory allocation failed\n");
       exit(EXIT_FAILURE);
@@ -528,7 +528,7 @@ static int read_chunk(FILE *fp, unsigned char **idat_concatenated, unsigned int 
     fread(data, 1, length, fp);
 
     // Process IHDR chunk
-    if (strncmp((const char *)type, "IHDR", 4) == 0)
+    if (strncmp((const char*)type, "IHDR", 4) == 0)
       process_IHDR(data, tex_width, tex_height, tex_channels, bit_depth, color_type);
 
     // Free the data buffer for non-IDAT chunks
@@ -543,15 +543,15 @@ static int read_chunk(FILE *fp, unsigned char **idat_concatenated, unsigned int 
   // printf("Chunk: %c%c%c%c, Length: %u, CRC: %u\n", type[0], type[1], type[2], type[3], length, crc);
 
   // Check for IEND chunk
-  if (strncmp((const char *)type, "IEND", 4) == 0)
+  if (strncmp((const char*)type, "IEND", 4) == 0)
     return 1;  // Stop reading chunks if IEND is encountered
 
   return 0;
 }
 
-static void *texture_read_png(const wchar_t *filename, wchar_t *asset_directory, uint32_t *tex_width, uint32_t *tex_height, uint32_t *tex_channels, uint8_t *bit_depth, uint8_t *color_type) {
+static void* texture_read_png(const wchar_t* filename, wchar_t* asset_directory, uint32_t* tex_width, uint32_t* tex_height, uint32_t* tex_channels, uint8_t* bit_depth, uint8_t* color_type) {
   // Global variables for IDAT concatenation
-  unsigned char *idat_concatenated = NULL;
+  unsigned char* idat_concatenated = NULL;
   unsigned int idat_length = 0;
   unsigned int idat_buffer_size = 0;
 
@@ -559,7 +559,7 @@ static void *texture_read_png(const wchar_t *filename, wchar_t *asset_directory,
   wcscpy_s(complete_path, MAX_LENGTH_OF_PATH, asset_directory);
   wcscat_s(complete_path, MAX_LENGTH_OF_PATH, filename);
 
-  FILE *fp;
+  FILE* fp;
   const int result = _wfopen_s(&fp, complete_path, L"rb");
   if (result != 0) {
     perror("Error opening file");
@@ -578,7 +578,7 @@ static void *texture_read_png(const wchar_t *filename, wchar_t *asset_directory,
 
   // Estimate the size of the decompressed data
   size_t decompressed_length = *tex_width * *tex_height * *tex_channels + *tex_height * (*bit_depth == 16 ? 2 : 1);
-  unsigned char *decompressed_data = calloc(1, decompressed_length);
+  unsigned char* decompressed_data = calloc(1, decompressed_length);
 
   if (!decompressed_data) {
     fprintf(stderr, "Failed to allocate memory for decompressed data\n");
@@ -591,7 +591,7 @@ static void *texture_read_png(const wchar_t *filename, wchar_t *asset_directory,
   a.zbuffer = idat_concatenated;                    // Set the input buffer to the concatenated IDAT data
   a.zbuffer_end = idat_concatenated + idat_length;  // Set the end of the input buffer
   // Decompress IDAT data using do_zlib
-  if (do_zlib(&a, (char *)decompressed_data, decompressed_length, 1, 1) == 0) {
+  if (do_zlib(&a, (char*)decompressed_data, decompressed_length, 1, 1) == 0) {
     fprintf(stderr, "Decompression failed\n");
     free(decompressed_data);
     free(idat_concatenated);
@@ -607,7 +607,7 @@ static void *texture_read_png(const wchar_t *filename, wchar_t *asset_directory,
 
   // Reverse PNG filtering
 
-  void *pixels;
+  void* pixels;
   if (*bit_depth == 8)
     pixels = reverse_png_filtering(a.zout_start, *tex_width, *tex_height, *tex_channels, *color_type);
   else if (*bit_depth == 16) {
@@ -624,91 +624,179 @@ static void *texture_read_png(const wchar_t *filename, wchar_t *asset_directory,
   return pixels;
 }
 
-// TODO: This needs to have missing file error check
-uint8_t texture_init(struct Texture *texture, struct TextureManagerCommon *texture_manager_common, struct APICommon *api_common, struct TextureSettings *texture_settings, wchar_t *path, size_t texture_index) {
-  struct TextureCommon *texture_common = &(texture->texture_common);
-  texture_common->path = _wcsdup(path);
-  wchar_t *name_location = wcsrchr(texture_common->path, L'/');
-  if (!name_location)
-    texture_common->name = _wcsdup(name_location);
-  else
-    texture_common->name = _wcsdup(name_location + 1);
-  wchar_t *type_location = wcsrchr(texture_common->path, L'.');
-  if (!type_location)
-    texture_common->type = _wcsdup(type_location);
-  else
-    texture_common->type = _wcsdup(type_location + 1);
-  // Todo: Detect pixel bit
-  uint32_t tex_width, tex_height, tex_channels;
-  uint8_t bit_depth, color_type;
+#include "mana/graphics/utilities/texture/texture.h"
 
-  void *pixels = texture_read_png(texture_common->path, api_common->asset_directory, &tex_width, &tex_height, &tex_channels, &bit_depth, &color_type);
+static wchar_t* build_mip_path(const wchar_t* base_path, uint32_t level) {
+  // base_path is something like: "/textures/waterm1.png"
 
-  switch (bit_depth) {
-    case 8:
-      switch (tex_channels) {
-        case 1:
-          texture_settings->format_type = FORMAT_R8_UNORM;
-          break;
-        case 4:
-          texture_settings->format_type = FORMAT_R8G8B8A8_UNORM;
-          break;
-      }
+  wchar_t* out = _wcsdup(base_path);
+  if (!out) return NULL;
+
+  size_t len = wcslen(out);
+
+  // Find the digit before the extension
+  wchar_t* dot = wcsrchr(out, L'.');
+  if (!dot) return out;
+
+  // Walk backwards to find the first digit
+  wchar_t* p = dot;
+  while (p > out) {
+    p--;
+    if (*p >= L'0' && *p <= L'9') {
+      *p = L'1' + level;  // level 0 → '1', level 1 → '2', etc.
       break;
-    case 16:
-      switch (tex_channels) {
-        case 1:
-          texture_settings->format_type = FORMAT_R16_UNORM;
-          break;
-        case 4:
-          texture_settings->format_type = FORMAT_R16G16B16A16_UNORM;
-          break;
-      }
-      break;
-    default:
-      log_message(LOG_SEVERITY_WARNING, "Unsupported bit depth: %d\n", bit_depth);
+    }
   }
 
-  texture_common->width = tex_width;
-  texture_common->height = tex_height;
+  return out;
+}
+
+// TODO: This needs to have missing file error check
+uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, struct TextureSettings* texture_settings, wchar_t* path, size_t texture_index) {
+  struct TextureCommon* texture_common = &(texture->texture_common);
+
+  texture_common->path = _wcsdup(path);
+
+  // FIX: your original if/else was inverted (would _wcsdup(NULL))
+  wchar_t* name_location = wcsrchr(texture_common->path, L'/');
+  texture_common->name = name_location ? _wcsdup(name_location + 1) : _wcsdup(texture_common->path);
+
+  wchar_t* type_location = wcsrchr(texture_common->path, L'.');
+  texture_common->type = type_location ? _wcsdup(type_location + 1) : _wcsdup(L"");
 
   texture_common->texture_manager_common = texture_manager_common;
-
   texture_common->id = texture_index;
 
-  if (!pixels) {
-    log_message(LOG_SEVERITY_WARNING, "Failed to load texture image: %s\n", texture_common->path);
+  //  load base mip (level 0)
+  uint32_t w0 = 0, h0 = 0, ch0 = 0;
+  uint8_t bit0 = 0, ct0 = 0;
+
+  void* pixels0 = texture_read_png(texture_common->path, api_common->asset_directory, &w0, &h0, &ch0, &bit0, &ct0);
+  if (!pixels0) {
+    log_message(LOG_SEVERITY_WARNING, "Failed to load texture image: %ls\n", texture_common->path);
     return 1;
   }
 
-  //// Guaranteed to be multiple of 4
-  //// avx512 -> avx2 -> avx -> sse2 -> neon -> fallback
-  // if (texture_settings->premultiplied_alpha == 0) {
-  //   for (uint32_t pixel_group_num = 0; pixel_group_num < tex_width * tex_height * tex_channels; pixel_group_num += 4) {
-  //     unsigned short alpha_value = pixels[pixel_group_num + 3];
-  //     pixels[pixel_group_num] *= (stbi_uc)((float)alpha_value / USHRT_MAX);
-  //     pixels[pixel_group_num + 1] *= (stbi_uc)((float)alpha_value / USHRT_MAX);
-  //     pixels[pixel_group_num + 2] *= (stbi_uc)((float)alpha_value / USHRT_MAX);
-  //   }
-  // }
+  // If ct0 == 2, pixels0 is now RGBA => force channels=4 so sizes match GPU upload.
+  if (ct0 == 2) ch0 = 4;
+
+  // Pick format from bit depth + channels
+  switch (bit0) {
+    case 8:
+      texture_settings->format_type = (ch0 == 1) ? FORMAT_R8_UNORM : FORMAT_R8G8B8A8_UNORM;
+      break;
+    case 16:
+      texture_settings->format_type = (ch0 == 1) ? FORMAT_R16_UNORM : FORMAT_R16G16B16A16_UNORM;
+      break;
+    default:
+      log_message(LOG_SEVERITY_WARNING, "Unsupported bit depth: %d\n", bit0);
+      return 1;
+  }
+
+  texture_common->width = w0;
+  texture_common->height = h0;
+
+  // build packed pixel buffer if custom mip chain
+  void* upload_pixels = pixels0;
+  uint32_t mip_count = 1;
+
+  if (texture_settings->mip_type == MIP_CUSTOM) {
+    mip_count = texture_settings->mip_count;
+    if (mip_count < 1) mip_count = 1;
+
+    uint32_t bytes_per_channel = (bit0 == 16) ? 2 : 1;
+    uint32_t channels = ch0;  // after ct0==2 fix => 4
+
+    // compute total bytes for all levels (must match exactly what Vulkan copy loop uses)
+    VkDeviceSize total = 0;
+    for (uint32_t level = 0; level < mip_count; level++) {
+      uint32_t w = w0 >> level;
+      if (!w) w = 1;
+      uint32_t h = h0 >> level;
+      if (!h) h = 1;
+      total += (VkDeviceSize)w * (VkDeviceSize)h * (VkDeviceSize)channels * (VkDeviceSize)bytes_per_channel;
+    }
+
+    uint8_t* combined = (uint8_t*)malloc((size_t)total);
+    if (!combined) {
+      log_message(LOG_SEVERITY_ERROR, "Failed to alloc combined mip buffer\n");
+      return 1;
+    }
+
+    // copy level 0 first
+    VkDeviceSize off = 0;
+    VkDeviceSize sz0 = (VkDeviceSize)w0 * (VkDeviceSize)h0 * (VkDeviceSize)channels * (VkDeviceSize)bytes_per_channel;
+    memcpy(combined + off, pixels0, (size_t)sz0);
+    off += sz0;
+    free(pixels0);
+
+    // load + copy levels 1..N-1
+    for (uint32_t level = 1; level < mip_count; level++) {
+      wchar_t* mip_path = build_mip_path(texture_common->path, level);
+      if (!mip_path) {
+        free(combined);
+        log_message(LOG_SEVERITY_ERROR, "Failed to build mip path\n");
+        return 1;
+      }
+
+      uint32_t wl = 0, hl = 0, chl = 0;
+      uint8_t bitl = 0, ctl = 0;
+      void* pixelsL = texture_read_png(mip_path, api_common->asset_directory, &wl, &hl, &chl, &bitl, &ctl);
+      free(mip_path);
+
+      if (!pixelsL) {
+        free(combined);
+        log_message(LOG_SEVERITY_ERROR, "Failed to load mip level %u\n", level);
+        return 1;
+      }
+      if (ctl == 2) chl = 4;  // same RGB->RGBA fix
+
+      // Validate consistency (bit depth + channels) and expected sizes
+      if (bitl != bit0 || chl != channels) {
+        free(pixelsL);
+        free(combined);
+        log_message(LOG_SEVERITY_ERROR, "Mip %u format mismatch\n", level);
+        return 1;
+      }
+
+      uint32_t exp_w = w0 >> level;
+      if (!exp_w) exp_w = 1;
+      uint32_t exp_h = h0 >> level;
+      if (!exp_h) exp_h = 1;
+      if (wl != exp_w || hl != exp_h) {
+        free(pixelsL);
+        free(combined);
+        log_message(LOG_SEVERITY_ERROR, "Mip %u size mismatch (got %ux%u expected %ux%u)\n", level, wl, hl, exp_w, exp_h);
+        return 1;
+      }
+
+      VkDeviceSize sz = (VkDeviceSize)wl * (VkDeviceSize)hl * (VkDeviceSize)channels * (VkDeviceSize)bytes_per_channel;
+      memcpy(combined + off, pixelsL, (size_t)sz);
+      off += sz;
+      free(pixelsL);
+    }
+
+    upload_pixels = combined;  // Vulkan will read all mips sequentially from this
+  }
 
 #ifdef VULKAN_API_SUPPORTED
-  if (api_common->api_type == API_VULKAN)
-    texture->texture_func = VULKAN_TEXTURE;
+  if (api_common->api_type == API_VULKAN) texture->texture_func = VULKAN_TEXTURE;
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-  if (api_common->api_type == API_DIRECTX12)
-    texture->texture_func = directx_12_TEXTURE;
+  if (api_common->api_type == API_DIRECTX12) texture->texture_func = directx_12_TEXTURE;
 #endif
 
-  texture->texture_func.texture_init(&(texture->texture_common), texture_common->texture_manager_common, api_common, texture_settings, pixels);
+  texture->texture_func.texture_init(&(texture->texture_common), texture_common->texture_manager_common, api_common, texture_settings, upload_pixels);
 
-  // stbi_image_free(pixels);
+  if (texture_settings->mip_type == MIP_CUSTOM) free(upload_pixels);  // combined
+  // else pixels0 already freed by caller? (we kept upload_pixels=pixels0) -> free it:
+  else
+    free(upload_pixels);
 
   return 0;
 }
 
-void texture_delete(struct Texture *texture, struct APICommon *api_common) {
+void texture_delete(struct Texture* texture, struct APICommon* api_common) {
   texture->texture_func.texture_delete(&(texture->texture_common), api_common);
 
   free(texture->texture_common.path);

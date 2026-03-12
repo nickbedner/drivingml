@@ -90,6 +90,18 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
     memset(attribute_descriptions, 0, sizeof(VkVertexInputAttributeDescription) * SHADER_ATTACHMENT_LIMIT);
     mesh_get_attribute_descriptions(shader_common->shader_settings.mesh_type, attribute_descriptions);
 
+    if (shader_common->shader_settings.vertex_attributes == 2 && (attribute_descriptions[1].format == VK_FORMAT_UNDEFINED || attribute_descriptions[1].location == attribute_descriptions[0].location)) {
+      attribute_descriptions[0].location = 0;
+      attribute_descriptions[0].binding = 0;
+      attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+      attribute_descriptions[0].offset = 0;
+
+      attribute_descriptions[1].location = 1;
+      attribute_descriptions[1].binding = 0;
+      attribute_descriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
+      attribute_descriptions[1].offset = sizeof(float) * 3;
+    }
+
     vertex_input_info.vertexBindingDescriptionCount = 1;
     vertex_input_info.vertexAttributeDescriptionCount = shader_common->shader_settings.vertex_attributes;
     vertex_input_info.pVertexBindingDescriptions = &binding_description;

@@ -1,8 +1,10 @@
 #pragma once
 
 #include <mana/graphics/entities/sprite/sprite.h>
+#include <mana/graphics/entities/water/water.h>
 #include <mana/graphics/shaders/modelshader.h>
 #include <mana/graphics/shaders/modelstaticshader.h>
+#include <mana/graphics/shaders/watershader.h>
 #include <mana/graphics/utilities/camera.h>
 #include <mana/graphics/utilities/modelcache.h>
 #include <mana/graphics/utilities/spritemanager/spritemanager.h>
@@ -13,7 +15,7 @@
 #include "drivingml/core/ac_model.h"
 #include "drivingml/core/player.h"
 
-#define EVAL_MODE true
+#define EVAL_MODE false
 
 #define MAX_MARKERS 32
 #define MAX_NPCS 8
@@ -36,6 +38,9 @@ struct Game {
 
   struct ModelShader model_shader;
   struct ModelStaticShader model_static_shader;
+
+  struct WaterShader water_shader;
+  struct Water water;
 
   struct SpriteManager sprite_manager;
   struct TextureManager texture_manager;

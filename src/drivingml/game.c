@@ -53,10 +53,7 @@ static void load_map_from_xml(struct Game* game, struct Mana* mana, const char* 
     wchar_t wtex[256];
     mbstowcs(wtex, tex, 256);
 
-    game->track = sprite_manager_add_sprite(
-        &(game->sprite_manager),
-        &(mana->api.api_common),
-        wtex);
+    game->track = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), wtex);
 
     float scale = sx ? (float)atof(sx) : 25.0f;
     float x = px ? (float)atof(px) : 0.0f;
@@ -106,7 +103,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 
   game->previous_reward = 0.0f;
 
-  struct TextureSettings sprite_texture_settings = {FILTER_NEAREST, MODE_CLAMP_TO_EDGE, FORMAT_R8G8B8A8_UNORM, true, true};
+  struct TextureSettings sprite_texture_settings = {FILTER_NEAREST, MODE_CLAMP_TO_EDGE, FORMAT_R8G8B8A8_UNORM, MIP_GENERATE, 5, true};
   texture_manager_init(&(game->texture_manager), &(mana->api.api_common));
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/spritesheet.png");
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/water.png");
@@ -118,6 +115,8 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/startfinish.png");
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/fence.png");
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/marker.png");
+  sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_LINEAR, .mode_type = MODE_REPEAT, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_CUSTOM, .mip_count = 5, .premultiplied_alpha = true};
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/waterm1.png");
 
   sprite_manager_init(&(game->sprite_manager), &(game->texture_manager), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 128);
 
@@ -188,6 +187,11 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
     game->npcs[npc_num].prev_y = game->npcs[npc_num].position.y;
     load_ac_model("checkpoints/ac_weights.bin", &(game->npcs[npc_num].model));
   }
+
+  water_shader_init(&(game->water_shader), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 3);
+  water_init(&(game->water), &(mana->api.api_common), &(game->water_shader.shader), texture_manager_get(game->sprite_manager.sprite_manager_common.texture_manager, L"/textures/waterm1.png"));
+  game->water.water_common.position = (vec3){0.0f, 0.0f, -5.0f};
+  game->water.water_common.scale = (vec3){256.0f, 256.0f, 1.0f};
 }
 
 void game_delete(struct Game* game, struct Mana* mana) {
@@ -445,11 +449,14 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
       window->should_resize = false;
     }
 
+    water_update_uniforms(&(game->water), api_common, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height);
     sprite_manager_update(&(game->sprite_manager), delta_time);
     sprite_manager_update_uniforms(&(game->sprite_manager), api_common, &(window->gbuffer->gbuffer_common));
 
     // GBuffer, only texture that needs to be multisampled
     gbuffer_start(window->gbuffer, &(window->swap_chain->swap_chain_common), window->renderer.renderer_settings.msaa_samples);
+
+    water_render(&(game->water), &(window->gbuffer->gbuffer_common));
 
     // Transparent sprites
     vec3d cam_pos = camera_get_pos(&game->player.camera);

@@ -22,6 +22,7 @@ struct VertexSprite {
 
 struct VertexQuad {
   vec3 position;
+  vec2 tex_coord;
 };
 
 struct VertexTriangle {
@@ -68,7 +69,7 @@ struct VertexGrass {
 //   VkDeviceMemory index_buffer_memory;
 // };
 
-static inline void mesh_get_attribute_descriptions(enum MESH_TYPE mesh_type, VkVertexInputAttributeDescription *attribute_descriptions) {
+static inline void mesh_get_attribute_descriptions(enum MESH_TYPE mesh_type, VkVertexInputAttributeDescription* attribute_descriptions) {
   switch (mesh_type) {
     case (MESH_TYPE_SPRITE): {
       attribute_descriptions[0].binding = 0;
@@ -87,6 +88,11 @@ static inline void mesh_get_attribute_descriptions(enum MESH_TYPE mesh_type, VkV
       attribute_descriptions[0].location = 0;
       attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
       attribute_descriptions[0].offset = offsetof(struct VertexQuad, position);
+
+      attribute_descriptions[1].binding = 0;
+      attribute_descriptions[1].location = 1;
+      attribute_descriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
+      attribute_descriptions[1].offset = offsetof(struct VertexQuad, tex_coord);
       break;
     }
     case (MESH_TYPE_TRIANGLE): {
@@ -203,7 +209,7 @@ static inline void mesh_get_attribute_descriptions(enum MESH_TYPE mesh_type, VkV
 //   //D3D12_INDEX_BUFFER_VIEW index_buffer_view;
 // };
 
-static inline uint32_t mesh_get_input_layout(enum MESH_TYPE mesh_type, D3D12_INPUT_ELEMENT_DESC *inputElementDescs) {
+static inline uint32_t mesh_get_input_layout(enum MESH_TYPE mesh_type, D3D12_INPUT_ELEMENT_DESC* inputElementDescs) {
   uint32_t num_attributes = 0;  // This will be used to determine how many attributes were added for the mesh type.
 
   switch (mesh_type) {
@@ -214,6 +220,7 @@ static inline uint32_t mesh_get_input_layout(enum MESH_TYPE mesh_type, D3D12_INP
     }
     case (MESH_TYPE_QUAD): {
       inputElementDescs[num_attributes++] = (D3D12_INPUT_ELEMENT_DESC){"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(struct VertexQuad, position), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0};
+      inputElementDescs[num_attributes++] = (D3D12_INPUT_ELEMENT_DESC){"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(struct VertexQuad, tex_coord), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0};
       break;
     }
     case (MESH_TYPE_TRIANGLE): {
@@ -262,9 +269,9 @@ static inline uint32_t mesh_get_input_layout(enum MESH_TYPE mesh_type, D3D12_INP
 struct MeshCommon {
   enum MESH_TYPE mesh_type;
   uint32_t mesh_memory_size;
-  struct Vector *vertices;
-  struct Vector *indices;
-  struct Vector *textures;
+  struct Vector* vertices;
+  struct Vector* indices;
+  struct Vector* textures;
 
   //  union {
   // #ifdef VULKAN_API_SUPPORTED

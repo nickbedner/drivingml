@@ -1,18 +1,18 @@
 #include "mana/graphics/apis/apivulkan.h"
 
-static uint_fast8_t api_vulkan_create_instance(struct VulkanAPI *vulkan_api);
-static uint_fast8_t api_vulkan_setup_debug_messenger(struct VulkanAPI *vulkan_api);
-static uint_fast8_t api_vulkan_pick_physical_device(struct VulkanAPI *vulkan_api);
-static bool api_vulkan_device_can_render(struct VulkanAPI *vulkan_api, VkPhysicalDevice device);
-static uint_fast8_t api_vulkan_create_logical_device(struct VulkanAPI *vulkan_api);
-static uint_fast8_t api_vulkan_create_command_pool(struct VulkanAPI *vulkan_api);
+static uint_fast8_t api_vulkan_create_instance(struct VulkanAPI* vulkan_api);
+static uint_fast8_t api_vulkan_setup_debug_messenger(struct VulkanAPI* vulkan_api);
+static uint_fast8_t api_vulkan_pick_physical_device(struct VulkanAPI* vulkan_api);
+static bool api_vulkan_device_can_render(struct VulkanAPI* vulkan_api, VkPhysicalDevice device);
+static uint_fast8_t api_vulkan_create_logical_device(struct VulkanAPI* vulkan_api);
+static uint_fast8_t api_vulkan_create_command_pool(struct VulkanAPI* vulkan_api);
 static bool api_vulkan_check_validation_layer_support(void);
-static void vulkan_command_pool_cleanup(struct VulkanAPI *vulkan_api);
-static void vulkan_device_cleanup(struct VulkanAPI *vulkan_api);
-static void vulkan_debug_cleanup(struct VulkanAPI *vulkan_api);
+static void vulkan_command_pool_cleanup(struct VulkanAPI* vulkan_api);
+static void vulkan_device_cleanup(struct VulkanAPI* vulkan_api);
+static void vulkan_debug_cleanup(struct VulkanAPI* vulkan_api);
 
-static inline uint_fast8_t api_vulkan_init_wrapper(struct APICommon *api_common) {
-  struct VulkanAPI *vulkan_api = &(api_common->vulkan_api);
+static inline uint_fast8_t api_vulkan_init_wrapper(struct APICommon* api_common) {
+  struct VulkanAPI* vulkan_api = &(api_common->vulkan_api);
 
   vulkan_api->physical_device = VK_NULL_HANDLE;
 
@@ -42,7 +42,7 @@ vulkan_api_create_instance_cleanup:
   return vulkan_error_code;
 }
 
-uint_fast8_t api_vulkan_init(struct APICommon *api_common) {
+uint_fast8_t api_vulkan_init(struct APICommon* api_common) {
   const uint_fast8_t api_vulkan_error = api_vulkan_init_wrapper(api_common);
   switch (api_vulkan_error) {
     case (VULKAN_API_SUCCESS): {
@@ -76,32 +76,32 @@ uint_fast8_t api_vulkan_init(struct APICommon *api_common) {
   return api_vulkan_error;
 }
 
-void api_vulkan_delete(struct APICommon *api_common) {
-  struct VulkanAPI *vulkan_api = &(api_common->vulkan_api);
+void api_vulkan_delete(struct APICommon* api_common) {
+  struct VulkanAPI* vulkan_api = &(api_common->vulkan_api);
 
   vulkan_command_pool_cleanup(vulkan_api);
   vulkan_device_cleanup(vulkan_api);
   vulkan_debug_cleanup(vulkan_api);
 }
 
-static void vulkan_device_cleanup(struct VulkanAPI *vulkan_api) {
+static void vulkan_device_cleanup(struct VulkanAPI* vulkan_api) {
   vkDestroyDevice(vulkan_api->device, NULL);
 }
 
-static void vulkan_command_pool_cleanup(struct VulkanAPI *vulkan_api) {
+static void vulkan_command_pool_cleanup(struct VulkanAPI* vulkan_api) {
   vkDestroyCommandPool(vulkan_api->device, vulkan_api->command_pool, NULL);
 }
 
-static void vulkan_debug_cleanup(struct VulkanAPI *vulkan_api) {
+static void vulkan_debug_cleanup(struct VulkanAPI* vulkan_api) {
 #ifdef ENABLE_VALIDATION_LAYERS
-  void *value = (void *)vkGetInstanceProcAddr(vulkan_api->instance, "vkDestroyDebugUtilsMessengerEXT");
+  void* value = (void*)vkGetInstanceProcAddr(vulkan_api->instance, "vkDestroyDebugUtilsMessengerEXT");
   PFN_vkDestroyDebugUtilsMessengerEXT func = (PFN_vkDestroyDebugUtilsMessengerEXT)value;
   if (func != NULL)
     func(vulkan_api->instance, vulkan_api->debug_messenger, NULL);
 #endif
 }
 
-static bool api_vulkan_check_surface_extension_support(const char **graphics_lbrary_extensions, uint32_t *graphics_library_extension_count) {
+static bool api_vulkan_check_surface_extension_support(const char** graphics_lbrary_extensions, uint32_t* graphics_library_extension_count) {
   // Enumerate the available instance extensions
   if (graphics_lbrary_extensions != NULL) {
     graphics_lbrary_extensions[0] = VK_KHR_SURFACE_EXTENSION_NAME;
@@ -112,7 +112,7 @@ static bool api_vulkan_check_surface_extension_support(const char **graphics_lbr
   uint32_t extension_count = 0;
   vkEnumerateInstanceExtensionProperties(NULL, &extension_count, NULL);
 
-  VkExtensionProperties *extensions = alloca(extension_count * sizeof(VkExtensionProperties));
+  VkExtensionProperties* extensions = alloca(extension_count * sizeof(VkExtensionProperties));
   vkEnumerateInstanceExtensionProperties(NULL, &extension_count, extensions);
 
   // Check if the VK_KHR_surface and VK_KHR_win32_surface extensions are available
@@ -138,7 +138,7 @@ static bool api_vulkan_check_surface_extension_support(const char **graphics_lbr
   return true;
 }
 
-static uint_fast8_t api_vulkan_create_instance(struct VulkanAPI *vulkan_api) {
+static uint_fast8_t api_vulkan_create_instance(struct VulkanAPI* vulkan_api) {
 #ifdef ENABLE_VALIDATION_LAYERS
   if (!api_vulkan_check_validation_layer_support())
     return VULKAN_API_CREATE_INSTANCE_ERROR;
@@ -164,7 +164,7 @@ static uint_fast8_t api_vulkan_create_instance(struct VulkanAPI *vulkan_api) {
   graphics_library_extension_count++;
 #endif
 
-  const char **graphics_lbrary_extensions = alloca(graphics_library_extension_count * sizeof(char *));
+  const char** graphics_lbrary_extensions = alloca(graphics_library_extension_count * sizeof(char*));
   if (!api_vulkan_check_surface_extension_support(graphics_lbrary_extensions, &graphics_library_extension_count))
     return VULKAN_API_CREATE_INSTANCE_ERROR;
 
@@ -190,7 +190,7 @@ static uint_fast8_t api_vulkan_create_instance(struct VulkanAPI *vulkan_api) {
   return VULKAN_API_SUCCESS;
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data, void *p_user_data) {
+static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT* p_callback_data, void* p_user_data) {
   char type[32] = {0};
   switch (message_type) {
     case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT: {
@@ -236,8 +236,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverity
   return VK_FALSE;
 }
 
-static VkResult create_debug_utils_messenger_ext(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *p_create_info, const VkAllocationCallbacks *p_allocator, VkDebugUtilsMessengerEXT *p_debug_messenger) {
-  void *value = (void *)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+static VkResult create_debug_utils_messenger_ext(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* p_create_info, const VkAllocationCallbacks* p_allocator, VkDebugUtilsMessengerEXT* p_debug_messenger) {
+  void* value = (void*)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
   PFN_vkCreateDebugUtilsMessengerEXT func = (PFN_vkCreateDebugUtilsMessengerEXT)value;
   if (func != NULL)
     return func(instance, p_create_info, p_allocator, p_debug_messenger);
@@ -245,7 +245,7 @@ static VkResult create_debug_utils_messenger_ext(VkInstance instance, const VkDe
     return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
 
-static uint_fast8_t api_vulkan_setup_debug_messenger(struct VulkanAPI *vulkan_api) {
+static uint_fast8_t api_vulkan_setup_debug_messenger(struct VulkanAPI* vulkan_api) {
 #ifdef ENABLE_VALIDATION_LAYERS
   if (!api_vulkan_check_validation_layer_support())
     return VULKAN_API_SETUP_DEBUG_MESSENGER_ERROR;
@@ -267,7 +267,7 @@ static bool api_vulkan_check_swap_chain_support(VkPhysicalDevice device) {
   // Enumerate available device extensions
   uint32_t extension_count = 0;
   vkEnumerateDeviceExtensionProperties(device, NULL, &extension_count, NULL);
-  VkExtensionProperties *extensions = alloca(extension_count * sizeof(VkExtensionProperties));
+  VkExtensionProperties* extensions = alloca(extension_count * sizeof(VkExtensionProperties));
   vkEnumerateDeviceExtensionProperties(device, NULL, &extension_count, extensions);
 
   // Check if VK_KHR_SWAPCHAIN_EXTENSION_NAME is available
@@ -286,14 +286,14 @@ static bool api_vulkan_check_swap_chain_support(VkPhysicalDevice device) {
   return false;
 }
 
-static uint_fast8_t api_vulkan_pick_physical_device(struct VulkanAPI *vulkan_api) {
+static uint_fast8_t api_vulkan_pick_physical_device(struct VulkanAPI* vulkan_api) {
   uint32_t device_count = 0;
   vkEnumeratePhysicalDevices(vulkan_api->instance, &device_count, NULL);
 
   if (device_count == 0)
     return VULKAN_API_PICK_PHYSICAL_DEVICE_ERROR;
 
-  VkPhysicalDevice *devices = alloca(device_count * sizeof(VkPhysicalDevice));
+  VkPhysicalDevice* devices = alloca(device_count * sizeof(VkPhysicalDevice));
   vkEnumeratePhysicalDevices(vulkan_api->instance, &device_count, devices);
 
   VkPhysicalDeviceProperties current_device_properties = {0};
@@ -341,10 +341,10 @@ static uint_fast8_t api_vulkan_pick_physical_device(struct VulkanAPI *vulkan_api
   return VULKAN_API_SUCCESS;
 }
 
-static bool api_vulkan_device_can_render(struct VulkanAPI *vulkan_api, VkPhysicalDevice device) {
+static bool api_vulkan_device_can_render(struct VulkanAPI* vulkan_api, VkPhysicalDevice device) {
   uint32_t queue_family_count = 0;
   vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, NULL);
-  VkQueueFamilyProperties *queue_families = alloca(queue_family_count * sizeof(VkQueueFamilyProperties));
+  VkQueueFamilyProperties* queue_families = alloca(queue_family_count * sizeof(VkQueueFamilyProperties));
   vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families);
 
   bool graphics_family_found = false;
@@ -362,7 +362,7 @@ static bool api_vulkan_device_can_render(struct VulkanAPI *vulkan_api, VkPhysica
   return true;
 }
 
-static uint_fast8_t api_vulkan_create_logical_device(struct VulkanAPI *vulkan_api) {
+static uint_fast8_t api_vulkan_create_logical_device(struct VulkanAPI* vulkan_api) {
   const uint32_t unique_queue_families[2] = {vulkan_api->indices.graphics_family, vulkan_api->indices.present_family};
   const int_fast32_t unique_queue_family_count = (unique_queue_families[0] == unique_queue_families[1]) ? 1 : 2;
 
@@ -407,7 +407,7 @@ static uint_fast8_t api_vulkan_create_logical_device(struct VulkanAPI *vulkan_ap
   return VULKAN_API_SUCCESS;
 }
 
-static uint_fast8_t api_vulkan_create_command_pool(struct VulkanAPI *vulkan_api) {
+static uint_fast8_t api_vulkan_create_command_pool(struct VulkanAPI* vulkan_api) {
   VkCommandPoolCreateFlags command_pool_flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
   VkCommandPoolCreateInfo pool_info = {0};
@@ -425,7 +425,7 @@ static bool api_vulkan_check_validation_layer_support(void) {
   uint32_t layer_count;
   vkEnumerateInstanceLayerProperties(&layer_count, NULL);
 
-  VkLayerProperties *available_layers = calloc(layer_count, sizeof(VkLayerProperties));
+  VkLayerProperties* available_layers = calloc(layer_count, sizeof(VkLayerProperties));
   vkEnumerateInstanceLayerProperties(&layer_count, available_layers);
 
   for (uint32_t layer_name_num = 0; layer_name_num < VULKAN_VALIDATION_LAYER_COUNT; layer_name_num++) {
@@ -447,7 +447,7 @@ static bool api_vulkan_check_validation_layer_support(void) {
   return true;
 }
 
-uint_fast8_t vulkan_graphics_utils_create_image_view(struct VkDevice_T *device, VkImage image, VkFormat format, VkImageAspectFlags aspect_flags, uint32_t mip_levels, VkImageView *image_view) {
+uint_fast8_t vulkan_graphics_utils_create_image_view(struct VkDevice_T* device, VkImage image, VkFormat format, VkImageAspectFlags aspect_flags, uint32_t mip_levels, VkImageView* image_view) {
   VkImageViewCreateInfo view_info = {0};
   view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   view_info.image = image;
@@ -467,7 +467,7 @@ uint_fast8_t vulkan_graphics_utils_create_image_view(struct VkDevice_T *device, 
   return VULKAN_API_SUCCESS;
 }
 
-uint_fast8_t vulkan_graphics_utils_create_image(struct VkDevice_T *device, struct VkPhysicalDevice_T *physical_device, uint32_t width, uint32_t height, uint32_t mip_levels, VkSampleCountFlagBits num_samples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage *image, VkDeviceMemory *image_memory) {
+uint_fast8_t vulkan_graphics_utils_create_image(struct VkDevice_T* device, struct VkPhysicalDevice_T* physical_device, uint32_t width, uint32_t height, uint32_t mip_levels, VkSampleCountFlagBits num_samples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* image_memory) {
   VkImageCreateInfo image_info = {0};
   image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   image_info.imageType = VK_IMAGE_TYPE_2D;
@@ -506,7 +506,7 @@ uint_fast8_t vulkan_graphics_utils_create_image(struct VkDevice_T *device, struc
   return VULKAN_API_SUCCESS;
 }
 
-uint_fast8_t vulkan_graphics_utils_create_buffer(struct VkDevice_T *device, struct VkPhysicalDevice_T *physical_device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer *buffer, VkDeviceMemory *buffer_memory) {
+uint_fast8_t vulkan_graphics_utils_create_buffer(struct VkDevice_T* device, struct VkPhysicalDevice_T* physical_device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer* buffer, VkDeviceMemory* buffer_memory) {
   VkBufferCreateInfo buffer_info = {0};
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   buffer_info.size = size;
@@ -536,7 +536,7 @@ uint_fast8_t vulkan_graphics_utils_create_buffer(struct VkDevice_T *device, stru
   return VULKAN_API_SUCCESS;
 }
 
-uint_fast8_t vulkan_graphics_utils_transition_image_layout(struct VkDevice_T *device, struct VkQueue_T *graphics_queue, struct VkCommandPool_T *command_pool, VkImage image, VkImageLayout old_layout, VkImageLayout new_layout, uint32_t mip_levels) {
+uint_fast8_t vulkan_graphics_utils_transition_image_layout(struct VkDevice_T* device, struct VkQueue_T* graphics_queue, struct VkCommandPool_T* command_pool, VkImage image, VkImageLayout old_layout, VkImageLayout new_layout, uint32_t mip_levels) {
   VkCommandBuffer commandBuffer = vulkan_graphics_utils_begin_single_time_commands(device, command_pool);
 
   VkImageMemoryBarrier barrier = {0};
@@ -579,7 +579,7 @@ uint_fast8_t vulkan_graphics_utils_transition_image_layout(struct VkDevice_T *de
   return VULKAN_API_SUCCESS;
 }
 
-uint32_t vulkan_graphics_utils_find_memory_type(struct VkPhysicalDevice_T *physical_device, uint32_t type_filter, VkMemoryPropertyFlags properties) {
+uint32_t vulkan_graphics_utils_find_memory_type(struct VkPhysicalDevice_T* physical_device, uint32_t type_filter, VkMemoryPropertyFlags properties) {
   VkPhysicalDeviceMemoryProperties mem_properties;
   vkGetPhysicalDeviceMemoryProperties(physical_device, &mem_properties);
 
@@ -592,7 +592,7 @@ uint32_t vulkan_graphics_utils_find_memory_type(struct VkPhysicalDevice_T *physi
   return VULKAN_API_SUCCESS;
 }
 
-VkCommandBuffer vulkan_graphics_utils_begin_single_time_commands(struct VkDevice_T *device, struct VkCommandPool_T *command_pool) {
+VkCommandBuffer vulkan_graphics_utils_begin_single_time_commands(struct VkDevice_T* device, struct VkCommandPool_T* command_pool) {
   VkCommandBufferAllocateInfo allocInfo = {0};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -611,7 +611,7 @@ VkCommandBuffer vulkan_graphics_utils_begin_single_time_commands(struct VkDevice
   return command_buffer;
 }
 
-void vulkan_graphics_utils_end_single_time_commands(struct VkDevice_T *device, struct VkQueue_T *graphics_queue, struct VkCommandPool_T *command_pool, VkCommandBuffer command_buffer) {
+void vulkan_graphics_utils_end_single_time_commands(struct VkDevice_T* device, struct VkQueue_T* graphics_queue, struct VkCommandPool_T* command_pool, VkCommandBuffer command_buffer) {
   vkEndCommandBuffer(command_buffer);
 
   VkSubmitInfo submit_info = {0};
@@ -625,25 +625,27 @@ void vulkan_graphics_utils_end_single_time_commands(struct VkDevice_T *device, s
   vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
 }
 
-uint_fast8_t vulkan_graphics_utils_create_sampler(struct VkDevice_T *device, VkSampler *texture_sampler, struct SamplerSettings sampler_settings) {
+uint_fast8_t vulkan_graphics_utils_create_sampler(struct VkDevice_T* device, VkSampler* texture_sampler, struct SamplerSettings sampler_settings) {
   VkSamplerCreateInfo sampler_info = {0};
   sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
   sampler_info.magFilter = sampler_settings.filter;
   sampler_info.minFilter = sampler_settings.filter;
   // TODO: Let this be changeable
+  // TODO BIGGGGGG: Fix anisotropy settings
   sampler_info.addressModeU = sampler_settings.address_mode;
   sampler_info.addressModeV = sampler_settings.address_mode;
   sampler_info.addressModeW = sampler_settings.address_mode;
-  sampler_info.anisotropyEnable = VK_TRUE;
-  sampler_info.maxAnisotropy = 16;
+  sampler_info.anisotropyEnable = VK_FALSE;
+  sampler_info.maxAnisotropy = 1;
   sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
   sampler_info.unnormalizedCoordinates = VK_FALSE;
   sampler_info.compareEnable = VK_FALSE;
   sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
   sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-  sampler_info.minLod = 0;
-  sampler_info.maxLod = (float)(sampler_settings.mip_levels);
-  sampler_info.mipLodBias = 0;
+  sampler_info.minLod = 0.0f;
+  // sampler_info.maxLod = (float)(sampler_settings.mip_levels);
+  sampler_info.maxLod = (float)(sampler_settings.mip_levels - 1);
+  sampler_info.mipLodBias = 0.0f;
 
   if (vkCreateSampler(device, &sampler_info, NULL, texture_sampler) != VK_SUCCESS) {
     printf("failed to create texture sampler!\n");
@@ -653,7 +655,7 @@ uint_fast8_t vulkan_graphics_utils_create_sampler(struct VkDevice_T *device, VkS
   return VULKAN_API_SUCCESS;
 }
 
-void vulkan_graphics_utils_copy_buffer_to_image(struct VkDevice_T *device, struct VkQueue_T *graphics_queue, struct VkCommandPool_T *command_pool, VkBuffer *buffer, VkImage *image, uint32_t width, uint32_t height) {
+void vulkan_graphics_utils_copy_buffer_to_image(struct VkDevice_T* device, struct VkQueue_T* graphics_queue, struct VkCommandPool_T* command_pool, VkBuffer* buffer, VkImage* image, uint32_t width, uint32_t height) {
   VkCommandBuffer command_buffer = vulkan_graphics_utils_begin_single_time_commands(device, command_pool);
 
   VkBufferImageCopy region = {0};
@@ -672,7 +674,7 @@ void vulkan_graphics_utils_copy_buffer_to_image(struct VkDevice_T *device, struc
   vulkan_graphics_utils_end_single_time_commands(device, graphics_queue, command_pool, command_buffer);
 }
 
-void vulkan_graphics_utils_generate_mipmaps(struct VkDevice_T *device, VkPhysicalDevice physical_device, struct VkQueue_T *graphics_queue, struct VkCommandPool_T *command_pool, VkImage image, VkFormat format, uint32_t tex_width, uint32_t tex_height, uint32_t mip_levels) {
+void vulkan_graphics_utils_generate_mipmaps(struct VkDevice_T* device, VkPhysicalDevice physical_device, struct VkQueue_T* graphics_queue, struct VkCommandPool_T* command_pool, VkImage image, VkFormat format, uint32_t tex_width, uint32_t tex_height, uint32_t mip_levels) {
   VkFormatProperties format_properties;
   vkGetPhysicalDeviceFormatProperties(physical_device, format, &format_properties);
 
@@ -764,7 +766,7 @@ VkFormat vulkan_graphics_utils_find_depth_format(VkPhysicalDevice physical_devic
   return VK_FORMAT_UNDEFINED;
 }
 
-void vulkan_graphics_utils_create_color_attachment(VkFormat image_format, struct VkAttachmentDescription *color_attachment) {
+void vulkan_graphics_utils_create_color_attachment(VkFormat image_format, struct VkAttachmentDescription* color_attachment) {
   color_attachment->format = image_format;
   color_attachment->samples = VK_SAMPLE_COUNT_1_BIT;
   color_attachment->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -775,7 +777,7 @@ void vulkan_graphics_utils_create_color_attachment(VkFormat image_format, struct
   color_attachment->finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 }
 
-void vulkan_graphics_utils_create_depth_attachment(VkPhysicalDevice physical_device, struct VkAttachmentDescription *depth_attachment) {
+void vulkan_graphics_utils_create_depth_attachment(VkPhysicalDevice physical_device, struct VkAttachmentDescription* depth_attachment) {
   depth_attachment->format = vulkan_graphics_utils_find_depth_format(physical_device);
   depth_attachment->samples = VK_SAMPLE_COUNT_1_BIT;
   depth_attachment->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -786,7 +788,7 @@ void vulkan_graphics_utils_create_depth_attachment(VkPhysicalDevice physical_dev
   depth_attachment->finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 }
 
-void graphics_utils_copy_buffer(struct VulkanAPI *vulkan_api, VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size) {
+void graphics_utils_copy_buffer(struct VulkanAPI* vulkan_api, VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size) {
   VkCommandBuffer command_buffer = vulkan_graphics_utils_begin_single_time_commands(vulkan_api->device, vulkan_api->command_pool);
 
   VkBufferCopy copy_region = {0};
@@ -796,7 +798,7 @@ void graphics_utils_copy_buffer(struct VulkanAPI *vulkan_api, VkBuffer src_buffe
   vulkan_graphics_utils_end_single_time_commands(vulkan_api->device, vulkan_api->graphics_queue, vulkan_api->command_pool, command_buffer);
 }
 
-void graphics_utils_copy_buffer_offset(struct VulkanAPI *vulkan_api, VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size, uint32_t offset) {
+void graphics_utils_copy_buffer_offset(struct VulkanAPI* vulkan_api, VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size, uint32_t offset) {
   VkCommandBuffer command_buffer = vulkan_graphics_utils_begin_single_time_commands(vulkan_api->device, vulkan_api->command_pool);
 
   VkBufferCopy copy_region = {0};
@@ -807,12 +809,12 @@ void graphics_utils_copy_buffer_offset(struct VulkanAPI *vulkan_api, VkBuffer sr
   vulkan_graphics_utils_end_single_time_commands(vulkan_api->device, vulkan_api->graphics_queue, vulkan_api->command_pool, command_buffer);
 }
 
-void vulkan_graphics_utils_setup_vertex_buffer(struct VulkanAPI *vulkan_api, struct Vector *vertices, VkBuffer *vertex_buffer, VkDeviceMemory *vertex_buffer_memory) {
+void vulkan_graphics_utils_setup_vertex_buffer(struct VulkanAPI* vulkan_api, struct Vector* vertices, VkBuffer* vertex_buffer, VkDeviceMemory* vertex_buffer_memory) {
   VkDeviceSize vertex_buffer_size = vertices->memory_size * vertices->size;
   VkBuffer vertex_staging_buffer = {0};
   VkDeviceMemory vertex_staging_buffer_memory = {0};
   vulkan_graphics_utils_create_buffer(vulkan_api->device, vulkan_api->physical_device, vertex_buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &vertex_staging_buffer, &vertex_staging_buffer_memory);
-  void *vertex_data;
+  void* vertex_data;
   vkMapMemory(vulkan_api->device, vertex_staging_buffer_memory, 0, vertex_buffer_size, 0, &vertex_data);
   memcpy(vertex_data, vertices->items, vertex_buffer_size);
   vkUnmapMemory(vulkan_api->device, vertex_staging_buffer_memory);
@@ -822,17 +824,17 @@ void vulkan_graphics_utils_setup_vertex_buffer(struct VulkanAPI *vulkan_api, str
   vkFreeMemory(vulkan_api->device, vertex_staging_buffer_memory, NULL);
 }
 
-void vulkan_graphics_utils_setup_vertex_buffer_pool(struct VulkanAPI *vulkan_api, struct Vector *vertices, size_t total_pool_elements, VkBuffer *vertex_buffer, VkDeviceMemory *vertex_buffer_memory) {
+void vulkan_graphics_utils_setup_vertex_buffer_pool(struct VulkanAPI* vulkan_api, struct Vector* vertices, size_t total_pool_elements, VkBuffer* vertex_buffer, VkDeviceMemory* vertex_buffer_memory) {
   VkDeviceSize vertex_buffer_size = vertices->memory_size * total_pool_elements;
   vulkan_graphics_utils_create_buffer(vulkan_api->device, vulkan_api->physical_device, vertex_buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertex_buffer, vertex_buffer_memory);
 }
 
-void vulkan_graphics_utils_update_vertex_buffer(struct VulkanAPI *vulkan_api, struct Vector *vertices, VkBuffer *vertex_buffer) {
+void vulkan_graphics_utils_update_vertex_buffer(struct VulkanAPI* vulkan_api, struct Vector* vertices, VkBuffer* vertex_buffer) {
   VkDeviceSize vertex_buffer_size = vertices->memory_size * vertices->size;
   VkBuffer vertex_staging_buffer = {0};
   VkDeviceMemory vertex_staging_buffer_memory = {0};
   vulkan_graphics_utils_create_buffer(vulkan_api->device, vulkan_api->physical_device, vertex_buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &vertex_staging_buffer, &vertex_staging_buffer_memory);
-  void *vertex_data;
+  void* vertex_data;
   vkMapMemory(vulkan_api->device, vertex_staging_buffer_memory, 0, vertex_buffer_size, 0, &vertex_data);
   memcpy(vertex_data, vertices->items, vertex_buffer_size);
   vkUnmapMemory(vulkan_api->device, vertex_staging_buffer_memory);
@@ -841,12 +843,12 @@ void vulkan_graphics_utils_update_vertex_buffer(struct VulkanAPI *vulkan_api, st
   vkFreeMemory(vulkan_api->device, vertex_staging_buffer_memory, NULL);
 }
 
-void vulkan_graphics_utils_setup_index_buffer(struct VulkanAPI *vulkan_api, struct Vector *indices, VkBuffer *index_buffer, VkDeviceMemory *index_buffer_memory) {
+void vulkan_graphics_utils_setup_index_buffer(struct VulkanAPI* vulkan_api, struct Vector* indices, VkBuffer* index_buffer, VkDeviceMemory* index_buffer_memory) {
   VkDeviceSize index_buffer_size = indices->memory_size * indices->size;
   VkBuffer index_staging_buffer = {0};
   VkDeviceMemory index_staging_buffer_memory = {0};
   vulkan_graphics_utils_create_buffer(vulkan_api->device, vulkan_api->physical_device, index_buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &index_staging_buffer, &index_staging_buffer_memory);
-  void *index_data;
+  void* index_data;
   vkMapMemory(vulkan_api->device, index_staging_buffer_memory, 0, index_buffer_size, 0, &index_data);
   memcpy(index_data, indices->items, index_buffer_size);
   vkUnmapMemory(vulkan_api->device, index_staging_buffer_memory);
@@ -856,17 +858,17 @@ void vulkan_graphics_utils_setup_index_buffer(struct VulkanAPI *vulkan_api, stru
   vkFreeMemory(vulkan_api->device, index_staging_buffer_memory, NULL);
 }
 
-void vulkan_graphics_utils_setup_index_buffer_pool(struct VulkanAPI *vulkan_api, struct Vector *indices, size_t total_pool_elements, VkBuffer *index_buffer, VkDeviceMemory *index_buffer_memory) {
+void vulkan_graphics_utils_setup_index_buffer_pool(struct VulkanAPI* vulkan_api, struct Vector* indices, size_t total_pool_elements, VkBuffer* index_buffer, VkDeviceMemory* index_buffer_memory) {
   VkDeviceSize index_buffer_size = indices->memory_size * total_pool_elements;
   vulkan_graphics_utils_create_buffer(vulkan_api->device, vulkan_api->physical_device, index_buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, index_buffer, index_buffer_memory);
 }
 
-void vulkan_graphics_utils_update_index_buffer(struct VulkanAPI *vulkan_api, struct Vector *indices, VkBuffer *index_buffer) {
+void vulkan_graphics_utils_update_index_buffer(struct VulkanAPI* vulkan_api, struct Vector* indices, VkBuffer* index_buffer) {
   VkDeviceSize index_buffer_size = indices->memory_size * indices->size;
   VkBuffer index_staging_buffer = {0};
   VkDeviceMemory index_staging_buffer_memory = {0};
   vulkan_graphics_utils_create_buffer(vulkan_api->device, vulkan_api->physical_device, index_buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &index_staging_buffer, &index_staging_buffer_memory);
-  void *index_data;
+  void* index_data;
   vkMapMemory(vulkan_api->device, index_staging_buffer_memory, 0, index_buffer_size, 0, &index_data);
   memcpy(index_data, indices->items, index_buffer_size);
   vkUnmapMemory(vulkan_api->device, index_staging_buffer_memory);
@@ -875,12 +877,12 @@ void vulkan_graphics_utils_update_index_buffer(struct VulkanAPI *vulkan_api, str
   vkFreeMemory(vulkan_api->device, index_staging_buffer_memory, NULL);
 }
 
-void vulkan_graphics_utils_setup_uniform_buffer(struct VulkanAPI *vulkan_api, size_t memory_size, VkBuffer *uniform_buffer, VkDeviceMemory *uniform_buffer_memory) {
+void vulkan_graphics_utils_setup_uniform_buffer(struct VulkanAPI* vulkan_api, size_t memory_size, VkBuffer* uniform_buffer, VkDeviceMemory* uniform_buffer_memory) {
   VkDeviceSize uniform_buffer_size = memory_size;
   vulkan_graphics_utils_create_buffer(vulkan_api->device, vulkan_api->physical_device, uniform_buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniform_buffer, uniform_buffer_memory);
 }
 
-uint_fast8_t vulkan_graphics_utils_setup_descriptor(struct VulkanAPI *vulkan_api, struct VkDescriptorSetLayout_T *descriptor_set_layout, struct VkDescriptorPool_T *descriptor_pool, VkDescriptorSet *descriptor_set) {
+uint_fast8_t vulkan_graphics_utils_setup_descriptor(struct VulkanAPI* vulkan_api, struct VkDescriptorSetLayout_T* descriptor_set_layout, struct VkDescriptorPool_T* descriptor_pool, VkDescriptorSet* descriptor_set) {
   VkDescriptorSetLayout layout = {0};
   layout = descriptor_set_layout;
 
@@ -898,7 +900,7 @@ uint_fast8_t vulkan_graphics_utils_setup_descriptor(struct VulkanAPI *vulkan_api
   return VULKAN_API_SUCCESS;
 }
 
-VkDescriptorBufferInfo vulkan_graphics_utils_setup_descriptor_buffer_info(size_t memory_size, VkBuffer *uniform_buffer) {
+VkDescriptorBufferInfo vulkan_graphics_utils_setup_descriptor_buffer_info(size_t memory_size, VkBuffer* uniform_buffer) {
   VkDescriptorBufferInfo buffer_info = {0};
   buffer_info.buffer = *uniform_buffer;
   buffer_info.offset = 0;
@@ -907,7 +909,7 @@ VkDescriptorBufferInfo vulkan_graphics_utils_setup_descriptor_buffer_info(size_t
   return buffer_info;
 }
 
-void vulkan_graphics_utils_setup_descriptor_buffer(VkWriteDescriptorSet *dcs, size_t index, VkDescriptorSet *descriptor_set, VkDescriptorBufferInfo *buffer_info) {
+void vulkan_graphics_utils_setup_descriptor_buffer(VkWriteDescriptorSet* dcs, size_t index, VkDescriptorSet* descriptor_set, VkDescriptorBufferInfo* buffer_info) {
   dcs[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   dcs[index].dstSet = *descriptor_set;
   dcs[index].dstBinding = (uint32_t)index;
@@ -917,7 +919,7 @@ void vulkan_graphics_utils_setup_descriptor_buffer(VkWriteDescriptorSet *dcs, si
   dcs[index].pBufferInfo = buffer_info;
 }
 
-VkDescriptorImageInfo vulkan_graphics_utils_setup_descriptor_image_info(VkImageView *texture_image_view, VkSampler *texture_sampler) {
+VkDescriptorImageInfo vulkan_graphics_utils_setup_descriptor_image_info(VkImageView* texture_image_view, VkSampler* texture_sampler) {
   VkDescriptorImageInfo image_info = {0};
   image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   image_info.imageView = *texture_image_view;
@@ -926,7 +928,7 @@ VkDescriptorImageInfo vulkan_graphics_utils_setup_descriptor_image_info(VkImageV
   return image_info;
 }
 
-void vulkan_graphics_utils_setup_descriptor_image(VkWriteDescriptorSet *dcs, size_t index, VkDescriptorSet *descriptor_set, VkDescriptorImageInfo *image_info) {
+void vulkan_graphics_utils_setup_descriptor_image(VkWriteDescriptorSet* dcs, size_t index, VkDescriptorSet* descriptor_set, VkDescriptorImageInfo* image_info) {
   dcs[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   dcs[index].dstSet = *descriptor_set;
   dcs[index].dstBinding = (uint32_t)index;
@@ -936,7 +938,7 @@ void vulkan_graphics_utils_setup_descriptor_image(VkWriteDescriptorSet *dcs, siz
   dcs[index].pImageInfo = image_info;
 }
 
-VkSampleCountFlagBits vulkan_graphics_utils_get_max_msaa_samples(struct VulkanAPI *vulkan_api) {
+VkSampleCountFlagBits vulkan_graphics_utils_get_max_msaa_samples(struct VulkanAPI* vulkan_api) {
   // return VK_SAMPLE_COUNT_1_BIT;
   VkPhysicalDeviceProperties physical_device_properties = {0};
   vkGetPhysicalDeviceProperties(vulkan_api->physical_device, &physical_device_properties);
@@ -967,7 +969,7 @@ VkVertexInputBindingDescription vulkan_graphics_utils_get_binding_description(ui
   return binding_description;
 }
 
-uint_fast8_t vulkan_graphics_utils_create_descriptors(struct VulkanAPI *vulkan_api, VkDescriptorSet *descriptor_set, VkDescriptorSetLayout *descriptor_set_layout, VkDescriptorPool *descriptor_pool, uint_fast32_t descriptors) {
+uint_fast8_t vulkan_graphics_utils_create_descriptors(struct VulkanAPI* vulkan_api, VkDescriptorSet* descriptor_set, VkDescriptorSetLayout* descriptor_set_layout, VkDescriptorPool* descriptor_pool, uint_fast32_t descriptors) {
   VkDescriptorSetAllocateInfo alloc_info = {0};
   alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   alloc_info.descriptorPool = *descriptor_pool;
@@ -975,7 +977,7 @@ uint_fast8_t vulkan_graphics_utils_create_descriptors(struct VulkanAPI *vulkan_a
   // alloc_info.pSetLayouts = &(shader_common->shader_vulkan.descriptor_set_layout);
 
   // Create an array of VkDescriptorSetLayout based on the descriptorSetCount
-  VkDescriptorSetLayout *layouts = (VkDescriptorSetLayout *)calloc(descriptors, sizeof(VkDescriptorSetLayout));
+  VkDescriptorSetLayout* layouts = (VkDescriptorSetLayout*)calloc(descriptors, sizeof(VkDescriptorSetLayout));
   for (uint_fast32_t descriptor_num = 0; descriptor_num < alloc_info.descriptorSetCount; descriptor_num++)
     layouts[descriptor_num] = *descriptor_set_layout;
   alloc_info.pSetLayouts = layouts;  // Point to the array of layouts

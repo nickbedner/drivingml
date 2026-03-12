@@ -76,7 +76,7 @@ def export_weights_bin(model, log_std, path):
 
 # We define small neural network for learning, 4 sequential stacked layers
 # 128 neurons in our Linear layers
-# Actor-Critic model
+# Actor-Critic model, 4 learnable layers with 1 actor and 1 critic layer each
 # Actor decides what action to take and outputs an action
 # Critic judges how good the situation is and gives a score
 # Critic it like the coach, and actor is like the player
