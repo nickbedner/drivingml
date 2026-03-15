@@ -103,7 +103,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 
   game->previous_reward = 0.0f;
 
-  struct TextureSettings sprite_texture_settings = {FILTER_NEAREST, MODE_CLAMP_TO_EDGE, FORMAT_R8G8B8A8_UNORM, MIP_GENERATE, 5, true};
+  struct TextureSettings sprite_texture_settings = {FILTER_NEAREST, MODE_CLAMP_TO_EDGE, FORMAT_R8G8B8A8_UNORM, MIP_GENERATE, 5, true, true, 16.0f};
   texture_manager_init(&(game->texture_manager), &(mana->api.api_common));
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/spritesheet.png");
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/water.png");
@@ -115,7 +115,9 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/startfinish.png");
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/fence.png");
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/marker.png");
-  sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_LINEAR, .mode_type = MODE_REPEAT, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_CUSTOM, .mip_count = 5, .premultiplied_alpha = true};
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/cloud.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/floor_plane.png");
+  sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_LINEAR, .mode_type = MODE_REPEAT, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_CUSTOM, .mip_count = 5, .premultiplied_alpha = true, false, 0.0f};
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/waterm1.png");
 
   sprite_manager_init(&(game->sprite_manager), &(game->texture_manager), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 128);
@@ -133,6 +135,20 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   fence_rotation = mat4_rotate(fence_rotation, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
   game->fence->sprite_common.rotation = mat4_to_quaternion(fence_rotation);
 
+  game->cloud = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/cloud.png");
+  game->cloud->sprite_common.position = (vec3){.x = 0, .y = -5000.0f, .z = 2.5f};
+  game->cloud->sprite_common.scale = (vec3){.x = 500.0f, .y = 500.0f, .z = 0.0f};
+  mat4 cloud_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
+  cloud_rotation = mat4_rotate(cloud_rotation, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+  game->cloud->sprite_common.rotation = mat4_to_quaternion(cloud_rotation);
+
+  // TODO: This needs to be 3D, sprite sorting messing it all up
+  // game->floor_plane = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/floor_plane.png");
+  // game->floor_plane->sprite_common.position = (vec3){.x = 0.0f, .y = 0.0f, .z = -5.1f};
+  // game->floor_plane->sprite_common.scale = (vec3){.x = 50000.0f, .y = 50000.0f, .z = 0.0f};
+  // mat4 rot = mat4_rotate(MAT4_IDENTITY, M_PI, (vec3){0.0, 0.5, 0.0});
+  // game->floor_plane->sprite_common.rotation = mat4_to_quaternion(rot);
+  //
   // game->mario = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/rb.png");
   // game->mario_position = (vec3){.x = 10.0f, .y = 95.0f, .z = 0.75};
   // game->mario->sprite_common.position = game->mario_position;
@@ -195,6 +211,8 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 }
 
 void game_delete(struct Game* game, struct Mana* mana) {
+  water_delete(&(game->water), &(mana->api.api_common));
+
   closesocket(game->sock);
   WSACleanup();
 
@@ -443,6 +461,8 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   if (!IsIconic(window->surface.hwnd)) {
     if (window->should_resize) {
       renderer_wait_for_device(&(window->renderer), window->api_common);
+
+      shader_resize(&(game->water_shader.shader), api_common, window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale);
 
       sprite_manager_resize(&(game->sprite_manager), api_common, window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->renderer.renderer_settings.supersample_scale);
 

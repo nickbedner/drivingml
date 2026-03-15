@@ -137,7 +137,9 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
     vulkan_graphics_utils_generate_mipmaps(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, api_common->vulkan_api.graphics_queue, api_common->vulkan_api.command_pool, texture_common->texture_vulkan.texture_image, format, texture_common->width, texture_common->height, mip_levels);
 
   vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, texture_common->texture_vulkan.texture_image, format, VK_IMAGE_ASPECT_COLOR_BIT, mip_levels, &(texture_common->texture_vulkan.texture_image_view));
-  vulkan_graphics_utils_create_sampler(api_common->vulkan_api.device, &(texture_common->texture_vulkan.texture_sampler), (struct SamplerSettings){.mip_levels = mip_levels, .filter = filter, .address_mode = mode});
+
+  VkBool32 anisotropy_enable_vulkan = texture_settings->anisotropy_enable ? VK_TRUE : VK_FALSE;
+  vulkan_graphics_utils_create_sampler(api_common->vulkan_api.device, &(texture_common->texture_vulkan.texture_sampler), (struct SamplerSettings){.mip_levels = mip_levels, .filter = filter, .address_mode = mode, .anisotropy_enable = anisotropy_enable_vulkan, .max_anisotropy = texture_settings->max_anisotropy});
 
   return 0;
 }

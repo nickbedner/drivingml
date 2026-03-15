@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.22)
-project(DrivingML LANGUAGES C VERSION 0.1.0)
+project(DrivingML LANGUAGES C ASM VERSION 0.1.0)
 
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 23)
 set(ignoreMe "${CMAKE_CXX_COMPILER}")
 set(CMAKE_CXX_COMPILER_WORKS 1)
 
-file(GLOB_RECURSE drivingml_SRC include/drivingml/*.h src/drivingml/*.c)
+file(GLOB_RECURSE drivingml_SRC include/drivingml/*.h src/drivingml/*.c src/drivingml/*.s)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Weverything -Wno-pre-c2x-compat -Wno-c++98-compat -Wno-declaration-after-statement -Wno-unsafe-buffer-usage -Wno-format-nonliteral -Wno-unused-function -Wno-unused-parameter -Werror=vla")
 

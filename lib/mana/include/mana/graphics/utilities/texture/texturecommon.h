@@ -42,6 +42,9 @@ struct TextureSettings {
 
   // Does the image already have premultiplied alphas, 0: No 1: Yes
   bool premultiplied_alpha;
+
+  bool anisotropy_enable;
+  float max_anisotropy;
 };
 
 #ifdef VULKAN_API_SUPPORTED

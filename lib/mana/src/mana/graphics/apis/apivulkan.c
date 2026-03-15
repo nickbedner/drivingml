@@ -630,13 +630,11 @@ uint_fast8_t vulkan_graphics_utils_create_sampler(struct VkDevice_T* device, VkS
   sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
   sampler_info.magFilter = sampler_settings.filter;
   sampler_info.minFilter = sampler_settings.filter;
-  // TODO: Let this be changeable
-  // TODO BIGGGGGG: Fix anisotropy settings
   sampler_info.addressModeU = sampler_settings.address_mode;
   sampler_info.addressModeV = sampler_settings.address_mode;
   sampler_info.addressModeW = sampler_settings.address_mode;
-  sampler_info.anisotropyEnable = VK_FALSE;
-  sampler_info.maxAnisotropy = 1;
+  sampler_info.anisotropyEnable = sampler_settings.anisotropy_enable;
+  sampler_info.maxAnisotropy = sampler_settings.max_anisotropy;
   sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
   sampler_info.unnormalizedCoordinates = VK_FALSE;
   sampler_info.compareEnable = VK_FALSE;

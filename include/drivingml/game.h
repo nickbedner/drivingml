@@ -15,7 +15,7 @@
 #include "drivingml/core/ac_model.h"
 #include "drivingml/core/player.h"
 
-#define EVAL_MODE false
+#define EVAL_MODE true
 
 #define MAX_MARKERS 32
 #define MAX_NPCS 8
@@ -63,6 +63,8 @@ struct Game {
   struct Sprite* start;
   struct Sprite* finish;
   struct Sprite* fence;
+  struct Sprite* floor_plane;
+  struct Sprite* cloud;
 
   int total_markers;
   struct Sprite* marker[MAX_MARKERS];

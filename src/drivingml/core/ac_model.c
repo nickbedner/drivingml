@@ -1,5 +1,7 @@
 #include "drivingml/core/ac_model.h"
 
+void relu(float* x, int n);
+
 int load_ac_model(const char* path, ACModel* m) {
   FILE* f = fopen(path, "rb");
   if (!f) {
@@ -51,10 +53,10 @@ void linear(const float* W, const float* b, int in, int out, const float* x, flo
   }
 }
 
-void relu(float* x, int n) {
-  for (int i = 0; i < n; i++)
-    if (x[i] < 0.0f) x[i] = 0.0f;
-}
+// void relu(float* x, int n) {
+//   for (int i = 0; i < n; i++)
+//     if (x[i] < 0.0f) x[i] = 0.0f;
+// }
 
 void ac_forward(const ACModel* m, const float state[5], float action_out[2], float* value_out) {
   float h1[H1];
