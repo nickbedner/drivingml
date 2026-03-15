@@ -85,10 +85,7 @@ static void load_map_from_xml(struct Game* game, struct Mana* mana, const char* 
         float x = (float)atof(x_str);
         float y = (float)atof(y_str);
 
-        game->marker[i] =
-            sprite_manager_add_sprite(&(game->sprite_manager),
-                                      &(mana->api.api_common),
-                                      "/textures/marker.png");
+        game->marker[i] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/marker.png");
 
         place_marker(game->marker[i], x, y);
       }

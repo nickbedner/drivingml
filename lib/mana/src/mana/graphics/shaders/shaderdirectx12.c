@@ -101,73 +101,56 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
   else
     cull_mode = D3D12_CULL_MODE_NONE;
 
-  BOOL direction = shader_common->shader_settings.front_face == SHADER_FRONT_FACE_CLOCKWISE ? TRUE : FALSE;
+  // Note: Remember Vulkan we flip y axis, so we need to flip the front face definition as well. Standard is clockwise for DirectX12 and counterclockwise for Vulkan
+  BOOL engine_front_ccw = shader_common->shader_settings.front_face == SHADER_FRONT_FACE_COUNTER_CLOCKWISE ? TRUE : FALSE;
   BOOL depth_test = shader_common->shader_settings.depth_test ? TRUE : FALSE;
   BOOL multisample_enabled = shader_common->shader_settings.num_msaa_samples > 1 ? TRUE : FALSE;
 
   rasterizer_desc.FillMode = D3D12_FILL_MODE_SOLID;
   rasterizer_desc.CullMode = cull_mode;
-  rasterizer_desc.FrontCounterClockwise = direction;
+  // Note: Our engine/front_face setting follows the Vulkan convention used by this renderer. Vulkan path applies a y flip, while the DirectX12 path does not
+  // To keep the same triangles front-facing across both backends, we invert the engine front-face setting when mapping to DirectX12
+  // D3D12: FrontCounterClockwise = TRUE  -> CCW is front
+  //        FrontCounterClockwise = FALSE -> CW  is front
+  // So if we have a shader using counter clockwise and it's standardized to Vulkan, then DirectX12 should be clockwise
+  rasterizer_desc.FrontCounterClockwise = !engine_front_ccw;
   rasterizer_desc.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
   rasterizer_desc.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
   rasterizer_desc.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-  rasterizer_desc.DepthClipEnable = depth_test;
+  rasterizer_desc.DepthClipEnable = TRUE;
   rasterizer_desc.MultisampleEnable = multisample_enabled;
   rasterizer_desc.AntialiasedLineEnable = FALSE;
   rasterizer_desc.ForcedSampleCount = 0;
   rasterizer_desc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
-  D3D12_BLEND_DESC blend_desc;
-  ZeroMemory(&blend_desc, sizeof(blend_desc));  // Initialize the struct to zero
-
-  blend_desc.AlphaToCoverageEnable = FALSE;
-  blend_desc.IndependentBlendEnable = FALSE;
-
-  D3D12_RENDER_TARGET_BLEND_DESC default_render_target_blend_desc = {FALSE, FALSE, D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD, D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD, D3D12_LOGIC_OP_NOOP, D3D12_COLOR_WRITE_ENABLE_ALL};
-
-  for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
-    blend_desc.RenderTarget[i] = default_render_target_blend_desc;
-
   /////////////////////////////////////////////////////////////////////////////
   D3D12_ROOT_PARAMETER root_parameters[SHADER_ATTACHMENT_LIMIT * 3];
   ZeroMemory(root_parameters, sizeof(root_parameters));
-
-  // D3D12_DESCRIPTOR_RANGE constant_buffer_range[SHADER_ATTACHMENT_LIMIT];
-  // ZeroMemory(constant_buffer_range, sizeof(constant_buffer_range));
-  for (uint_fast8_t constant_num = 0; constant_num < shader_common->shader_settings.uniforms_constants; constant_num++) {
-    // constant_buffer_range[constant_num].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-    // constant_buffer_range[constant_num].NumDescriptors = 1;
-    // constant_buffer_range[constant_num].BaseShaderRegister = shader_common->shader_settings.uniform_constant_state[constant_num].shader_position;
-    // constant_buffer_range[constant_num].RegisterSpace = 0;
-    // constant_buffer_range[constant_num].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-    root_parameters[shader_common->shader_settings.uniform_constant_state[constant_num].shader_position].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    root_parameters[shader_common->shader_settings.uniform_constant_state[constant_num].shader_position].Descriptor.ShaderRegister = shader_common->shader_settings.uniform_constant_state[constant_num].shader_position;
-    root_parameters[shader_common->shader_settings.uniform_constant_state[constant_num].shader_position].Descriptor.RegisterSpace = 0;
-    if (shader_common->shader_settings.uniform_constant_state[constant_num].shader_stage == SHADER_STAGE_VERTEX)
-      root_parameters[shader_common->shader_settings.uniform_constant_state[constant_num].shader_position].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    else if (shader_common->shader_settings.uniform_constant_state[constant_num].shader_stage == SHADER_STAGE_FRAGMENT)
-      root_parameters[shader_common->shader_settings.uniform_constant_state[constant_num].shader_position].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-  }
   D3D12_DESCRIPTOR_RANGE descriptor_table_ranges[SHADER_ATTACHMENT_LIMIT];
   ZeroMemory(descriptor_table_ranges, sizeof(descriptor_table_ranges));
-  for (uint_fast8_t texture_num = 0; texture_num < shader_common->shader_settings.texture_samples; texture_num++) {
+
+  uint32_t root_param_index = 0;
+
+  for (uint_fast8_t constant_num = 0; constant_num < shader_common->shader_settings.uniforms_constants; constant_num++, root_param_index++) {
+    root_parameters[root_param_index].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    root_parameters[root_param_index].Descriptor.ShaderRegister = shader_common->shader_settings.uniform_constant_state[constant_num].shader_position;
+    root_parameters[root_param_index].Descriptor.RegisterSpace = 0;
+    root_parameters[root_param_index].ShaderVisibility = (shader_common->shader_settings.uniform_constant_state[constant_num].shader_stage == SHADER_STAGE_VERTEX) ? D3D12_SHADER_VISIBILITY_VERTEX : D3D12_SHADER_VISIBILITY_PIXEL;
+  }
+
+  for (uint_fast8_t texture_num = 0; texture_num < shader_common->shader_settings.texture_samples; texture_num++, root_param_index++) {
     descriptor_table_ranges[texture_num].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
     descriptor_table_ranges[texture_num].NumDescriptors = 1;
     descriptor_table_ranges[texture_num].BaseShaderRegister = shader_common->shader_settings.texture_sample_state[texture_num].shader_position;
     descriptor_table_ranges[texture_num].RegisterSpace = 0;
     descriptor_table_ranges[texture_num].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-    root_parameters[shader_common->shader_settings.texture_sample_state[texture_num].shader_position].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    root_parameters[shader_common->shader_settings.texture_sample_state[texture_num].shader_position].DescriptorTable.NumDescriptorRanges = 1;
-    root_parameters[shader_common->shader_settings.texture_sample_state[texture_num].shader_position].DescriptorTable.pDescriptorRanges = &descriptor_table_ranges[texture_num];
-    if (shader_common->shader_settings.texture_sample_state[texture_num].shader_stage == SHADER_STAGE_VERTEX)
-      root_parameters[shader_common->shader_settings.texture_sample_state[texture_num].shader_position].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    else if (shader_common->shader_settings.texture_sample_state[texture_num].shader_stage == SHADER_STAGE_FRAGMENT)
-      root_parameters[shader_common->shader_settings.texture_sample_state[texture_num].shader_position].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+    root_parameters[root_param_index].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    root_parameters[root_param_index].DescriptorTable.NumDescriptorRanges = 1;
+    root_parameters[root_param_index].DescriptorTable.pDescriptorRanges = &descriptor_table_ranges[texture_num];
+    root_parameters[root_param_index].ShaderVisibility = (shader_common->shader_settings.texture_sample_state[texture_num].shader_stage == SHADER_STAGE_VERTEX) ? D3D12_SHADER_VISIBILITY_VERTEX : D3D12_SHADER_VISIBILITY_PIXEL;
   }
 
-  // TODO: This should probably be moved to whatever would need to use this shader
   D3D12_DESCRIPTOR_RANGE sampler_table_range;
   ZeroMemory(&sampler_table_range, sizeof(sampler_table_range));
   sampler_table_range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
@@ -175,10 +158,12 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
   sampler_table_range.BaseShaderRegister = 0;
   sampler_table_range.RegisterSpace = 0;
   sampler_table_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-  root_parameters[shader_common->shader_settings.uniforms_constants + shader_common->shader_settings.texture_samples].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-  root_parameters[shader_common->shader_settings.uniforms_constants + shader_common->shader_settings.texture_samples].DescriptorTable.NumDescriptorRanges = 1;
-  root_parameters[shader_common->shader_settings.uniforms_constants + shader_common->shader_settings.texture_samples].DescriptorTable.pDescriptorRanges = &sampler_table_range;
-  root_parameters[shader_common->shader_settings.uniforms_constants + shader_common->shader_settings.texture_samples].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+  root_parameters[root_param_index].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+  root_parameters[root_param_index].DescriptorTable.NumDescriptorRanges = 1;
+  root_parameters[root_param_index].DescriptorTable.pDescriptorRanges = &sampler_table_range;
+  root_parameters[root_param_index].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+  root_param_index++;
   //
   // D3D12_DESCRIPTOR_RANGE sampler_table_range[SHADER_ATTACHMENT_LIMIT];
   // ZeroMemory(sampler_table_range, sizeof(sampler_table_range));
@@ -200,7 +185,7 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
 
   D3D12_ROOT_SIGNATURE_DESC root_signature_desc;
   ZeroMemory(&root_signature_desc, sizeof(root_signature_desc));
-  root_signature_desc.NumParameters = shader_common->shader_settings.uniforms_constants + shader_common->shader_settings.texture_samples + 1;
+  root_signature_desc.NumParameters = root_param_index;
   root_signature_desc.pParameters = root_parameters;
   root_signature_desc.NumStaticSamplers = 0;
   root_signature_desc.pStaticSamplers = NULL;
@@ -208,16 +193,31 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
 
   ID3DBlob* serialized_root_sig = NULL;
   ID3DBlob* error_blob = NULL;
-  D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1, &serialized_root_sig, &error_blob);
+  HRESULT hr = D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1, &serialized_root_sig, &error_blob);
+  if (FAILED(hr)) {
+    if (error_blob) {
+      char* err_msg = (char*)error_blob->lpVtbl->GetBufferPointer(error_blob);
+      log_message(LOG_SEVERITY_ERROR, "Root Signature Compilation Messages:\n%s\n", err_msg);
+      error_blob->lpVtbl->Release(error_blob);
+      error_blob = NULL;
+    }
+    log_message(LOG_SEVERITY_ERROR, "Failed to serialize root signature\n");
+    return 1;
+  }
 
   if (error_blob) {
     // Handle error - use the errorBlob's data to get a string error message
     char* err_msg = (char*)error_blob->lpVtbl->GetBufferPointer(error_blob);
     log_message(LOG_SEVERITY_ERROR, "Root Signature Compilation Messages:\n%s\n", err_msg);
     error_blob->lpVtbl->Release(error_blob);
+    error_blob = NULL;
   }
 
-  api_common->directx_12_api.device->lpVtbl->CreateRootSignature(api_common->directx_12_api.device, 0, serialized_root_sig->lpVtbl->GetBufferPointer(serialized_root_sig), serialized_root_sig->lpVtbl->GetBufferSize(serialized_root_sig), &IID_ID3D12RootSignature, (void**)&(shader_common->shader_directx12.root_signature));
+  hr = api_common->directx_12_api.device->lpVtbl->CreateRootSignature(api_common->directx_12_api.device, 0, serialized_root_sig->lpVtbl->GetBufferPointer(serialized_root_sig), serialized_root_sig->lpVtbl->GetBufferSize(serialized_root_sig), &IID_ID3D12RootSignature, (void**)&shader_common->shader_directx12.root_signature);
+  if (FAILED(hr)) {
+    log_message(LOG_SEVERITY_ERROR, "Failed to create root signature\n");
+    return 1;
+  }
 
   if (serialized_root_sig)
     serialized_root_sig->lpVtbl->Release(serialized_root_sig);
@@ -228,7 +228,15 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
   D3D12_INPUT_ELEMENT_DESC input_element_descs[32] = {0};
   uint32_t num_attributes = mesh_get_input_layout(shader_common->shader_settings.mesh_type, input_element_descs);
 
+  /* count color render targets (skip depth) */
+  uint32_t color_targets = 0;
+  for (uint_fast8_t i = 0; i < shader_common->shader_settings.render_targets; i++)
+    if (shader_common->shader_settings.render_target_format[i] != SHADER_RENDER_TARGET_FORMAT_D32_FLOAT)
+      color_targets++;
+
   D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {0};
+  pso_desc.NumRenderTargets = color_targets;
+
   if (shader_common->shader_settings.vertex_attributes > 0) {
     pso_desc.InputLayout.pInputElementDescs = input_element_descs;
     pso_desc.InputLayout.NumElements = num_attributes;
@@ -236,6 +244,30 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
     pso_desc.InputLayout.pInputElementDescs = NULL;
     pso_desc.InputLayout.NumElements = 0;
   }
+
+  D3D12_BLEND_DESC blend_desc;
+  ZeroMemory(&blend_desc, sizeof(blend_desc));
+
+  blend_desc.AlphaToCoverageEnable = FALSE;
+  blend_desc.IndependentBlendEnable = FALSE;
+
+  D3D12_RENDER_TARGET_BLEND_DESC rt_blend = {0};
+  rt_blend.BlendEnable = shader_common->shader_settings.blend ? TRUE : FALSE;
+  rt_blend.LogicOpEnable = FALSE;
+
+  rt_blend.SrcBlend = D3D12_BLEND_ONE;
+  rt_blend.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+  rt_blend.BlendOp = D3D12_BLEND_OP_ADD;
+
+  rt_blend.SrcBlendAlpha = D3D12_BLEND_ONE;
+  rt_blend.DestBlendAlpha = D3D12_BLEND_ZERO;
+  rt_blend.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+
+  rt_blend.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+  for (UINT i = 0; i < color_targets; i++)
+    blend_desc.RenderTarget[i] = rt_blend;
+
   pso_desc.pRootSignature = shader_common->shader_directx12.root_signature;
   pso_desc.VS.pShaderBytecode = shader_common->shader_directx12.vertex_shader_blob->lpVtbl->GetBufferPointer(shader_common->shader_directx12.vertex_shader_blob);
   pso_desc.VS.BytecodeLength = shader_common->shader_directx12.vertex_shader_blob->lpVtbl->GetBufferSize(shader_common->shader_directx12.vertex_shader_blob);
@@ -243,49 +275,28 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
   pso_desc.PS.BytecodeLength = shader_common->shader_directx12.fragment_shader_blob->lpVtbl->GetBufferSize(shader_common->shader_directx12.fragment_shader_blob);
   pso_desc.RasterizerState = rasterizer_desc;
   pso_desc.BlendState = blend_desc;
-  pso_desc.DepthStencilState.DepthEnable = depth_test;
-  if (depth_test) {
-    // pso_desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-    // pso_desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
-    D3D12_DEPTH_STENCIL_DESC depth_stencil_desc = {0};
-
-    // Enable depth testing.
-    depth_stencil_desc.DepthEnable = TRUE;
-    depth_stencil_desc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-
-    // For reverse depth, objects closer to the camera will have a greater depth value.
-    depth_stencil_desc.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
-
-    // Stencil settings, for now, we'll disable stencil testing.
-    depth_stencil_desc.StencilEnable = FALSE;
-    depth_stencil_desc.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
-    depth_stencil_desc.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
-
-    // Default stencil operations in case stencil test is enabled later.
-    depth_stencil_desc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-    depth_stencil_desc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-    depth_stencil_desc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
-    depth_stencil_desc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
-
-    depth_stencil_desc.BackFace = depth_stencil_desc.FrontFace;  // Just copy the front face settings to the back face for simplicity.
-    pso_desc.DepthStencilState = depth_stencil_desc;
-    pso_desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;  // Or whatever your depth format is
-  }
-  pso_desc.DepthStencilState.StencilEnable = FALSE;
+  D3D12_DEPTH_STENCIL_DESC depth_stencil_desc = {0};
+  depth_stencil_desc.DepthEnable = depth_test;
+  depth_stencil_desc.DepthWriteMask = shader_common->shader_settings.depth_write ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+  depth_stencil_desc.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+  depth_stencil_desc.StencilEnable = FALSE;
+  pso_desc.DepthStencilState = depth_stencil_desc;
+  pso_desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
   pso_desc.SampleMask = UINT_MAX;
   pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-  pso_desc.NumRenderTargets = shader_common->shader_settings.render_targets;
+
+  for (int i = 0; i < 8; i++)
+    pso_desc.RTVFormats[i] = DXGI_FORMAT_UNKNOWN;
+  uint32_t rtv_index = 0;
   for (uint_fast8_t render_target_num = 0; render_target_num < shader_common->shader_settings.render_targets; render_target_num++) {
     if (shader_common->shader_settings.render_target_format[render_target_num] == SHADER_RENDER_TARGET_FORMAT_R8G8B8A8_UNORM)
-      pso_desc.RTVFormats[render_target_num] = DXGI_FORMAT_R8G8B8A8_UNORM;
+      pso_desc.RTVFormats[rtv_index++] = DXGI_FORMAT_R8G8B8A8_UNORM;
     else if (shader_common->shader_settings.render_target_format[render_target_num] == SHADER_RENDER_TARGET_FORMAT_R11G11B10_FLOAT)
-      pso_desc.RTVFormats[render_target_num] = DXGI_FORMAT_R11G11B10_FLOAT;
+      pso_desc.RTVFormats[rtv_index++] = DXGI_FORMAT_R11G11B10_FLOAT;
     else if (shader_common->shader_settings.render_target_format[render_target_num] == SHADER_RENDER_TARGET_FORMAT_R16G16B16A16_FLOAT)
-      pso_desc.RTVFormats[render_target_num] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+      pso_desc.RTVFormats[rtv_index++] = DXGI_FORMAT_R16G16B16A16_FLOAT;
     else if (shader_common->shader_settings.render_target_format[render_target_num] == SHADER_RENDER_TARGET_FORMAT_R32G32B32A32_FLOAT)
-      pso_desc.RTVFormats[render_target_num] = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    else if (shader_common->shader_settings.render_target_format[render_target_num] == SHADER_RENDER_TARGET_FORMAT_D32_FLOAT)
-      pso_desc.RTVFormats[render_target_num] = DXGI_FORMAT_D32_FLOAT;
+      pso_desc.RTVFormats[rtv_index++] = DXGI_FORMAT_R32G32B32A32_FLOAT;
   }
   pso_desc.SampleDesc.Count = shader_common->shader_settings.num_msaa_samples;
   if (shader_common->shader_settings.num_msaa_samples != 1) {
@@ -305,7 +316,11 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
     pso_desc.SampleDesc.Quality = max_quality_level;
   }
 
-  api_common->directx_12_api.device->lpVtbl->CreateGraphicsPipelineState(api_common->directx_12_api.device, &pso_desc, &IID_ID3D12PipelineState, (void**)&(shader_common->shader_directx12.pipeline_state));
+  HRESULT hr_pso = api_common->directx_12_api.device->lpVtbl->CreateGraphicsPipelineState(api_common->directx_12_api.device, &pso_desc, &IID_ID3D12PipelineState, (void**)&shader_common->shader_directx12.pipeline_state);
+  if (FAILED(hr_pso)) {
+    log_message(LOG_SEVERITY_ERROR, "Failed to create graphics pipeline state\n");
+    return 1;
+  }
   /////////////////////////////////////////////////////////////////////////////
   D3D12_DESCRIPTOR_HEAP_DESC sampler_heap_desc = {0};
   sampler_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;

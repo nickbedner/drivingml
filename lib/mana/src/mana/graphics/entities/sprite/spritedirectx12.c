@@ -1,6 +1,6 @@
 #include "mana/graphics/entities/sprite/spritedirectx12.h"
 
-uint_fast8_t sprite_directx_12_init(struct SpriteCommon *sprite_common, struct APICommon *api_common, struct Shader *shader, struct Texture *texture, size_t num) {
+uint_fast8_t sprite_directx_12_init(struct SpriteCommon* sprite_common, struct APICommon* api_common, struct Shader* shader, struct Texture* texture, size_t num) {
   // Set up the vertex buffer
   directx_12_graphics_utils_setup_vertex_buffer(&(api_common->directx_12_api), sprite_common->image_mesh->mesh_common.vertices, &sprite_common->sprite_directx12.vertex_buffer);
 
@@ -24,7 +24,7 @@ uint_fast8_t sprite_directx_12_init(struct SpriteCommon *sprite_common, struct A
   return 0;
 }
 
-void sprite_directx_12_delete(struct SpriteCommon *sprite_common, struct APICommon *api_common) {
+void sprite_directx_12_delete(struct SpriteCommon* sprite_common, struct APICommon* api_common) {
   if (sprite_common->sprite_directx12.vertex_buffer) {
     sprite_common->sprite_directx12.vertex_buffer->lpVtbl->Release(sprite_common->sprite_directx12.vertex_buffer);
     sprite_common->sprite_directx12.vertex_buffer = NULL;
@@ -41,7 +41,7 @@ void sprite_directx_12_delete(struct SpriteCommon *sprite_common, struct APIComm
   }
 }
 
-void sprite_directx_12_render(struct SpriteCommon *sprite_common, struct GBufferCommon *gbuffer_common) {
+void sprite_directx_12_render(struct SpriteCommon* sprite_common, struct GBufferCommon* gbuffer_common) {
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->RSSetViewports(gbuffer_common->gbuffer_directx12.command_list, 1, &(sprite_common->shader->shader_common.shader_directx12.viewport));
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->RSSetScissorRects(gbuffer_common->gbuffer_directx12.command_list, 1, &(sprite_common->shader->shader_common.shader_directx12.scissor_rect));
 
@@ -59,7 +59,7 @@ void sprite_directx_12_render(struct SpriteCommon *sprite_common, struct GBuffer
   // Set the descriptor heap
   // ID3D12DescriptorHeap *heaps[] = {sprite_common->image_texture->texture_common.texture_directx12.srv_heap};
   // gbuffer_common->gbuffer_directx12.command_list->lpVtbl->SetDescriptorHeaps(gbuffer_common->gbuffer_directx12.command_list, 1, heaps);
-  ID3D12DescriptorHeap *descriptor_heaps[] = {sprite_common->image_texture->texture_common.texture_manager_common->texture_manager_directx12.srv_heap, sprite_common->shader->shader_common.shader_directx12.sampler_heap};
+  ID3D12DescriptorHeap* descriptor_heaps[] = {sprite_common->image_texture->texture_common.texture_manager_common->texture_manager_directx12.srv_heap, sprite_common->shader->shader_common.shader_directx12.sampler_heap};
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->SetDescriptorHeaps(gbuffer_common->gbuffer_directx12.command_list, _countof(descriptor_heaps), descriptor_heaps);
 
   // Bind the SRV for the texture
@@ -83,7 +83,7 @@ void sprite_directx_12_render(struct SpriteCommon *sprite_common, struct GBuffer
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->DrawIndexedInstanced(gbuffer_common->gbuffer_directx12.command_list, (UINT)sprite_common->image_mesh->mesh_common.indices->size, 1, 0, 0, 0);
 }
 
-void sprite_directx_12_update_uniforms(struct SpriteCommon *sprite_common, struct APICommon *api_common, struct GBufferCommon *gbuffer_common) {
+void sprite_directx_12_update_uniforms(struct SpriteCommon* sprite_common, struct APICommon* api_common, struct GBufferCommon* gbuffer_common) {
   struct SpriteUniformBufferObject ubos = {0};
   ubos.proj = gbuffer_common->projection_matrix;
   ubos.proj = mat4_transpose(ubos.proj);
@@ -97,7 +97,7 @@ void sprite_directx_12_update_uniforms(struct SpriteCommon *sprite_common, struc
   ubos.model = mat4_transpose(ubos.model);
 
   // Map the constant buffer to update it
-  void *data;
+  void* data;
   HRESULT hr = sprite_common->sprite_directx12.constant_buffer->lpVtbl->Map(sprite_common->sprite_directx12.constant_buffer, 0, NULL, &data);
   if (SUCCEEDED(hr)) {
     memcpy(data, &ubos, sizeof(struct SpriteUniformBufferObject));

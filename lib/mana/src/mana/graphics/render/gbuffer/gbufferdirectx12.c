@@ -1,8 +1,8 @@
 #include "mana/graphics/render/gbuffer/gbufferdirectx12.h"
 
 // NOTE: This function is used for DirectX 12 error handling init
-static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon *gbuffer_common, struct APICommon *api_common, struct SwapChainCommon *swap_chain_common, const uint_fast32_t msaa_samples) {
-  ID3D12Device *device = api_common->directx_12_api.device;
+static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
+  ID3D12Device* device = api_common->directx_12_api.device;
   HRESULT hr;
 
   uint32_t gbuffer_width = swap_chain_common->swap_chain_extent.width * swap_chain_common->supersample_scale;
@@ -57,11 +57,11 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon *gbuffe
   heap_properties.VisibleNodeMask = 1;
 
   // Create the color texture
-  hr = device->lpVtbl->CreateCommittedResource(device, &heap_properties, D3D12_HEAP_FLAG_NONE, &texture_desc, D3D12_RESOURCE_STATE_RENDER_TARGET, &(gbuffer_common->gbuffer_directx12.color_clear_value), &IID_ID3D12Resource, (void **)&(gbuffer_common->gbuffer_directx12.color_texture));
+  hr = device->lpVtbl->CreateCommittedResource(device, &heap_properties, D3D12_HEAP_FLAG_NONE, &texture_desc, D3D12_RESOURCE_STATE_RENDER_TARGET, &(gbuffer_common->gbuffer_directx12.color_clear_value), &IID_ID3D12Resource, (void**)&(gbuffer_common->gbuffer_directx12.color_texture));
   if (FAILED(hr))
     return 1;
   // Create the normal texture
-  hr = device->lpVtbl->CreateCommittedResource(device, &heap_properties, D3D12_HEAP_FLAG_NONE, &texture_desc, D3D12_RESOURCE_STATE_RENDER_TARGET, &(gbuffer_common->gbuffer_directx12.normal_clear_value), &IID_ID3D12Resource, (void **)&(gbuffer_common->gbuffer_directx12.normal_texture));
+  hr = device->lpVtbl->CreateCommittedResource(device, &heap_properties, D3D12_HEAP_FLAG_NONE, &texture_desc, D3D12_RESOURCE_STATE_RENDER_TARGET, &(gbuffer_common->gbuffer_directx12.normal_clear_value), &IID_ID3D12Resource, (void**)&(gbuffer_common->gbuffer_directx12.normal_texture));
   if (FAILED(hr))
     return 1;
 
@@ -86,11 +86,11 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon *gbuffe
     texture_desc_multisample.SampleDesc = (DXGI_SAMPLE_DESC){msaa_samples, max_quality_level};
 
     // Create the multisampled texture
-    hr = device->lpVtbl->CreateCommittedResource(device, &heap_properties, D3D12_HEAP_FLAG_NONE, &texture_desc_multisample, D3D12_RESOURCE_STATE_RENDER_TARGET, &(gbuffer_common->gbuffer_directx12.color_clear_value), &IID_ID3D12Resource, (void **)&(gbuffer_common->gbuffer_directx12.multisample_color_texture));
+    hr = device->lpVtbl->CreateCommittedResource(device, &heap_properties, D3D12_HEAP_FLAG_NONE, &texture_desc_multisample, D3D12_RESOURCE_STATE_RENDER_TARGET, &(gbuffer_common->gbuffer_directx12.color_clear_value), &IID_ID3D12Resource, (void**)&(gbuffer_common->gbuffer_directx12.multisample_color_texture));
     if (FAILED(hr))
       return 1;
 
-    hr = device->lpVtbl->CreateCommittedResource(device, &heap_properties, D3D12_HEAP_FLAG_NONE, &texture_desc_multisample, D3D12_RESOURCE_STATE_RENDER_TARGET, &(gbuffer_common->gbuffer_directx12.normal_clear_value), &IID_ID3D12Resource, (void **)&(gbuffer_common->gbuffer_directx12.multisample_normal_texture));
+    hr = device->lpVtbl->CreateCommittedResource(device, &heap_properties, D3D12_HEAP_FLAG_NONE, &texture_desc_multisample, D3D12_RESOURCE_STATE_RENDER_TARGET, &(gbuffer_common->gbuffer_directx12.normal_clear_value), &IID_ID3D12Resource, (void**)&(gbuffer_common->gbuffer_directx12.multisample_normal_texture));
     if (FAILED(hr))
       return 1;
   }
@@ -102,7 +102,7 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon *gbuffe
   if (msaa_samples != 1)
     rtv_heap_desc.NumDescriptors += 2;  // Multisample color and normals
   rtv_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-  hr = device->lpVtbl->CreateDescriptorHeap(device, &rtv_heap_desc, &IID_ID3D12DescriptorHeap, (void **)&(gbuffer_common->gbuffer_directx12.rtv_descriptor_heap));
+  hr = device->lpVtbl->CreateDescriptorHeap(device, &rtv_heap_desc, &IID_ID3D12DescriptorHeap, (void**)&(gbuffer_common->gbuffer_directx12.rtv_descriptor_heap));
   if (FAILED(hr))
     return 1;
 
@@ -110,7 +110,7 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon *gbuffe
   dsv_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
   dsv_heap_desc.NumDescriptors = 1;  // Depth
   dsv_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-  hr = device->lpVtbl->CreateDescriptorHeap(device, &dsv_heap_desc, &IID_ID3D12DescriptorHeap, (void **)&(gbuffer_common->gbuffer_directx12.dsv_descriptor_heap));
+  hr = device->lpVtbl->CreateDescriptorHeap(device, &dsv_heap_desc, &IID_ID3D12DescriptorHeap, (void**)&(gbuffer_common->gbuffer_directx12.dsv_descriptor_heap));
   if (FAILED(hr))
     return 1;
 
@@ -164,7 +164,7 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon *gbuffe
   gbuffer_common->gbuffer_directx12.depth_clear_value.DepthStencil.Depth = gbuffer_common->depth_clear_value;
   gbuffer_common->gbuffer_directx12.depth_clear_value.DepthStencil.Stencil = 0;
 
-  hr = device->lpVtbl->CreateCommittedResource(device, &heap_properties, D3D12_HEAP_FLAG_NONE, &texture_desc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &(gbuffer_common->gbuffer_directx12.depth_clear_value), &IID_ID3D12Resource, (void **)&(gbuffer_common->gbuffer_directx12.depth_texture));
+  hr = device->lpVtbl->CreateCommittedResource(device, &heap_properties, D3D12_HEAP_FLAG_NONE, &texture_desc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &(gbuffer_common->gbuffer_directx12.depth_clear_value), &IID_ID3D12Resource, (void**)&(gbuffer_common->gbuffer_directx12.depth_texture));
   if (FAILED(hr))
     return 1;
 
@@ -172,11 +172,11 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon *gbuffe
   device->lpVtbl->CreateDepthStencilView(device, gbuffer_common->gbuffer_directx12.depth_texture, NULL, gbuffer_common->gbuffer_directx12.dsv_handle);
 
   // Create Command Allocators and Command Lists
-  hr = api_common->directx_12_api.device->lpVtbl->CreateCommandAllocator(api_common->directx_12_api.device, D3D12_COMMAND_LIST_TYPE_DIRECT, &IID_ID3D12CommandAllocator, (void **)&(gbuffer_common->gbuffer_directx12.command_allocator));
+  hr = api_common->directx_12_api.device->lpVtbl->CreateCommandAllocator(api_common->directx_12_api.device, D3D12_COMMAND_LIST_TYPE_DIRECT, &IID_ID3D12CommandAllocator, (void**)&(gbuffer_common->gbuffer_directx12.command_allocator));
   if (FAILED(hr))
     return 1;
 
-  hr = api_common->directx_12_api.device->lpVtbl->CreateCommandList(api_common->directx_12_api.device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, gbuffer_common->gbuffer_directx12.command_allocator, NULL, &IID_ID3D12CommandList, (void **)&(gbuffer_common->gbuffer_directx12.command_list));
+  hr = api_common->directx_12_api.device->lpVtbl->CreateCommandList(api_common->directx_12_api.device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, gbuffer_common->gbuffer_directx12.command_allocator, NULL, &IID_ID3D12CommandList, (void**)&(gbuffer_common->gbuffer_directx12.command_list));
   if (FAILED(hr))
     return 1;
 
@@ -220,11 +220,11 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon *gbuffe
   if (FAILED(hr))
     return 1;
 
-  ID3D12CommandList *pp_command_lists[] = {(ID3D12CommandList *)gbuffer_common->gbuffer_directx12.command_list};
+  ID3D12CommandList* pp_command_lists[] = {(ID3D12CommandList*)gbuffer_common->gbuffer_directx12.command_list};
   api_common->directx_12_api.command_queue->lpVtbl->ExecuteCommandLists(api_common->directx_12_api.command_queue, _countof(pp_command_lists), pp_command_lists);
 
   // Create Fences
-  hr = api_common->directx_12_api.device->lpVtbl->CreateFence(api_common->directx_12_api.device, 0, D3D12_FENCE_FLAG_NONE, &IID_ID3D12Fence, (void **)&(gbuffer_common->gbuffer_directx12.fence));
+  hr = api_common->directx_12_api.device->lpVtbl->CreateFence(api_common->directx_12_api.device, 0, D3D12_FENCE_FLAG_NONE, &IID_ID3D12Fence, (void**)&(gbuffer_common->gbuffer_directx12.fence));
   if (FAILED(hr))
     return 1;
 
@@ -241,7 +241,7 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon *gbuffe
   srv_heap_desc.NumDescriptors = GBUFFER_TOTAL_ATTACHMENTS;  // Or however many you need
   srv_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
   srv_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-  hr = api_common->directx_12_api.device->lpVtbl->CreateDescriptorHeap(api_common->directx_12_api.device, &srv_heap_desc, &IID_ID3D12DescriptorHeap, (void **)&(gbuffer_common->gbuffer_directx12.srv_heap));
+  hr = api_common->directx_12_api.device->lpVtbl->CreateDescriptorHeap(api_common->directx_12_api.device, &srv_heap_desc, &IID_ID3D12DescriptorHeap, (void**)&(gbuffer_common->gbuffer_directx12.srv_heap));
   if (FAILED(hr))
     return 1;
 
@@ -288,7 +288,7 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon *gbuffe
   return 0;
 }
 
-uint_fast8_t gbuffer_directx_12_init(struct GBufferCommon *gbuffer_common, struct APICommon *api_common, struct SwapChainCommon *swap_chain_common, const uint_fast32_t msaa_samples) {
+uint_fast8_t gbuffer_directx_12_init(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   if (gbuffer_directx_12_init_wrapper(gbuffer_common, api_common, swap_chain_common, msaa_samples)) {
     directx_12_graphics_utils_poll_debug_messages(&(api_common->directx_12_api));
     return 1;
@@ -297,7 +297,7 @@ uint_fast8_t gbuffer_directx_12_init(struct GBufferCommon *gbuffer_common, struc
   return 0;
 }
 
-void gbuffer_directx_12_delete(struct GBufferCommon *gbuffer_common, struct APICommon *api_common, const uint_fast32_t msaa_samples) {
+void gbuffer_directx_12_delete(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, const uint_fast32_t msaa_samples) {
   // Release color_texture
   if (gbuffer_common->gbuffer_directx12.color_texture) {
     gbuffer_common->gbuffer_directx12.color_texture->lpVtbl->Release(gbuffer_common->gbuffer_directx12.color_texture);
@@ -359,14 +359,14 @@ void gbuffer_directx_12_delete(struct GBufferCommon *gbuffer_common, struct APIC
   }
 }
 
-uint_fast8_t gbuffer_directx_12_resize(struct GBufferCommon *gbuffer_common, struct APICommon *api_common, struct SwapChainCommon *swap_chain_common, const uint_fast32_t msaa_samples) {
+uint_fast8_t gbuffer_directx_12_resize(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   gbuffer_directx_12_delete(gbuffer_common, api_common, msaa_samples);
   gbuffer_directx_12_init(gbuffer_common, api_common, swap_chain_common, msaa_samples);
 
   return 0;
 }
 
-uint_fast8_t gbuffer_directx_12_start(struct GBufferCommon *gbuffer_common, struct SwapChainCommon *swap_chain_common, const uint_fast32_t msaa_samples) {
+uint_fast8_t gbuffer_directx_12_start(struct GBufferCommon* gbuffer_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   // Reset command allocator and then the command list
   gbuffer_common->gbuffer_directx12.command_allocator->lpVtbl->Reset(gbuffer_common->gbuffer_directx12.command_allocator);
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->Reset(gbuffer_common->gbuffer_directx12.command_list, gbuffer_common->gbuffer_directx12.command_allocator, NULL);
@@ -433,7 +433,7 @@ uint_fast8_t gbuffer_directx_12_start(struct GBufferCommon *gbuffer_common, stru
   return 0;
 }
 
-uint_fast8_t gbuffer_directx_12_stop(struct GBufferCommon *gbuffer_common, struct APICommon *api_common, const uint_fast32_t msaa_samples) {
+uint_fast8_t gbuffer_directx_12_stop(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, const uint_fast32_t msaa_samples) {
   // Possibly set barriers or any other synchronization primitives required for DirectX12. This is a common step but specifics can vary based on the exact workflow.
   D3D12_RESOURCE_BARRIER barriers[5] = {0};
   barriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -553,7 +553,7 @@ uint_fast8_t gbuffer_directx_12_stop(struct GBufferCommon *gbuffer_common, struc
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->Close(gbuffer_common->gbuffer_directx12.command_list);
 
   // Execute the command list
-  ID3D12CommandList *pp_command_lists[] = {(ID3D12CommandList *)gbuffer_common->gbuffer_directx12.command_list};
+  ID3D12CommandList* pp_command_lists[] = {(ID3D12CommandList*)gbuffer_common->gbuffer_directx12.command_list};
   api_common->directx_12_api.command_queue->lpVtbl->ExecuteCommandLists(api_common->directx_12_api.command_queue, _countof(pp_command_lists), pp_command_lists);
 
   // Wait until frame commands are complete. This can be optimized by checking fence values or using a more advanced pattern.
