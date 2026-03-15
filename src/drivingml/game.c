@@ -28,17 +28,17 @@ static inline void place_marker(struct Sprite* marker, float x, float y) {
 }
 
 static void load_map_from_xml(struct Game* game, struct Mana* mana, const char* xml_path, const char* map_name) {
-  struct XmlNode* root = xml_parser_load_xml_file((char*)xml_path);
+  struct XmlNode* root = xml_parser_load_xml_file(xml_path);
   if (!root)
     return;
 
-  struct XmlNode* map_node = xml_node_get_child_with_attribute(root, "map", "name", (char*)map_name);
+  struct XmlNode* map_node = xml_node_get_child_with_attribute(root, "map", "name", map_name);
 
   if (!map_node) {
     xml_parser_delete(root);
     return;
   }
-  // Track
+
   struct XmlNode* track_node = xml_node_get_child(map_node, "track");
   if (!track_node) {
     xml_parser_delete(root);
@@ -49,11 +49,9 @@ static void load_map_from_xml(struct Game* game, struct Mana* mana, const char* 
   char* sx = xml_node_get_attribute(track_node, "scale");
   char* px = xml_node_get_attribute(track_node, "x");
   char* py = xml_node_get_attribute(track_node, "y");
-  if (tex) {
-    wchar_t wtex[256];
-    mbstowcs(wtex, tex, 256);
 
-    game->track = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), wtex);
+  if (tex) {
+    game->track = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), tex);
 
     float scale = sx ? (float)atof(sx) : 25.0f;
     float x = px ? (float)atof(px) : 0.0f;
@@ -66,7 +64,6 @@ static void load_map_from_xml(struct Game* game, struct Mana* mana, const char* 
     game->track->sprite_common.rotation = mat4_to_quaternion(rot);
   }
 
-  // Markers
   struct XmlNode* markers_node = xml_node_get_child(map_node, "markers");
 
   if (markers_node) {
@@ -82,12 +79,17 @@ static void load_map_from_xml(struct Game* game, struct Mana* mana, const char* 
         char* x_str = xml_node_get_attribute(marker, "x");
         char* y_str = xml_node_get_attribute(marker, "y");
 
-        if (!x_str || !y_str) continue;
+        if (!x_str || !y_str)
+          continue;
 
         float x = (float)atof(x_str);
         float y = (float)atof(y_str);
 
-        game->marker[i] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/marker.png");
+        game->marker[i] =
+            sprite_manager_add_sprite(&(game->sprite_manager),
+                                      &(mana->api.api_common),
+                                      "/textures/marker.png");
+
         place_marker(game->marker[i], x, y);
       }
     }
@@ -105,37 +107,35 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 
   struct TextureSettings sprite_texture_settings = {FILTER_NEAREST, MODE_CLAMP_TO_EDGE, FORMAT_R8G8B8A8_UNORM, MIP_GENERATE, 5, true, true, 16.0f};
   texture_manager_init(&(game->texture_manager), &(mana->api.api_common));
-  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/spritesheet.png");
-  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/water.png");
-  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/map.png");
-  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/rb.png");
-  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/whispy.png");
-  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/track.png");
-  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/circuit.png");
-  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/startfinish.png");
-  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/fence.png");
-  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/marker.png");
-  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/cloud.png");
-  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/floor_plane.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, "/textures/spritesheet.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, "/textures/water.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, "/textures/map.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, "/textures/rb.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, "/textures/whispy.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, "/textures/track.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, "/textures/circuit.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, "/textures/startfinish.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, "/textures/fence.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, "/textures/marker.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, "/textures/cloud.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, "/textures/floor_plane.png");
   sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_LINEAR, .mode_type = MODE_REPEAT, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_CUSTOM, .mip_count = 5, .premultiplied_alpha = true, false, 0.0f};
-  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, L"/textures/waterm1.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), &sprite_texture_settings, "/textures/waterm1.png");
 
   sprite_manager_init(&(game->sprite_manager), &(game->texture_manager), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 128);
 
-  wchar_t wpath[MAX_LENGTH_OF_PATH] = {0};
-  swprintf(wpath, MAX_LENGTH_OF_PATH, L"%ls/maps.xml", mana->api.api_common.asset_directory);
   char path[MAX_LENGTH_OF_PATH] = {0};
-  wcstombs(path, wpath, MAX_LENGTH_OF_PATH);
+  snprintf(path, MAX_LENGTH_OF_PATH, "%s/maps.xml", mana->api.api_common.asset_directory);
   load_map_from_xml(game, mana, path, "track1");
 
-  game->fence = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/fence.png");
+  game->fence = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/fence.png");
   game->fence->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = 2.5f};
   game->fence->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
   mat4 fence_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
   fence_rotation = mat4_rotate(fence_rotation, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
   game->fence->sprite_common.rotation = mat4_to_quaternion(fence_rotation);
 
-  game->cloud = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/cloud.png");
+  game->cloud = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/cloud.png");
   game->cloud->sprite_common.position = (vec3){.x = 0, .y = -5000.0f, .z = 2.5f};
   game->cloud->sprite_common.scale = (vec3){.x = 500.0f, .y = 500.0f, .z = 0.0f};
   mat4 cloud_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
@@ -191,7 +191,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   else
     game->current_npcs += 1;
   for (int npc_num = 0; npc_num < game->current_npcs; npc_num++) {
-    game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/rb.png");
+    game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/rb.png");
     game->npcs[npc_num].speed = 0.0f;
     game->npcs[npc_num].position = (vec3){.x = 10.0f + (npc_num * 10), .y = 95.0f + ((npc_num % 4) * 3.0f), .z = 0.75};
     game->npcs[npc_num].sprite->sprite_common.position = game->npcs[npc_num].position;
@@ -205,7 +205,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   }
 
   water_shader_init(&(game->water_shader), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 3);
-  water_init(&(game->water), &(mana->api.api_common), &(game->water_shader.shader), texture_manager_get(game->sprite_manager.sprite_manager_common.texture_manager, L"/textures/waterm1.png"));
+  water_init(&(game->water), &(mana->api.api_common), &(game->water_shader.shader), texture_manager_get(game->sprite_manager.sprite_manager_common.texture_manager, "/textures/waterm1.png"));
   game->water.water_common.position = (vec3){0.0f, 0.0f, -5.0f};
   game->water.water_common.scale = (vec3){1024.0f, 1024.0f, 1.0f};
 }

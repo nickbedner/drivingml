@@ -66,9 +66,9 @@ struct TextureDirectX12 {
 
 struct TextureCommon {
   size_t id;
-  wchar_t* name;
-  wchar_t* type;
-  wchar_t* path;
+  char* name;
+  char* type;
+  char* path;
   uint32_t width;
   uint32_t height;
 

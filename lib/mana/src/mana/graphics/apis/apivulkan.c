@@ -329,7 +329,7 @@ static uint_fast8_t api_vulkan_pick_physical_device(struct VulkanAPI* vulkan_api
           vulkan_api->physical_device = device;
         }
       } else
-        printf("Unknown device: %s\n", device_properties.deviceName);
+        log_message(LOG_SEVERITY_INFO, "Unknown device: %s\n", device_properties.deviceName);
     }
   }
 

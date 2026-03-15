@@ -1,6 +1,6 @@
 #include "mana/core/corecommon.h"
 
-void log_message(enum log_severity_t severity, const char *format, ...) {
+void log_message(enum log_severity_t severity, const char* format, ...) {
   va_list args;
   va_start(args, format);
 
@@ -9,13 +9,13 @@ void log_message(enum log_severity_t severity, const char *format, ...) {
   localtime_s(&tm, &t);
   char timestamp[26];
   asctime_s(timestamp, sizeof(timestamp), &tm);
-  char *newline;
+  char* newline;
   strtok_s(timestamp, "\n", &newline);
   if (newline)
     *newline = '\0';
 
-  const char *severity_str;
-  const char *color_code;
+  const char* severity_str;
+  const char* color_code;
   switch (severity) {
     case LOG_SEVERITY_DEBUG: {
 #ifndef NDEBUG
@@ -54,7 +54,7 @@ void log_message(enum log_severity_t severity, const char *format, ...) {
   fflush(stdout);
 
   if (severity == LOG_SEVERITY_WARNING || severity == LOG_SEVERITY_ERROR || severity == LOG_SEVERITY_CRITICAL) {
-    FILE *error_log;
+    FILE* error_log;
     int result = fopen_s(&error_log, "error.log", "a");
     if (result != 0) {
       char error_message[256];
@@ -91,35 +91,45 @@ double get_high_resolution_time(void) {
 #endif
 }
 
-// Function to check if a directory exists
-static bool directory_exists(const wchar_t *path) {
-  DWORD dwAttrib = GetFileAttributesW(path);
+static bool directory_exists(const char* path) {
+#ifdef _WIN32
+  DWORD dwAttrib = GetFileAttributesA(path);
   return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+#else
+  struct stat info;
+  if (stat(path, &info) != 0)
+    return false;
+  return (info.st_mode & S_IFDIR) != 0;
+#endif
 }
 
-void mana_search_for_assets_directory(wchar_t *asset_directory) {
-#ifdef _WIN64
-  const wchar_t *folder_name = L"assets";
-  wchar_t current_path[MAX_PATH];
-  wchar_t parent_path[MAX_PATH];
-  wchar_t final_path[MAX_PATH];
+void mana_search_for_assets_directory(char* asset_directory, size_t max_len) {
+  const char* folder_name = "assets";
+  char current_path[MAX_PATH] = {0};
+  char parent_path[MAX_PATH] = {0};
 
-  // Check in current directory
-  _snwprintf_s(current_path, MAX_PATH, MAX_PATH, L".\\%s", folder_name);
+  char cwd[MAX_PATH] = {0};
+#ifdef _WIN32
+  _getcwd(cwd, sizeof(cwd));
+#else
+  getcwd(cwd, sizeof(cwd));
+#endif
+
+  log_message(LOG_SEVERITY_DEBUG, "Current working directory: %s\n", cwd);
+
+  snprintf(current_path, sizeof(current_path), "./%s", folder_name);
+
   if (directory_exists(current_path)) {
-    wcscpy_s(final_path, MAX_PATH, current_path);
-  } else {
-    // Check in parent directory
-    _snwprintf_s(parent_path, MAX_PATH, MAX_PATH, L"..\\%s", folder_name);
-    if (directory_exists(parent_path)) {
-      wcscpy_s(final_path, MAX_PATH, parent_path);
-    } else {
-      log_message(LOG_SEVERITY_CRITICAL, "The 'assets' folder was not found!\n");
-      return;
-    }
+    snprintf(asset_directory, max_len, "%s", current_path);
+    return;
   }
 
-  // Assuming asset_directory is large enough to hold the path
-  wcscpy_s(asset_directory, MAX_PATH, final_path);
-#endif
+  snprintf(parent_path, sizeof(parent_path), "../%s", folder_name);
+
+  if (directory_exists(parent_path)) {
+    snprintf(asset_directory, max_len, "%s", parent_path);
+    return;
+  }
+
+  log_message(LOG_SEVERITY_CRITICAL, "The 'assets' folder was not found!\n");
 }

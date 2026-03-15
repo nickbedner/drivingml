@@ -1,9 +1,9 @@
 .intel_syntax noprefix
 .text
-.globl relu
+.globl relu_asm
 .p2align 4
 
-relu:
+relu_asm:
     # int3
     # rcx = float* x
     # edx = int n

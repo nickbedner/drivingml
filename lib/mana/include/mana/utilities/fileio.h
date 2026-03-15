@@ -4,9 +4,9 @@
 
 // NOTE: Will only read binary file
 // TODO: Pack this in a struct or something
-static inline char *read_file(const char *filename) {
-  char *data = NULL;
-  FILE *fp;
+static inline char* read_file(const char* filename) {
+  char* data = NULL;
+  FILE* fp;
   const int result = fopen_s(&fp, filename, "rb");
   if (result != 0) {
     log_message(LOG_SEVERITY_ERROR, "Error opening file: %s\n", filename);
@@ -23,7 +23,7 @@ static inline char *read_file(const char *filename) {
     return data;
   }
 
-  data = (char *)malloc((size_t)size + 1);
+  data = (char*)malloc((size_t)size + 1);
   data[size] = '\0';
 
   // NOTE: Could not read chunk of binary data
@@ -36,48 +36,58 @@ static inline char *read_file(const char *filename) {
   return data;
 }
 
-static inline uint32_t *read_shader_file(const wchar_t *filename, uint_fast64_t *file_length) {
-  uint32_t *data = NULL;
-  FILE *fp;
-  const int result = _wfopen_s(&fp, filename, L"rb");
-  if (result != 0) {
+static inline uint32_t* read_shader_file(const char* filename, uint_fast64_t* file_length) {
+  uint32_t* data = NULL;
+  FILE* fp;
+
+#ifdef _WIN32
+  if (fopen_s(&fp, filename, "rb") != 0)
+#else
+  fp = fopen(filename, "rb");
+  if (!fp)
+#endif
+  {
     log_message(LOG_SEVERITY_ERROR, "Error opening file: %s\n", filename);
-    return data;
+    return NULL;
   }
 
   fseek(fp, 0, SEEK_END);
-  int64_t size = ftell(fp);
+  long size = ftell(fp);
   rewind(fp);
 
-  // NOTE: Could not reach end of file
-  if (size == -1) {
+  if (size <= 0) {
     fclose(fp);
-    return data;
+    return NULL;
   }
 
   *file_length = (uint_fast64_t)size;
 
-#ifdef _WIN64
-  data = (uint32_t *)_aligned_malloc((size_t)size + 1, sizeof(uint32_t));
+#ifdef _WIN32
+  data = (uint32_t*)_aligned_malloc((size_t)size, sizeof(uint32_t));
 #else
-  data = (uint32_t *)aligned_alloc(sizeof(uint32_t), (size_t)size);
+  data = (uint32_t*)aligned_alloc(sizeof(uint32_t), (size_t)size);
 #endif
 
-  // NOTE: Could not read chunk of binary data
-  if (fread(data, (size_t)size, 1, fp) != 1) {
-#ifdef _WIN64
+  if (!data) {
+    fclose(fp);
+    return NULL;
+  }
+
+  if (fread(data, 1, (size_t)size, fp) != (size_t)size) {
+#ifdef _WIN32
     _aligned_free(data);
 #else
     free(data);
 #endif
-    data = NULL;
+    fclose(fp);
+    return NULL;
   }
 
   fclose(fp);
   return data;
 }
 
-static inline void close_shader_file(uint32_t *data) {
+static inline void close_shader_file(uint32_t* data) {
 #ifdef _WIN64
   _aligned_free(data);
 #else

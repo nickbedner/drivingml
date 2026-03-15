@@ -47,53 +47,42 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
     ID3DIncludeVtbl* lp_vtbl;
   };
 
-  struct D3DIncludeC include_handler_c = {&v_table_c};
+  struct D3DIncludeC include_handler = {&v_table_c};
 
-  wchar_t base_path[MAX_LENGTH_OF_PATH] = {0};
+  wchar_t vertex_path[MAX_LENGTH_OF_PATH];
+  wchar_t fragment_path[MAX_LENGTH_OF_PATH];
 
-  // Convert "/shaders/hlsl/" to a wide string
-  const wchar_t* additional_path = L"/shaders/hlsl/";
+  // Build full shader paths directly
+  swprintf_s(vertex_path, MAX_LENGTH_OF_PATH, L"%hs/shaders/hlsl/%hs.hlsl", api_common->asset_directory, shader_common->shader_settings.vertex_shader);
+  swprintf_s(fragment_path, MAX_LENGTH_OF_PATH, L"%hs/shaders/hlsl/%hs.hlsl", api_common->asset_directory, shader_common->shader_settings.fragment_shader);
 
-  // Convert char* to wchar_t*
-  size_t converted_chars = 0;
-  // mbstowcs_s(&converted_chars, base_path, MAX_LENGTH_OF_PATH, api_common->asset_directory, _TRUNCATE);
-  wcsncpy_s(base_path, MAX_LENGTH_OF_PATH, api_common->asset_directory, _TRUNCATE);
+  wprintf(L"Vertex shader path: %ls\n", vertex_path);
+  wprintf(L"Fragment shader path: %ls\n", fragment_path);
 
-  // Append additional path
-  wcscat_s(base_path, MAX_LENGTH_OF_PATH, additional_path);
+  ID3DBlob* vertex_errors = NULL;
+  ID3DBlob* fragment_errors = NULL;
 
-  size_t vertex_path_size = wcslen(base_path) + wcslen(shader_common->shader_settings.vertex_shader) + wcslen(L".hlsl") + 1;
-  size_t fragment_path_size = wcslen(base_path) + wcslen(shader_common->shader_settings.fragment_shader) + wcslen(L".hlsl") + 1;
+  HRESULT vertex_result = D3DCompileFromFile(vertex_path, NULL, (ID3DInclude*)&include_handler, "VS_main", "vs_5_0", 0, 0, &shader_common->shader_directx12.vertex_shader_blob, &vertex_errors);
+  HRESULT fragment_result = D3DCompileFromFile(fragment_path, NULL, (ID3DInclude*)&include_handler, "PS_main", "ps_5_0", 0, 0, &shader_common->shader_directx12.fragment_shader_blob, &fragment_errors);
 
-  wchar_t* vertex_shader_path = (wchar_t*)malloc(vertex_path_size * sizeof(wchar_t));
-  wchar_t* fragment_shader_path = (wchar_t*)malloc(fragment_path_size * sizeof(wchar_t));
+  if (FAILED(vertex_result)) {
+    if (vertex_errors) {
+      log_message(LOG_SEVERITY_ERROR, "Vertex Shader Compilation:\n%s\n", (char*)vertex_errors->lpVtbl->GetBufferPointer(vertex_errors));
 
-  swprintf(vertex_shader_path, vertex_path_size, L"%ls%hs.hlsl", base_path, shader_common->shader_settings.vertex_shader);
-  swprintf(fragment_shader_path, fragment_path_size, L"%ls%hs.hlsl", base_path, shader_common->shader_settings.fragment_shader);
+      vertex_errors->lpVtbl->Release(vertex_errors);
+    }
+  }
 
-  ID3DBlob* vertex_compilation_message_blob;
-  ID3DBlob* fragment_compilation_message_blob;
+  if (FAILED(fragment_result)) {
+    if (fragment_errors) {
+      log_message(LOG_SEVERITY_ERROR, "Fragment Shader Compilation:\n%s\n", (char*)fragment_errors->lpVtbl->GetBufferPointer(fragment_errors));
 
-  HRESULT vertex_result = D3DCompileFromFile(vertex_shader_path, NULL, (ID3DInclude*)&include_handler_c, "VS_main", "vs_5_0", 0, 0, &(shader_common->shader_directx12.vertex_shader_blob), &vertex_compilation_message_blob);
-  HRESULT fragment_result = D3DCompileFromFile(fragment_shader_path, NULL, (ID3DInclude*)&include_handler_c, "PS_main", "ps_5_0", 0, 0, &(shader_common->shader_directx12.fragment_shader_blob), &fragment_compilation_message_blob);
-
-  free(vertex_shader_path);
-  free(fragment_shader_path);
+      fragment_errors->lpVtbl->Release(fragment_errors);
+    }
+  }
 
   if (FAILED(vertex_result) || FAILED(fragment_result)) {
-    if (vertex_compilation_message_blob) {
-      char* err_msg = (char*)vertex_compilation_message_blob->lpVtbl->GetBufferPointer(vertex_compilation_message_blob);
-      log_message(LOG_SEVERITY_ERROR, "Vertex Shader Compilation Messages:\n%s\n", err_msg);
-      vertex_compilation_message_blob->lpVtbl->Release(vertex_compilation_message_blob);
-    }
-
-    if (fragment_compilation_message_blob) {
-      char* err_msg = (char*)fragment_compilation_message_blob->lpVtbl->GetBufferPointer(fragment_compilation_message_blob);
-      log_message(LOG_SEVERITY_ERROR, "Fragment Shader Compilation Messages:\n%s\n", err_msg);
-      fragment_compilation_message_blob->lpVtbl->Release(fragment_compilation_message_blob);
-    }
-
-    log_message(LOG_SEVERITY_ERROR, "Failed to compile shader\n");
+    log_message(LOG_SEVERITY_ERROR, "Shader compilation failed\n");
     return 1;
   }
 
@@ -223,9 +212,9 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
 
   if (error_blob) {
     // Handle error - use the errorBlob's data to get a string error message
-    char* err_msg = (char*)error_blob->lpVtbl->GetBufferPointer(vertex_compilation_message_blob);
+    char* err_msg = (char*)error_blob->lpVtbl->GetBufferPointer(error_blob);
     log_message(LOG_SEVERITY_ERROR, "Root Signature Compilation Messages:\n%s\n", err_msg);
-    error_blob->lpVtbl->Release(vertex_compilation_message_blob);
+    error_blob->lpVtbl->Release(error_blob);
   }
 
   api_common->directx_12_api.device->lpVtbl->CreateRootSignature(api_common->directx_12_api.device, 0, serialized_root_sig->lpVtbl->GetBufferPointer(serialized_root_sig), serialized_root_sig->lpVtbl->GetBufferSize(serialized_root_sig), &IID_ID3D12RootSignature, (void**)&(shader_common->shader_directx12.root_signature));

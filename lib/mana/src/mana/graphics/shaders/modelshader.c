@@ -2,8 +2,8 @@
 
 uint_fast8_t model_shader_init(struct ModelShader* model_shader, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, struct GBufferCommon* gbuffer_common, bool depth_test, bool depth_write, const uint_fast32_t msaa_samples, uint_fast32_t descriptors) {
   struct ShaderSettings* shader_settings = &(model_shader->shader.shader_common.shader_settings);
-  shader_settings->vertex_shader = L"model";
-  shader_settings->fragment_shader = L"model";
+  shader_settings->vertex_shader = "model";
+  shader_settings->fragment_shader = "model";
   shader_settings->front_face = SHADER_FRONT_FACE_COUNTER_CLOCKWISE;
   shader_settings->cull_mode = SHADER_CULL_MODE_BACK_BIT;  // SHADER_CULL_MODE_NONE;
   shader_settings->depth_test = depth_test;

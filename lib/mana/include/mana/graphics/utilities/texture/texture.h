@@ -7,7 +7,6 @@
 #include "mana/graphics/apis/api.h"
 #include "mana/utilities/zlib.h"
 
-
 #ifdef VULKAN_API_SUPPORTED
 #include "mana/graphics/utilities/texture/texturevulkan.h"
 #endif
@@ -16,8 +15,8 @@
 #endif
 
 struct TextureFunc {
-  uint_fast8_t (*texture_init)(struct TextureCommon *, struct TextureManagerCommon *, struct APICommon *, struct TextureSettings *, void *);
-  void (*texture_delete)(struct TextureCommon *, struct APICommon *);
+  uint_fast8_t (*texture_init)(struct TextureCommon*, struct TextureManagerCommon*, struct APICommon*, struct TextureSettings*, void*);
+  void (*texture_delete)(struct TextureCommon*, struct APICommon*);
 };
 
 #ifdef VULKAN_API_SUPPORTED
@@ -32,5 +31,5 @@ struct Texture {
   struct TextureCommon texture_common;
 };
 
-uint8_t texture_init(struct Texture *texture, struct TextureManagerCommon *texture_manager_common, struct APICommon *api_common, struct TextureSettings *texture_settings, wchar_t *path, size_t texture_index);
-void texture_delete(struct Texture *texture, struct APICommon *api_common);
+uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, struct TextureSettings* texture_settings, const char* path, size_t texture_index);
+void texture_delete(struct Texture* texture, struct APICommon* api_common);

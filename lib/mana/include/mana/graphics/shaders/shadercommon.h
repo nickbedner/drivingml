@@ -48,8 +48,8 @@ struct ShaderAttributeSettings {
 
 struct ShaderSettings {
   uint_fast32_t descriptors;
-  wchar_t* vertex_shader;
-  wchar_t* fragment_shader;
+  const char* vertex_shader;
+  const char* fragment_shader;
   bool depth_test;
   bool depth_write;
   bool supersampled;

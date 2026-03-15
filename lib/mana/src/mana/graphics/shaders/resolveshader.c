@@ -1,8 +1,8 @@
 #include "mana/graphics/shaders/resolveshader.h"
 
-uint_fast8_t resolve_shader_init(struct ResolveShader *resolve_shader, struct APICommon *api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, uint_fast8_t num_textures, uint_fast8_t descriptors, enum MESH_TYPE mesh_type) {
+uint_fast8_t resolve_shader_init(struct ResolveShader* resolve_shader, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, uint_fast8_t num_textures, uint_fast8_t descriptors, enum MESH_TYPE mesh_type) {
   struct ShaderSettings common_settings;
-  common_settings.vertex_shader = L"screenspace";
+  common_settings.vertex_shader = "screenspace";
   common_settings.front_face = SHADER_FRONT_FACE_COUNTER_CLOCKWISE;
   common_settings.cull_mode = SHADER_CULL_MODE_NONE;
   common_settings.depth_test = false;
@@ -22,30 +22,30 @@ uint_fast8_t resolve_shader_init(struct ResolveShader *resolve_shader, struct AP
   common_settings.descriptors = descriptors;
   common_settings.extra_data = resolve_shader->extra_data;
 
-  struct ShaderSettings *resolve1_settings = &(resolve_shader->shader[0].shader_common.shader_settings);
+  struct ShaderSettings* resolve1_settings = &(resolve_shader->shader[0].shader_common.shader_settings);
   *resolve1_settings = common_settings;
-  resolve1_settings->fragment_shader = L"blit";
+  resolve1_settings->fragment_shader = "blit";
   shader_init((&resolve_shader->shader[0]), api_common, width, height, supersample_scale);
 
-  struct ShaderSettings *resolve2_settings = &(resolve_shader->shader[1].shader_common.shader_settings);
+  struct ShaderSettings* resolve2_settings = &(resolve_shader->shader[1].shader_common.shader_settings);
   *resolve2_settings = common_settings;
-  resolve2_settings->fragment_shader = L"resolve/resolve2";
+  resolve2_settings->fragment_shader = "resolve/resolve2";
   shader_init((&resolve_shader->shader[1]), api_common, width, height, supersample_scale);
 
-  struct ShaderSettings *resolve3_settings = &(resolve_shader->shader[2].shader_common.shader_settings);
+  struct ShaderSettings* resolve3_settings = &(resolve_shader->shader[2].shader_common.shader_settings);
   *resolve3_settings = common_settings;
-  resolve3_settings->fragment_shader = L"resolve/resolve3";
+  resolve3_settings->fragment_shader = "resolve/resolve3";
   shader_init((&resolve_shader->shader[2]), api_common, width, height, supersample_scale);
 
-  struct ShaderSettings *resolve4_settings = &(resolve_shader->shader[3].shader_common.shader_settings);
+  struct ShaderSettings* resolve4_settings = &(resolve_shader->shader[3].shader_common.shader_settings);
   *resolve4_settings = common_settings;
-  resolve4_settings->fragment_shader = L"resolve/resolve4";
+  resolve4_settings->fragment_shader = "resolve/resolve4";
   shader_init((&resolve_shader->shader[3]), api_common, width, height, supersample_scale);
 
   return 0;
 }
 
-void resolve_shader_delete(struct ResolveShader *resolve_shader, struct APICommon *api_common) {
+void resolve_shader_delete(struct ResolveShader* resolve_shader, struct APICommon* api_common) {
   for (uint_fast8_t shader_num = 0; shader_num < 4; shader_num++)
     shader_delete(&(resolve_shader->shader[shader_num]), api_common);
 }

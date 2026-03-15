@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+# https://www.datacamp.com/tutorial/proximal-policy-optimization?utm_source=chatgpt.com
+# https://docs.pytorch.org/tutorials/intermediate/reinforcement_ppo.html?utm_source=chatgpt.com
+# https://www.codegenes.net/blog/actor-critic-pytorch/?utm_source=chatgpt.com
+# https://www.datacamp.com/tutorial/proximal-policy-optimization?utm_source=chatgpt.com
+
+from shutil import which
 import socket
 import struct
 import torch
@@ -364,7 +370,9 @@ while True:
 
             print(f"Checkpoint updated at episode {episode}")
 
-            # Export weights for C engine
+            # Export weights for C engine to run inference without PyTorch
+            # Forward pass = the mathematical computation through the network
+            # Inference = using the network to make predictions(which includes a forward pass)
             if EXPORT_WEIGHTS:
                 export_weights_bin(model, log_std.detach().cpu(), EXPORT_PATH + "/ac_weights.bin")
 

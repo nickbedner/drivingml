@@ -2,8 +2,8 @@
 
 uint_fast8_t blit_shader_init(struct BlitShader *blit_shader, struct APICommon *api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, uint_fast8_t num_textures, uint_fast8_t descriptors, enum MESH_TYPE mesh_type) {
   struct ShaderSettings *shader_settings = &(blit_shader->shader.shader_common.shader_settings);
-  shader_settings->vertex_shader = L"screenspace";
-  shader_settings->fragment_shader = L"blit";
+  shader_settings->vertex_shader = "screenspace";
+  shader_settings->fragment_shader = "blit";
   shader_settings->front_face = SHADER_FRONT_FACE_COUNTER_CLOCKWISE;
   shader_settings->cull_mode = SHADER_CULL_MODE_NONE;
   shader_settings->depth_test = false;

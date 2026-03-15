@@ -9,9 +9,9 @@
 #endif
 
 struct TextureManagerFunc {
-  uint_fast8_t (*texture_manager_init)(struct TextureManagerCommon *texture_manager, struct APICommon *);
-  void (*texture_manager_delete)(struct TextureManagerCommon *texture_manager, struct APICommon *api_common);
-  uint_fast8_t (*texture_manager_add)(struct TextureManagerCommon *texture_manager, struct APICommon *api_common, struct TextureSettings *texture_settings);
+  uint_fast8_t (*texture_manager_init)(struct TextureManagerCommon* texture_manager, struct APICommon*);
+  void (*texture_manager_delete)(struct TextureManagerCommon* texture_manager, struct APICommon* api_common);
+  uint_fast8_t (*texture_manager_add)(struct TextureManagerCommon* texture_manager, struct APICommon* api_common, struct TextureSettings* texture_settings);
 };
 
 #ifdef VULKAN_API_SUPPORTED
@@ -26,7 +26,7 @@ struct TextureManager {
   struct TextureManagerCommon texture_manager_common;
 };
 
-void texture_manager_init(struct TextureManager *texture_manager, struct APICommon *api_common);
-void texture_manager_delete(struct TextureManager *texture_manager, struct APICommon *api_common);
-void texture_manager_add(struct TextureManager *texture_manager, struct APICommon *api_common, struct TextureSettings *texture_settings, wchar_t *path);
-struct Texture *texture_manager_get(struct TextureManager *texture_manager, wchar_t *texture_name);
+void texture_manager_init(struct TextureManager* texture_manager, struct APICommon* api_common);
+void texture_manager_delete(struct TextureManager* texture_manager, struct APICommon* api_common);
+void texture_manager_add(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings* texture_settings, const char* path);
+struct Texture* texture_manager_get(struct TextureManager* texture_manager, const char* texture_name);

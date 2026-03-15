@@ -141,29 +141,17 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
   color_blending.blendConstants[2] = 0.0f;
   color_blending.blendConstants[3] = 0.0f;
   /////////////////////////////////////////////////////////////////////////////
-  wchar_t base_path[MAX_LENGTH_OF_PATH] = {0};
-  wcscpy_s(base_path, MAX_LENGTH_OF_PATH, api_common->asset_directory);
-  wcscat_s(base_path, MAX_LENGTH_OF_PATH, L"/shaders/spirv/");
+  char vertex_path[MAX_LENGTH_OF_PATH];
+  char fragment_path[MAX_LENGTH_OF_PATH];
 
-  size_t vertex_path_size = wcslen(base_path) + wcslen(shader_common->shader_settings.vertex_shader) + strlen(".vert.spv") + 1;
-  size_t fragment_path_size = wcslen(base_path) + wcslen(shader_common->shader_settings.fragment_shader) + strlen(".frag.spv") + 1;
-
-  // Allocate memory for the file paths
-  wchar_t* vertex_shader_path = (wchar_t*)malloc(vertex_path_size * sizeof(wchar_t));
-  wchar_t* fragment_shader_path = (wchar_t*)malloc(fragment_path_size * sizeof(wchar_t));
-
-  // Format the vertex and fragment shader paths using _snwprintf_s (use %ls for wide strings)
-  _snwprintf_s(vertex_shader_path, vertex_path_size, MAX_LENGTH_OF_PATH, L"%ls%ls.vert.spv", base_path, shader_common->shader_settings.vertex_shader);
-  _snwprintf_s(fragment_shader_path, fragment_path_size, MAX_LENGTH_OF_PATH, L"%ls%ls.frag.spv", base_path, shader_common->shader_settings.fragment_shader);
+  snprintf(vertex_path, MAX_LENGTH_OF_PATH, "%s/shaders/spirv/%s.vert.spv", api_common->asset_directory, shader_common->shader_settings.vertex_shader);
+  snprintf(fragment_path, MAX_LENGTH_OF_PATH, "%s/shaders/spirv/%s.frag.spv", api_common->asset_directory, shader_common->shader_settings.fragment_shader);
 
   uint_fast64_t vertex_code_length = 0;
   uint_fast64_t fragment_code_length = 0;
 
-  uint32_t* vertex_shader_code = read_shader_file(vertex_shader_path, &vertex_code_length);
-  uint32_t* fragment_shader_code = read_shader_file(fragment_shader_path, &fragment_code_length);
-
-  free(vertex_shader_path);
-  free(fragment_shader_path);
+  uint32_t* vertex_shader_code = read_shader_file(vertex_path, &vertex_code_length);
+  uint32_t* fragment_shader_code = read_shader_file(fragment_path, &fragment_code_length);
 
   VkShaderModule vert_shader_module = shader_create_shader_module(api_common, vertex_shader_code, vertex_code_length);
   VkShaderModule frag_shader_module = shader_create_shader_module(api_common, fragment_shader_code, fragment_code_length);

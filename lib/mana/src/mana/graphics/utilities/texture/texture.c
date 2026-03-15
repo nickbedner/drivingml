@@ -549,19 +549,22 @@ static int read_chunk(FILE* fp, unsigned char** idat_concatenated, unsigned int*
   return 0;
 }
 
-static void* texture_read_png(const wchar_t* filename, wchar_t* asset_directory, uint32_t* tex_width, uint32_t* tex_height, uint32_t* tex_channels, uint8_t* bit_depth, uint8_t* color_type) {
-  // Global variables for IDAT concatenation
+static void* texture_read_png(const char* filename, const char* asset_directory, uint32_t* tex_width, uint32_t* tex_height, uint32_t* tex_channels, uint8_t* bit_depth, uint8_t* color_type) {
   unsigned char* idat_concatenated = NULL;
   unsigned int idat_length = 0;
   unsigned int idat_buffer_size = 0;
 
-  wchar_t complete_path[MAX_LENGTH_OF_PATH] = {0};
-  wcscpy_s(complete_path, MAX_LENGTH_OF_PATH, asset_directory);
-  wcscat_s(complete_path, MAX_LENGTH_OF_PATH, filename);
+  char complete_path[MAX_LENGTH_OF_PATH] = {0};
+  snprintf(complete_path, sizeof(complete_path), "%s%s", asset_directory, filename);
 
   FILE* fp;
-  const int result = _wfopen_s(&fp, complete_path, L"rb");
-  if (result != 0) {
+#ifdef _WIN32
+  if (fopen_s(&fp, complete_path, "rb") != 0)
+#else
+  fp = fopen(complete_path, "rb");
+  if (!fp)
+#endif
+  {
     perror("Error opening file");
     return NULL;
   }
@@ -572,48 +575,51 @@ static void* texture_read_png(const wchar_t* filename, wchar_t* asset_directory,
     return NULL;
   }
 
-  // Read chunks until the IEND chunk is reached or EOF
   while (!feof(fp))
     read_chunk(fp, &idat_concatenated, &idat_length, &idat_buffer_size, tex_width, tex_height, tex_channels, bit_depth, color_type);
 
-  // Estimate the size of the decompressed data
   size_t decompressed_length = *tex_width * *tex_height * *tex_channels + *tex_height * (*bit_depth == 16 ? 2 : 1);
+
   unsigned char* decompressed_data = calloc(1, decompressed_length);
 
   if (!decompressed_data) {
     fprintf(stderr, "Failed to allocate memory for decompressed data\n");
     free(idat_concatenated);
+    fclose(fp);
     return NULL;
   }
 
-  // Prepare the zbuf structure for decompression
   zbuf a = {0};
-  a.zbuffer = idat_concatenated;                    // Set the input buffer to the concatenated IDAT data
-  a.zbuffer_end = idat_concatenated + idat_length;  // Set the end of the input buffer
-  // Decompress IDAT data using do_zlib
+  a.zbuffer = idat_concatenated;
+  a.zbuffer_end = idat_concatenated + idat_length;
+
   if (do_zlib(&a, (char*)decompressed_data, decompressed_length, 1, 1) == 0) {
     fprintf(stderr, "Decompression failed\n");
     free(decompressed_data);
     free(idat_concatenated);
     fclose(fp);
-
     return NULL;
   }
 
   if ((size_t)(a.zout - a.zout_start) < decompressed_length) {
     log_message(LOG_SEVERITY_WARNING, "Decompressed data is smaller than expected\n");
+    free(decompressed_data);
+    free(idat_concatenated);
+    fclose(fp);
     return NULL;
   }
 
-  // Reverse PNG filtering
-
   void* pixels;
+
   if (*bit_depth == 8)
     pixels = reverse_png_filtering(a.zout_start, *tex_width, *tex_height, *tex_channels, *color_type);
-  else if (*bit_depth == 16) {
+  else if (*bit_depth == 16)
     pixels = reverse_png_filtering_16bit(a.zout_start, *tex_width, *tex_height, *tex_channels * 2, *color_type);
-  } else {
+  else {
     log_message(LOG_SEVERITY_WARNING, "Unsupported bit depth: %d\n", *bit_depth);
+    free(decompressed_data);
+    free(idat_concatenated);
+    fclose(fp);
     return NULL;
   }
 
@@ -626,24 +632,22 @@ static void* texture_read_png(const wchar_t* filename, wchar_t* asset_directory,
 
 #include "mana/graphics/utilities/texture/texture.h"
 
-static wchar_t* build_mip_path(const wchar_t* base_path, uint32_t level) {
+static char* build_mip_path(const char* base_path, uint32_t level) {
   // base_path is something like: "/textures/waterm1.png"
 
-  wchar_t* out = _wcsdup(base_path);
+  char* out = strdup(base_path);
   if (!out) return NULL;
 
-  size_t len = wcslen(out);
-
-  // Find the digit before the extension
-  wchar_t* dot = wcsrchr(out, L'.');
+  // Find the extension
+  char* dot = strrchr(out, '.');
   if (!dot) return out;
 
-  // Walk backwards to find the first digit
-  wchar_t* p = dot;
+  // Walk backwards to find the first digit before the extension
+  char* p = dot;
   while (p > out) {
     p--;
-    if (*p >= L'0' && *p <= L'9') {
-      *p = L'1' + level;  // level 0 → '1', level 1 → '2', etc.
+    if (*p >= '0' && *p <= '9') {
+      *p = '1' + level;  // level 0 → '1', level 1 → '2', etc.
       break;
     }
   }
@@ -652,28 +656,31 @@ static wchar_t* build_mip_path(const wchar_t* base_path, uint32_t level) {
 }
 
 // TODO: This needs to have missing file error check
-uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, struct TextureSettings* texture_settings, wchar_t* path, size_t texture_index) {
+uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, struct TextureSettings* texture_settings, const char* path, size_t texture_index) {
   struct TextureCommon* texture_common = &(texture->texture_common);
 
-  texture_common->path = _wcsdup(path);
+  texture_common->path = strdup(path);
 
-  // FIX: your original if/else was inverted (would _wcsdup(NULL))
-  wchar_t* name_location = wcsrchr(texture_common->path, L'/');
-  texture_common->name = name_location ? _wcsdup(name_location + 1) : _wcsdup(texture_common->path);
+  char* name_location = strrchr(texture_common->path, '/');
+#ifdef _WIN32
+  if (!name_location) name_location = strrchr(texture_common->path, '\\');
+#endif
+  texture_common->name = name_location ? strdup(name_location + 1) : strdup(texture_common->path);
 
-  wchar_t* type_location = wcsrchr(texture_common->path, L'.');
-  texture_common->type = type_location ? _wcsdup(type_location + 1) : _wcsdup(L"");
+  char* type_location = strrchr(texture_common->path, '.');
+  texture_common->type = type_location ? strdup(type_location + 1) : strdup("");
 
   texture_common->texture_manager_common = texture_manager_common;
   texture_common->id = texture_index;
 
-  //  load base mip (level 0)
   uint32_t w0 = 0, h0 = 0, ch0 = 0;
   uint8_t bit0 = 0, ct0 = 0;
 
   void* pixels0 = texture_read_png(texture_common->path, api_common->asset_directory, &w0, &h0, &ch0, &bit0, &ct0);
+
   if (!pixels0) {
-    log_message(LOG_SEVERITY_WARNING, "Failed to load texture image: %ls\n", texture_common->path);
+    log_message(LOG_SEVERITY_WARNING, "Failed to load texture image: %s\n", texture_common->path);
+
     return 1;
   }
 

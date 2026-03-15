@@ -55,4 +55,4 @@ void log_message(enum log_severity_t severity, const char* format, ...);
 int32_t log_delete(void);
 
 double get_high_resolution_time(void);
-void mana_search_for_assets_directory(wchar_t* asset_directory);
+void mana_search_for_assets_directory(char* asset_directory, size_t max_len);

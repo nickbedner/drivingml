@@ -2,8 +2,8 @@
 
 uint_fast8_t water_shader_init(struct WaterShader* water_shader, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, struct GBufferCommon* gbuffer_common, const uint_fast32_t msaa_samples, uint_fast32_t descriptors) {
   struct ShaderSettings* shader_settings = &(water_shader->shader.shader_common.shader_settings);
-  shader_settings->vertex_shader = L"water";
-  shader_settings->fragment_shader = L"water";
+  shader_settings->vertex_shader = "water";
+  shader_settings->fragment_shader = "water";
   shader_settings->front_face = SHADER_FRONT_FACE_COUNTER_CLOCKWISE;
   shader_settings->cull_mode = SHADER_CULL_MODE_NONE;  // SHADER_CULL_MODE_BACK_BIT
   shader_settings->depth_test = true;

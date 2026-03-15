@@ -1,9 +1,9 @@
 #include "mana/graphics/shaders/spriteanimationshader.h"
 
-int sprite_animation_shader_init(struct SpriteAnimationShader *sprite_animation_shader, struct APICommon *api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, struct GBufferCommon *gbuffer_common, bool depth_test, const uint_fast32_t msaa_samples, uint_fast32_t descriptors) {
-  struct ShaderSettings *shader_settings = &(sprite_animation_shader->shader.shader_common.shader_settings);
-  shader_settings->vertex_shader = L"spriteanimation";
-  shader_settings->fragment_shader = L"spriteanimation";
+int sprite_animation_shader_init(struct SpriteAnimationShader* sprite_animation_shader, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, struct GBufferCommon* gbuffer_common, bool depth_test, const uint_fast32_t msaa_samples, uint_fast32_t descriptors) {
+  struct ShaderSettings* shader_settings = &(sprite_animation_shader->shader.shader_common.shader_settings);
+  shader_settings->vertex_shader = "spriteanimation";
+  shader_settings->fragment_shader = "spriteanimation";
   shader_settings->front_face = SHADER_FRONT_FACE_COUNTER_CLOCKWISE;
   shader_settings->cull_mode = SHADER_CULL_MODE_BACK_BIT;  // SHADER_CULL_MODE_NONE;
   shader_settings->depth_test = depth_test;
@@ -116,7 +116,7 @@ int sprite_animation_shader_init(struct SpriteAnimationShader *sprite_animation_
   return 0;
 }
 
-void sprite_animation_shader_delete(struct SpriteAnimationShader *sprite_animation_shader, struct APICommon *api_common) {
+void sprite_animation_shader_delete(struct SpriteAnimationShader* sprite_animation_shader, struct APICommon* api_common) {
   shader_delete(&sprite_animation_shader->shader, api_common);
 
   // vkDestroyDescriptorPool(api_common->vulkan_api.device, sprite_animation_shader->shader.shader_common.shader_vulkan.descriptor_pool, NULL);

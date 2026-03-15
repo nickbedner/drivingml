@@ -62,14 +62,14 @@ enum API_TYPE {
 #ifdef DIRECTX_12_API_SUPPORTED
 struct DirectX12API {
 #ifdef ENABLE_DEBUG_CONTROLLER
-  ID3D12Debug *debug_controller;
+  ID3D12Debug* debug_controller;
 #endif
-  ID3D12Device *device;
-  IDXGIFactory4 *factory;
-  ID3D12CommandQueue *command_queue;
-  ID3D12CommandAllocator *command_allocator;
-  ID3D12GraphicsCommandList *command_list;
-  ID3D12Fence *fence;  // The fence used for synchronization
+  ID3D12Device* device;
+  IDXGIFactory4* factory;
+  ID3D12CommandQueue* command_queue;
+  ID3D12CommandAllocator* command_allocator;
+  ID3D12GraphicsCommandList* command_list;
+  ID3D12Fence* fence;  // The fence used for synchronization
   UINT64 fence_value;  // The current value of the fence
   HANDLE fence_event;  // Event used for CPU/GPU synchronization
 };
@@ -96,7 +96,7 @@ struct VulkanAPI {
 struct APICommon {
   enum API_TYPE api_type;
   bool inverted_y;
-  wchar_t asset_directory[MAX_LENGTH_OF_PATH];
+  const char asset_directory[MAX_LENGTH_OF_PATH];
   union {
 #ifdef DIRECTX_12_API_SUPPORTED
     struct DirectX12API directx_12_api;
