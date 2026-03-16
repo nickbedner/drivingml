@@ -71,7 +71,7 @@ struct ShaderSettings {
 };
 
 struct ShaderSettingsCompute {
-  wchar_t* compute_shader;
+  const char* compute_shader;
   void* render_pass;
 };
 

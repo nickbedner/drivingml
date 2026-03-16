@@ -1,5 +1,6 @@
 #pragma once
 
+#include <float.h>
 #include <mana/graphics/entities/sprite/sprite.h>
 #include <mana/graphics/entities/water/water.h>
 #include <mana/graphics/shaders/modelshader.h>
@@ -22,7 +23,7 @@
 #define MAX_TREES 32
 
 struct NPC {
-  ACModel model;
+  struct ACModel model;
   float speed;
   vec3 position;
   float heading;
@@ -80,3 +81,4 @@ struct Game {
 void game_init(struct Game* game, struct Mana* mana, struct Window* window);
 void game_delete(struct Game* game, struct Mana* mana);
 void game_update(struct Game* game, struct Mana* mana, double delta_time);
+void game_render(struct Game* game, struct Mana* mana, double delta_time);

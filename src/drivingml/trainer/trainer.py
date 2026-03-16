@@ -5,7 +5,6 @@
 # https://www.codegenes.net/blog/actor-critic-pytorch/?utm_source=chatgpt.com
 # https://www.datacamp.com/tutorial/proximal-policy-optimization?utm_source=chatgpt.com
 
-from shutil import which
 import socket
 import struct
 import torch
@@ -59,7 +58,7 @@ def export_weights_bin(model, log_std, path):
         # Magic number so we know version, aka Actor-Critic v.1
         f.write(b"ACv1")
         # Dimensions so C knows what are model is
-        f.write(struct.pack("<5i", 5, 128, 128, 2, 1))
+        f.write(struct.pack("<5i", 7, 128, 128, 2, 1))
 
         # Shared layers
         write_tensor(f, sd["shared.0.weight"])
@@ -89,13 +88,13 @@ def export_weights_bin(model, log_std, path):
 # Linear is a linear function
 # ReLU is Rectified Linear Unit which helps nueral network learn complex pattersn
 # 4 shared layers linear -> relu -> linear -> relu
-# Neurons = 5(input) + 128(first hidden) + 128(second hidden) + 2(actor output) + 1(critic output) = 264
+# Neurons = 7(input) + 128(first hidden) + 128(second hidden) + 2(actor output) + 1(critic output) = 266
 # Parameters = (5×128+128)(first hidden)+(128×128+128)(second hidden)+(128×2+2)(actor)+(128×1+1)(critic) = 17,667
 class ActorCritic(nn.Module):
     def __init__(self):
         super().__init__()
         self.shared = nn.Sequential(
-            nn.Linear(5, 128),
+            nn.Linear(7, 128),
             nn.ReLU(),
             nn.Linear(128, 128),
             nn.ReLU()
@@ -139,6 +138,10 @@ states = []
 old_log_probs = []
 # Past actual actions taken
 us = []
+prev_state = None
+prev_u = None
+prev_log_prob = None
+prev_value = None
 
 # Sets how much randonmess for our two actions
 log_std = nn.Parameter(torch.ones(2) * -1.5)
@@ -178,20 +181,33 @@ def recv_exact(sock, size):
 
 while True:
     # Make sure we actually recieved something and it's correct packet size
-    data = recv_exact(conn, 24)
+    data = recv_exact(conn, 32)
     if data is None:
         break
 
     # Break apart packet into variable
-    dx, dy, speed, azimuth,reward, done = struct.unpack("<5fi", data)
+    dx, dy, speed, azimuth,tree_dx, tree_dy, reward, done = struct.unpack("<7fi", data)
     # Normalize speed to help with training
-    speed = np.tanh(speed / 50.0)
+    speed = np.tanh(speed / 120.0)
     # Simplifies and normalizes azimuth into sin and cos angles for model
     # For example in azimuth 0 and 360 are the same but can look different for the model
     azimuth = np.sin(azimuth), np.cos(azimuth)
 
     # Creates and input tensor for the model
-    state = torch.tensor([dx, dy, speed, azimuth[0], azimuth[1]], dtype=torch.float32)
+    state = torch.tensor(
+        [dx, dy, speed, azimuth[0], azimuth[1], tree_dx, tree_dy],
+        dtype=torch.float32
+    )
+
+    # ------------------------------------------------------------
+    # IMPORTANT: The reward that just arrived belongs to the PREVIOUS action
+    # ------------------------------------------------------------
+    if not EVAL_MODE and prev_state is not None:
+        states.append(prev_state)
+        us.append(prev_u)
+        old_log_probs.append(prev_log_prob)
+        values.append(prev_value)
+        rewards.append(reward)
 
     # Mean is the actor's output(the action)
     # Value it the critic's estimate how good the state is, is it expecting good future rewards
@@ -201,36 +217,50 @@ while True:
     # Turn log randomness into real randomness
     std = log_std_exp.exp()
 
-    # If evaluating(testing) the model then we just use the mean direction, otherwise add random for training
-    if EVAL_MODE:
-        # Deterministic action
-        u = mean
+
+    if done == 1:
+        # Env will reset after it receives something, so send neutral action.
+        action_np = np.zeros(2, dtype="float32")
+        conn.send(struct.pack("<2f", *action_np))
+
+        # Do not carry terminal state/action forward as a pending transition.
+        prev_state = None
+        prev_u = None
+        prev_log_prob = None
+        prev_value = None
     else:
-        # Random action, randn means random numbers from a normal distribution
-        u = mean + std * torch.randn_like(mean)
+        # If evaluating(testing) the model then we just use the mean direction, otherwise add random for training
+        if EVAL_MODE:
+            # Deterministic action
+            u = mean
+        else:
+            # Random action, randn means random numbers from a normal distribution
+            u = mean + std * torch.randn_like(mean)
 
-    # Squeezes action into range of -1 to 1
-    a = torch.tanh(u)
+        # Squeezes action into range of -1 to 1
+        a = torch.tanh(u)
 
-    # Log prob uses the true tanh transform, aka fancy math to calculate correct probablity of final action
-    log_prob = gaussian_log_prob(u, mean, log_std_exp) - tanh_correction(a)
+        # Log prob uses the true tanh transform, aka fancy math to calculate correct probablity of final action
+        log_prob = gaussian_log_prob(u, mean, log_std_exp) - tanh_correction(a)
 
-    # Clamp for env safety and numeric reasons
-    # Eps value to remove edge cases and prevent breaking
-    eps = 1e-6
-    a_env = a.clamp(-1 + eps, 1 - eps)
+        # Clamp for env safety and numeric reasons
+        # Eps value to remove edge cases and prevent breaking
+        eps = 1e-6
+        a_env = a.clamp(-1 + eps, 1 - eps)
 
-    # If training then store past into buffers
-    if not EVAL_MODE:
-        states.append(state.detach())
-        us.append(u.detach())
-        old_log_probs.append(log_prob.detach())
-        values.append(value.detach())
-        rewards.append(reward)
+        # Send clipped action to game
+        action_np = a_env.detach().cpu().numpy().astype("float32")
+        conn.send(struct.pack("<2f", *action_np))
 
-    # Send clipped action to game
-    action_np = a_env.detach().cpu().numpy().astype("float32")
-    conn.send(struct.pack("<2f", *action_np))
+        # If training then store past into buffers
+        # Store CURRENT action/state as pending.
+        # Its reward will arrive in the NEXT packet.
+        if not EVAL_MODE:
+            prev_state = state.detach()
+            prev_u = u.detach()
+            prev_log_prob = log_prob.detach()
+            prev_value = value.detach()
+
 
     # If episode finished then we train and save training
     # Trigger training on rollout or episode end
@@ -240,18 +270,10 @@ while True:
 
         # Bootstrap value if not done, uses critic to estimate future reward
         if done == 0:
-            with torch.no_grad():
-                _, next_value = model(state)
-            bootstrap_value = next_value.item()
+            bootstrap_value = value.detach().item()
         else:
             bootstrap_value = 0.0
         
-        # Convert rollout to tensors for model to train on
-        states_tensor = torch.stack(states)
-        old_log_probs_tensor = torch.stack(old_log_probs)
-        values_tensor = torch.stack(values).squeeze(-1)
-        us_tensor = torch.stack(us)
-
         # Check if we even have enough date to train on
         if len(rewards) < 2:
             states.clear()
@@ -260,6 +282,12 @@ while True:
             rewards.clear()
             us.clear()
             continue
+
+        # Convert rollout to tensors for model to train on
+        states_tensor = torch.stack(states)
+        old_log_probs_tensor = torch.stack(old_log_probs)
+        values_tensor = torch.stack(values).reshape(-1)
+        us_tensor = torch.stack(us)
 
         # Compute returns once, which are the total future rewards from each step
         returns = []
@@ -315,7 +343,7 @@ while True:
             # Update actor using PPO clipped rules
             policy_loss = -torch.min(ratio * advantages, clipped_ratio * advantages).mean()
             # Trains critic to match true returns
-            value_loss = nn.SmoothL1Loss()(new_values.squeeze(-1), returns)
+            value_loss = nn.SmoothL1Loss()(new_values, returns)
 
             # Encourage randomness so agent keeps exploring
             base_entropy = D.Normal(mean, std).entropy().sum(-1).mean()

@@ -244,12 +244,12 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   fence_rotation = mat4_rotate(fence_rotation, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
   game->fence->sprite_common.rotation = mat4_to_quaternion(fence_rotation);
 
-  game->cloud = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/cloud.png");
-  game->cloud->sprite_common.position = (vec3){.x = 0, .y = -5000.0f, .z = 2.5f};
-  game->cloud->sprite_common.scale = (vec3){.x = 500.0f, .y = 500.0f, .z = 0.0f};
-  mat4 cloud_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  cloud_rotation = mat4_rotate(cloud_rotation, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-  game->cloud->sprite_common.rotation = mat4_to_quaternion(cloud_rotation);
+  // game->cloud = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/cloud.png");
+  // game->cloud->sprite_common.position = (vec3){.x = 0, .y = -5000.0f, .z = 2.5f};
+  // game->cloud->sprite_common.scale = (vec3){.x = 500.0f, .y = 500.0f, .z = 0.0f};
+  // mat4 cloud_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
+  // cloud_rotation = mat4_rotate(cloud_rotation, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+  // game->cloud->sprite_common.rotation = mat4_to_quaternion(cloud_rotation);
 
   // TODO: This needs to be 3D, sprite sorting messing it all up
   // game->floor_plane = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/floor_plane.png");
@@ -358,8 +358,9 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   if (game->start_timer > 180)
     start = true;
 
-  float move_speed = 30.0f;
-  float rotation_speed = 1.5f;  // - game->mario_speed / 50.0f;
+  const float speed_scale = 144.0f / 60.0f;  // 2.4
+  float move_speed = 30.0f * speed_scale;
+  float rotation_speed = 1.5f * speed_scale;
   vec3d cam_pos = camera_get_pos(&game->player.camera);
 
   for (int t = 0; t < game->total_trees; t++) {
@@ -410,10 +411,10 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     game->npcs[ai_num].speed += throttle * move_speed * delta_time;
 
     // Clamp speed
-    if (game->npcs[ai_num].speed > 50.0f)
-      game->npcs[ai_num].speed = 50.0f;
-    if (game->npcs[ai_num].speed < -20.0f)
-      game->npcs[ai_num].speed = -20.0f;
+    if (game->npcs[ai_num].speed > 50.0f * speed_scale)
+      game->npcs[ai_num].speed = 50.0f * speed_scale;
+    if (game->npcs[ai_num].speed < -20.0f * speed_scale)
+      game->npcs[ai_num].speed = -20.0f * speed_scale;
 
     // Movement + progress based reward
     float heading = game->npcs[ai_num].heading;
@@ -427,34 +428,57 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     float dy_before = marker_pos.y - game->npcs[ai_num].position.y;
     float dist_before = sqrtf(dx_before * dx_before + dy_before * dy_before);
 
-    // Reward Calculation
+    bool hit_tree = false;
+
+    ///////////////////////////////////////////////////
+    // Start of reward calculation
+    ///////////////////////////////////////////////////
     float reward = 0.0f;
+
+    float speed_before_move = game->npcs[ai_num].speed;
 
     //  Move car
     game->npcs[ai_num].position.x += forward_vel.x * game->npcs[ai_num].speed * delta_time;
     game->npcs[ai_num].position.y += forward_vel.y * game->npcs[ai_num].speed * delta_time;
 
     const float TREE_RADIUS = 1.75f;
+    const float BOUNCE_RESTITUTION = 1.5f;
+    const float MIN_BOUNCE_SPEED = 15.0f;
+
     for (int t = 0; t < game->total_trees; t++) {
       vec3 tree_pos = game->trees[t]->sprite_common.position;
 
       float dx = game->npcs[ai_num].position.x - tree_pos.x;
       float dy = game->npcs[ai_num].position.y - tree_pos.y;
-
       float dist = sqrtf(dx * dx + dy * dy);
 
       if (dist < TREE_RADIUS) {
-        // push car back out
-        float nx = dx / dist;
-        float ny = dy / dist;
+        hit_tree = true;
 
+        float nx, ny;
+        if (dist > 1e-4f) {
+          nx = dx / dist;
+          ny = dy / dist;
+        } else {
+          // Fallback if car center somehow lands exactly on tree center
+          nx = -forward_vel.x;
+          ny = -forward_vel.y;
+        }
+
+        // Push car out to the tree boundary
         game->npcs[ai_num].position.x = tree_pos.x + nx * TREE_RADIUS;
         game->npcs[ai_num].position.y = tree_pos.y + ny * TREE_RADIUS;
 
-        // stop the car
-        game->npcs[ai_num].speed *= -0.2f;
+        // Estimate impact speed along the collision normal
+        float vx = forward_vel.x * speed_before_move;
+        float vy = forward_vel.y * speed_before_move;
+        float impact_speed = fabsf(vx * nx + vy * ny);
 
-        reward -= 1.0f;  // penalty
+        // Reverse speed so the car bounces backward relative to its heading
+        game->npcs[ai_num].speed = -fmaxf(MIN_BOUNCE_SPEED, impact_speed * BOUNCE_RESTITUTION);
+
+        reward -= 4.0f;
+        break;
       }
     }
 
@@ -476,12 +500,11 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
     // Main dense signal: reward distance reduction
     float progress = dist_before - dist_after;
-    reward += 0.1f * progress;
+    if (!hit_tree)
+      reward += 0.1f * progress;
 
-    //  Checkpoint reward
     const float checkpoint_radius = 15.0f;
-
-    if (dist_after < checkpoint_radius) {
+    if (!hit_tree && dist_after < checkpoint_radius) {
       reward += 2.0f;  // checkpoint bonus
 
       game->npcs[ai_num].current_marker++;
@@ -495,9 +518,8 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     }
 
     // Penalize reversing
-    if (game->npcs[ai_num].speed < 0.0f) {
+    if (game->npcs[ai_num].speed < 0.0f)
       reward -= 0.05f;
-    }
 
     // Small time penalty
     reward -= 0.005f;
@@ -506,26 +528,79 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     reward -= 0.01f * steer * steer;
     reward -= 0.02f * fabsf(angle);
 
+    // Use the CURRENT target marker after checkpoint update
     vec3 next_marker = game->marker[game->npcs[ai_num].current_marker]->sprite_common.position;
 
-    // World delta
+    // World delta to target
     float dxw = next_marker.x - game->npcs[ai_num].position.x;
     float dyw = next_marker.y - game->npcs[ai_num].position.y;
 
-    // Car forward
+    // Car forward/right basis
     float fx = -cosf(game->npcs[ai_num].heading);
     float fy = -sinf(game->npcs[ai_num].heading);
-
-    // Car right
     float rx = fy;
     float ry = -fx;
 
-    // Project to car frame
+    // Marker error in car frame
     float forward_err = dxw * fx + dyw * fy;
     float right_err = dxw * rx + dyw * ry;
 
-    // Better normalization for 100x100 map
+    // Normalization constants
     const float norm = 150.0f;
+    const float obstacle_norm = 100.0f;
+
+    // Pick the most relevant tree ahead of the car
+    bool found_tree_ahead = false;
+    float best_forward = obstacle_norm;
+    float best_right = 0.0f;
+    float best_score = FLT_MAX;
+
+    for (int t = 0; t < game->total_trees; t++) {
+      vec3 tree_pos = game->trees[t]->sprite_common.position;
+
+      float dx = tree_pos.x - game->npcs[ai_num].position.x;
+      float dy = tree_pos.y - game->npcs[ai_num].position.y;
+
+      float forward = dx * fx + dy * fy;
+      float right = dx * rx + dy * ry;
+
+      if (forward <= 0.0f)
+        continue;
+
+      float score = forward + 2.0f * fabsf(right);
+      if (score < best_score) {
+        found_tree_ahead = true;
+        best_score = score;
+        best_forward = forward;
+        best_right = right;
+      }
+    }
+
+    float tree_dx = 1.0f;
+    float tree_dy = 0.0f;
+    if (found_tree_ahead) {
+      tree_dx = best_forward / obstacle_norm;
+      tree_dy = best_right / obstacle_norm;
+    }
+
+    // Clamp to sane range
+    if (tree_dx > 1.0f)
+      tree_dx = 1.0f;
+    if (tree_dx < -1.0f)
+      tree_dx = -1.0f;
+    if (tree_dy > 1.0f)
+      tree_dy = 1.0f;
+    if (tree_dy < -1.0f)
+      tree_dy = -1.0f;
+
+    if (found_tree_ahead && tree_dx < 0.25f) {
+      float lateral = fabsf(tree_dy);
+      if (lateral < 0.15f) {
+        float forward_term = (0.25f - tree_dx) / 0.25f;
+        float lateral_term = (0.15f - lateral) / 0.15f;
+        reward -= 0.15f * forward_term * lateral_term;
+      }
+    }
 
     if (!EVAL_MODE) {
       struct Packet {
@@ -533,6 +608,8 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
         float dy;
         float speed;
         float azimuth;
+        float tree_dx;
+        float tree_dy;
         float reward;
         int done;
       };
@@ -543,6 +620,8 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
       packet.dy = right_err / norm;
       packet.speed = game->npcs[ai_num].speed;
       packet.azimuth = heading;
+      packet.tree_dx = tree_dx;
+      packet.tree_dy = tree_dy;
       packet.reward = reward;
       packet.done = done;
 
@@ -573,11 +652,8 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     } else {
       if (start == true) {
         float value;
-        // Match Python preprocessing exactly:
-        // speed = tanh(speed / 50.0)
-        // azimuth -> (sin, cos)
-        float speed_norm = tanhf(game->npcs[ai_num].speed / 50.0f);
-        float game_state[5] = {forward_err / norm, right_err / norm, speed_norm, sinf(heading), cosf(heading)};
+        float speed_norm = tanhf(game->npcs[ai_num].speed / 120.0f);
+        float game_state[7] = {forward_err / norm, right_err / norm, speed_norm, sinf(heading), cosf(heading), tree_dx, tree_dy};
         ac_forward(&(game->npcs[ai_num].model), game_state, game->npcs[ai_num].last_action, &value);
       }
     }
@@ -592,6 +668,12 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     if (EVAL_MODE)
       game->marker[marker_num]->sprite_common.position.z = -10000.0f;
   }
+}
+
+void game_render(struct Game* game, struct Mana* mana, double delta_time) {
+  struct APICommon* api_common = &(mana->api.api_common);
+  struct Window* window = game->window;
+  struct InputManager* input_manager = &window->input_manager;
 
   window->gbuffer->gbuffer_common.projection_matrix = camera_get_projection_matrix(&(game->player.camera), window);
   window->gbuffer->gbuffer_common.view_matrix = camera_get_view_matrix(&(game->player.camera));

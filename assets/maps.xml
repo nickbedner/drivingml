@@ -2,14 +2,14 @@
 	<map name="track1">
 		<track texture="/textures/map.png" x="0" y="0" scale="25"/>
 		<markers>
-			<marker x="-95" y="100"/>
-			<marker x="-95" y="50"/>
+			<marker x="-100" y="100"/>
+			<marker x="-100" y="50"/>
 			<marker x="-20" y="50"/>
-			<marker x="-95" y="20"/>
-			<marker x="-95" y="-20"/>
+			<marker x="-100" y="20"/>
+			<marker x="-100" y="-20"/>
 			<marker x="-25" y="-20"/>
-			<marker x="-95" y="-50"/>
-			<marker x="-95" y="-90"/>
+			<marker x="-100" y="-50"/>
+			<marker x="-100" y="-105"/>
 			<marker x="140" y="-90"/>
 			<marker x="130" y="-30"/>
 			<marker x="65" y="-30"/>
@@ -19,7 +19,18 @@
 			<marker x="110" y="100"/>
 		</markers>
 		<obstacle>
-			<tree x="-90" y="-90"/>
+			<tree x="-75" y="105"/>
+			<tree x="-50" y="95"/>
+			<tree x="-70" y="-92"/>
+			<tree x="-60" y="-105"/>
+			<tree x="-50" y="-76"/>
+			<tree x="-45" y="-115"/>
+			<tree x="-30" y="-96"/>
+			<tree x="-25" y="-90"/>
+			<tree x="24" y="-106"/>
+			<tree x="20" y="-84"/>
+			<tree x="-35" y="-100"/>
+			<tree x="-15" y="-84"/>
 		</obstacle>
 	</map>
 	<map name="track2">

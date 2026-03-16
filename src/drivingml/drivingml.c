@@ -54,46 +54,36 @@ void drivingml_delete(struct DrivingML* drivingml) {
 }
 
 void drivingml_start(struct DrivingML* drivingml) {
-  // TODO: Add a way to change the target frame rate
-  const int target_frame_rate = 999;
-  const double target_frame_time = 1.0 / (double)target_frame_rate;
-
-  double prev_time = get_high_resolution_time();
-  double fps_timer = prev_time;
-  int frame_count = 0;
+  const double sim_dt = 1.0 / 60.0;
+  double previous_time = get_high_resolution_time();
+  double accumulator = 0.0;
 
   while (!drivingml->window.should_close) {
     double current_time = get_high_resolution_time();
-    double delta_time = current_time - prev_time;
-    prev_time = current_time;
+    double frame_time = current_time - previous_time;
 
-    // Frame update
+    previous_time = current_time;
+
+    if (frame_time > 0.25) frame_time = 0.25;  // avoid giant catch-up
+    accumulator += frame_time;
+
     window_prepare_frame(&(drivingml->window));
-    // game_update(&(drivingml->game), &(drivingml->mana), delta_time);
+
+    int max_steps = 5;
+    int steps = 0;
+
+#ifndef EVAL_MODE
+    // In training mode we want to run as many sim steps as possible to speed up training, but still render every frame so we can see what's going on
+    while (accumulator >= sim_dt && steps < max_steps) {
+      game_update(&(drivingml->game), &(drivingml->mana), sim_dt);
+      accumulator -= sim_dt;
+      steps++;
+    }
+#else
     game_update(&(drivingml->game), &(drivingml->mana), 0.01666666666);
+#endif
+    // render once per displayed frame
+    game_render(&(drivingml->game), &(drivingml->mana), frame_time);
     window_end_frame(&(drivingml->window));
-
-    frame_count++;
-
-    // FPS logging once per second
-    if (current_time - fps_timer >= 1.0) {
-      double fps = frame_count / (current_time - fps_timer);
-      printf("FPS: %.2f\n", fps);
-      fps_timer = current_time;
-      frame_count = 0;
-    }
-
-    double ms_per_frame = delta_time * 1000.0;
-    // printf("Frame Time: %.3f ms\n", ms_per_frame);
-
-    // Frame limiting (if vsync is off)
-    if (!drivingml->window.vsync) {
-      double frame_elapsed = get_high_resolution_time() - current_time;
-      double remaining_time = target_frame_time - frame_elapsed;
-
-      if (remaining_time > 0.001) {  // avoid sleeping for too little
-        Sleep((DWORD)(remaining_time * 1000.0));
-      }
-    }
   }
 }

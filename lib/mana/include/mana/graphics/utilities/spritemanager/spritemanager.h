@@ -29,7 +29,7 @@ struct SpriteManager {
 void sprite_manager_init(struct SpriteManager* sprite_manager, struct TextureManager* texture_manager, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, struct GBufferCommon* gbuffer_common, uint_fast8_t msaa_samples, uint_fast32_t descriptors);
 void sprite_manager_delete(struct SpriteManager* sprite_manager, struct APICommon* api_common);
 void sprite_manager_resize(struct SpriteManager* sprite_manager, struct APICommon* api_common, uint_fast32_t width, uint_fast32_t height, uint_fast8_t supersample_scale);
-struct Sprite* sprite_manager_add_sprite(struct SpriteManager* sprite_manager, struct APICommon* api_common, wchar_t* texture_name);
+struct Sprite* sprite_manager_add_sprite(struct SpriteManager* sprite_manager, struct APICommon* api_common, const char* texture_name);
 void sprite_manager_remove(struct SpriteManager* sprite_manager, struct APICommon* api_common, size_t sprite_num);
 void sprite_manager_update_uniforms(struct SpriteManager* sprite_manager, struct APICommon* api_common, struct GBufferCommon* gbuffer_common);
 void sprite_manager_render(struct SpriteManager* sprite_manager, struct GBufferCommon* gbuffer_common, vec4d sort_key);

@@ -38,7 +38,7 @@ void sprite_manager_resize(struct SpriteManager* sprite_manager, struct APICommo
   shader_resize(&(sprite_manager->sprite_manager_common.sprite_shader.shader), api_common, width, height, supersample_scale);
 }
 
-struct Sprite* sprite_manager_add_sprite(struct SpriteManager* sprite_manager, struct APICommon* api_common, wchar_t* texture_name) {
+struct Sprite* sprite_manager_add_sprite(struct SpriteManager* sprite_manager, struct APICommon* api_common, const char* texture_name) {
   // Note: These would be pooled and preallocated I'm guessing
   struct Sprite* sprite = calloc(1, sizeof(struct Sprite));
   size_t sprite_num = array_list_size(&(sprite_manager->sprite_manager_common.sprites));

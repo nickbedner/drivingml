@@ -2,13 +2,14 @@
 
 void relu_asm(float* x, int n);
 
-int load_ac_model(const char* path, ACModel* m) {
+int load_ac_model(const char* path, struct ACModel* model) {
   FILE* f = fopen(path, "rb");
   if (!f) {
     printf("Failed to open %s\n", path);
     return 0;
   }
 
+  // This refers to our model codename aka a magic header to know which one we're using
   char magic[4];
   fread(magic, 1, 4, f);
   if (memcmp(magic, "ACv1", 4) != 0) {
@@ -19,69 +20,77 @@ int load_ac_model(const char* path, ACModel* m) {
 
   int32_t dims[5];
   fread(dims, sizeof(int32_t), 5, f);
-
-  if (dims[0] != 5 || dims[1] != 128 || dims[2] != 128 || dims[3] != 2) {
+  if (dims[0] != 7 || dims[1] != 128 || dims[2] != 128 || dims[3] != 2) {
     printf("Model dimensions mismatch\n");
     fclose(f);
     return 0;
   }
 
 #define READ(arr) fread(arr, sizeof(float), sizeof(arr) / sizeof(float), f)
-
-  READ(m->w1);
-  READ(m->b1);
-  READ(m->w2);
-  READ(m->b2);
-  READ(m->wa);
-  READ(m->ba);
-  READ(m->wc);
-  READ(m->bc);
-  READ(m->log_std);
+  READ(model->input_to_hidden1_weights);
+  READ(model->hidden1_bias);
+  READ(model->hidden1_to_hidden2_weights);
+  READ(model->hidden2_bias);
+  READ(model->hidden2_to_action_weights);
+  READ(model->action_bias);
+  READ(model->hidden2_to_value_weights);
+  READ(model->value_bias);
+  READ(model->action_log_std);
 
   fclose(f);
   printf("Model loaded successfully\n");
   return 1;
 }
 
-void linear(const float* W, const float* b, int in, int out, const float* x, float* y) {
-  for (int o = 0; o < out; o++) {
-    float sum = b[o];
-    const float* row = W + o * in;
-    for (int i = 0; i < in; i++)
-      sum += row[i] * x[i];
-    y[o] = sum;
+void linear_layer(const float* weights, const float* bias, int input_size, int output_size, const float* input, float* output) {
+  for (int out_neuron = 0; out_neuron < output_size; out_neuron++) {
+    float neuron_sum = bias[out_neuron];
+
+    const float* weight_row = weights + out_neuron * input_size;
+
+    for (int in_feature = 0; in_feature < input_size; in_feature++) {
+      neuron_sum += weight_row[in_feature] * input[in_feature];
+    }
+
+    output[out_neuron] = neuron_sum;
   }
 }
 
-void relu(float* x, int n) {
-  for (int i = 0; i < n; i++)
-    if (x[i] < 0.0f) x[i] = 0.0f;
+// Remeber relu = Rectified Linear Unit, which introduces nonlinearity into the model
+void relu_activation(float* values, int count) {
+  for (int neuron = 0; neuron < count; neuron++) {
+    if (values[neuron] < 0.0f) {
+      values[neuron] = 0.0f;
+    }
+  }
 }
 
-void ac_forward(const ACModel* m, const float state[5], float action_out[2], float* value_out) {
-  float h1[H1];
-  float h2[H2];
-  float mean[ACT];
+// Forward pass and inference in C, which is the process of moving input data through the network's layers from input to output to generate a prediction
+void ac_forward(const struct ACModel* model, const float state_vector[INPUTS], float action_output[ACTIONS], float* value_prediction) {
+  float h1[HIDDEN_1];
+  float h2[HIDDEN_2];
+  float mean[ACTIONS];
   float value[1];
 
-  linear(m->w1, m->b1, IN, H1, state, h1);
-  relu(h1, H1);
+  linear_layer(model->input_to_hidden1_weights, model->hidden1_bias, INPUTS, HIDDEN_1, state_vector, h1);
+  relu_activation(h1, HIDDEN_1);
 
-  linear(m->w2, m->b2, H1, H2, h1, h2);
-  relu(h2, H2);
+  linear_layer(model->hidden1_to_hidden2_weights, model->hidden2_bias, HIDDEN_1, HIDDEN_2, h1, h2);
+  relu_activation(h2, HIDDEN_2);
 
-  linear(m->wa, m->ba, H2, ACT, h2, mean);
-  linear(m->wc, m->bc, H2, 1, h2, value);
+  linear_layer(model->hidden2_to_action_weights, model->action_bias, HIDDEN_2, ACTIONS, h2, mean);
+  linear_layer(model->hidden2_to_value_weights, model->value_bias, HIDDEN_2, 1, h2, value);
 
-  // Deterministic eval mode: action = tanh(mean)
-  for (int i = 0; i < ACT; i++) {
-    action_out[i] = tanhf(mean[i]);
+  // Deterministic eval mode: action = tanh(mean), remvember tanh converts the network’s raw output into a valid action range
+  for (int i = 0; i < ACTIONS; i++) {
+    action_output[i] = tanhf(mean[i]);
 
     // Same clamp as python
     const float eps = 1e-6f;
-    if (action_out[i] < -1.0f + eps) action_out[i] = -1.0f + eps;
-    if (action_out[i] > 1.0f - eps) action_out[i] = 1.0f - eps;
+    if (action_output[i] < -1.0f + eps) action_output[i] = -1.0f + eps;
+    if (action_output[i] > 1.0f - eps) action_output[i] = 1.0f - eps;
   }
 
-  *value_out = value[0];
+  // Critic value
+  *value_prediction = value[0];
 }
