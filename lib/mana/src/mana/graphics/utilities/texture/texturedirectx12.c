@@ -1,85 +1,141 @@
 #include "mana/graphics/utilities/texture/texturedirectx12.h"
 
-static void texture_directx_12_upload_texture_data(struct APICommon* api_common, ID3D12GraphicsCommandList* command_list, ID3D12Resource* texture_resource, DXGI_FORMAT format, void* data, uint32_t width, uint32_t height, uint8_t bytes_per_channel, uint8_t channels) {
+static uint64_t texture_directx_12_upload_texture_data(struct APICommon* api_common, ID3D12GraphicsCommandList* command_list, ID3D12Resource* texture_resource, DXGI_FORMAT format, const void* data, uint32_t base_width, uint32_t base_height, uint32_t mip_levels, uint8_t bytes_per_channel, uint8_t channels) {
+  ID3D12Device* device = api_common->directx_12_api.device;
+
+  D3D12_RESOURCE_DESC tex_desc;
+  texture_resource->lpVtbl->GetDesc(texture_resource, &tex_desc);
+
   uint32_t bytes_per_pixel = bytes_per_channel * channels;
-  uint32_t row_pitch = width * bytes_per_pixel;
-  uint32_t aligned_row_pitch = (row_pitch + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1) & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
-  uint64_t buffer_size = (uint64_t)aligned_row_pitch * height;
+  UINT num_subresources = mip_levels;
 
-  D3D12_RESOURCE_DESC buffer_desc = {0};
-  buffer_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-  buffer_desc.Alignment = 0;
-  buffer_desc.Width = buffer_size;
-  buffer_desc.Height = 1;
-  buffer_desc.DepthOrArraySize = 1;
-  buffer_desc.MipLevels = 1;
-  buffer_desc.Format = DXGI_FORMAT_UNKNOWN;
-  buffer_desc.SampleDesc.Count = 1;
-  buffer_desc.SampleDesc.Quality = 0;
-  buffer_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-  buffer_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+  D3D12_PLACED_SUBRESOURCE_FOOTPRINT* layouts = (D3D12_PLACED_SUBRESOURCE_FOOTPRINT*)malloc(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) * num_subresources);
+  UINT* num_rows = (UINT*)malloc(sizeof(UINT) * num_subresources);
+  UINT64* row_sizes = (UINT64*)malloc(sizeof(UINT64) * num_subresources);
+  D3D12_SUBRESOURCE_DATA* subresources = (D3D12_SUBRESOURCE_DATA*)malloc(sizeof(D3D12_SUBRESOURCE_DATA) * num_subresources);
 
-  ID3D12Resource* upload_heap = NULL;
-
-  D3D12_HEAP_PROPERTIES heap_properties = {0};
-  heap_properties.Type = D3D12_HEAP_TYPE_UPLOAD;
-  heap_properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-  heap_properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-  heap_properties.CreationNodeMask = 1;
-  heap_properties.VisibleNodeMask = 1;
-
-  if (FAILED(api_common->directx_12_api.device->lpVtbl->CreateCommittedResource(api_common->directx_12_api.device, &heap_properties, D3D12_HEAP_FLAG_NONE, &buffer_desc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, &IID_ID3D12Resource, (void**)&upload_heap)))
-    return;
-
-  uint8_t* mapped_data = NULL;
-  D3D12_RANGE range = {0, buffer_size};
-  HRESULT hr = upload_heap->lpVtbl->Map(upload_heap, 0, &range, (void**)&mapped_data);
-  if (FAILED(hr)) {
-    upload_heap->lpVtbl->Release(upload_heap);
-    return;
+  if (!layouts || !num_rows || !row_sizes || !subresources) {
+    free(layouts);
+    free(num_rows);
+    free(row_sizes);
+    free(subresources);
+    return 1;
   }
 
-  uint8_t* src_data = (uint8_t*)data;
-  uint32_t row_bytes = width * channels * bytes_per_channel;
+  UINT64 upload_size = 0;
+  device->lpVtbl->GetCopyableFootprints(
+      device,
+      &tex_desc,
+      0,
+      num_subresources,
+      0,
+      layouts,
+      num_rows,
+      row_sizes,
+      &upload_size);
 
-  for (uint32_t y = 0; y < height; ++y) {
-    memcpy(mapped_data, src_data, row_bytes);
-    src_data += row_bytes;
-    mapped_data += aligned_row_pitch;
+  const uint8_t* src = (const uint8_t*)data;
+  for (UINT mip = 0; mip < num_subresources; ++mip) {
+    uint32_t w = base_width >> mip;
+    uint32_t h = base_height >> mip;
+    if (w == 0) w = 1;
+    if (h == 0) h = 1;
+
+    subresources[mip].pData = src;
+    subresources[mip].RowPitch = (LONG_PTR)(w * bytes_per_pixel);
+    subresources[mip].SlicePitch = (LONG_PTR)(w * h * bytes_per_pixel);
+
+    src += (size_t)(w * h * bytes_per_pixel);
+  }
+
+  D3D12_HEAP_PROPERTIES heap_props = {0};
+  heap_props.Type = D3D12_HEAP_TYPE_UPLOAD;
+  heap_props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+  heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+  heap_props.CreationNodeMask = 1;
+  heap_props.VisibleNodeMask = 1;
+
+  D3D12_RESOURCE_DESC upload_desc = {0};
+  upload_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+  upload_desc.Alignment = 0;
+  upload_desc.Width = upload_size;
+  upload_desc.Height = 1;
+  upload_desc.DepthOrArraySize = 1;
+  upload_desc.MipLevels = 1;
+  upload_desc.Format = DXGI_FORMAT_UNKNOWN;
+  upload_desc.SampleDesc.Count = 1;
+  upload_desc.SampleDesc.Quality = 0;
+  upload_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+  upload_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+  ID3D12Resource* upload_heap = NULL;
+  HRESULT hr = device->lpVtbl->CreateCommittedResource(device, &heap_props, D3D12_HEAP_FLAG_NONE, &upload_desc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, &IID_ID3D12Resource, (void**)&upload_heap);
+
+  if (FAILED(hr)) {
+    free(layouts);
+    free(num_rows);
+    free(row_sizes);
+    free(subresources);
+    return 1;
+  }
+
+  uint8_t* mapped = NULL;
+  D3D12_RANGE read_range = {0, 0};
+  hr = upload_heap->lpVtbl->Map(upload_heap, 0, &read_range, (void**)&mapped);
+  if (FAILED(hr)) {
+    upload_heap->lpVtbl->Release(upload_heap);
+    free(layouts);
+    free(num_rows);
+    free(row_sizes);
+    free(subresources);
+    return 1;
+  }
+
+  for (UINT mip = 0; mip < num_subresources; ++mip) {
+    const uint8_t* src_rows = (const uint8_t*)subresources[mip].pData;
+    uint8_t* dst_rows = mapped + layouts[mip].Offset;
+    UINT64 src_row_pitch = (UINT64)subresources[mip].RowPitch;
+    UINT dst_row_pitch = layouts[mip].Footprint.RowPitch;
+
+    for (UINT row = 0; row < num_rows[mip]; ++row)
+      memcpy(dst_rows + (size_t)row * dst_row_pitch, src_rows + (size_t)row * src_row_pitch, (size_t)src_row_pitch);
   }
 
   upload_heap->lpVtbl->Unmap(upload_heap, 0, NULL);
 
-  D3D12_TEXTURE_COPY_LOCATION src = {0};
-  src.pResource = upload_heap;
-  src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-  src.PlacedFootprint.Offset = 0;
-  src.PlacedFootprint.Footprint.Format = format;
-  src.PlacedFootprint.Footprint.Width = width;
-  src.PlacedFootprint.Footprint.Height = height;
-  src.PlacedFootprint.Footprint.Depth = 1;
-  src.PlacedFootprint.Footprint.RowPitch = aligned_row_pitch;
-
-  D3D12_TEXTURE_COPY_LOCATION dst = {0};
-  dst.pResource = texture_resource;
-  dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-  dst.SubresourceIndex = 0;
-
   hr = api_common->directx_12_api.command_allocator->lpVtbl->Reset(api_common->directx_12_api.command_allocator);
   if (FAILED(hr)) {
-    log_message(LOG_SEVERITY_ERROR, "Failed to reset command allocator");
     upload_heap->lpVtbl->Release(upload_heap);
-    return;
+    free(layouts);
+    free(num_rows);
+    free(row_sizes);
+    free(subresources);
+    return 1;
   }
 
-  hr = api_common->directx_12_api.command_list->lpVtbl->Reset(api_common->directx_12_api.command_list, api_common->directx_12_api.command_allocator, NULL);
+  hr = command_list->lpVtbl->Reset(command_list, api_common->directx_12_api.command_allocator, NULL);
   if (FAILED(hr)) {
-    log_message(LOG_SEVERITY_ERROR, "Failed to reset command list");
     upload_heap->lpVtbl->Release(upload_heap);
-    return;
+    free(layouts);
+    free(num_rows);
+    free(row_sizes);
+    free(subresources);
+    return 1;
   }
 
-  command_list->lpVtbl->CopyTextureRegion(command_list, &dst, 0, 0, 0, &src, NULL);
+  for (UINT mip = 0; mip < num_subresources; ++mip) {
+    D3D12_TEXTURE_COPY_LOCATION dst = {0};
+    dst.pResource = texture_resource;
+    dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    dst.SubresourceIndex = mip;
+
+    D3D12_TEXTURE_COPY_LOCATION src_loc = {0};
+    src_loc.pResource = upload_heap;
+    src_loc.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+    src_loc.PlacedFootprint = layouts[mip];
+
+    command_list->lpVtbl->CopyTextureRegion(command_list, &dst, 0, 0, 0, &src_loc, NULL);
+  }
 
   D3D12_RESOURCE_BARRIER barrier = {0};
   barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -90,25 +146,33 @@ static void texture_directx_12_upload_texture_data(struct APICommon* api_common,
   barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
   command_list->lpVtbl->ResourceBarrier(command_list, 1, &barrier);
 
-  hr = api_common->directx_12_api.command_list->lpVtbl->Close(api_common->directx_12_api.command_list);
+  hr = command_list->lpVtbl->Close(command_list);
   if (FAILED(hr)) {
-    log_message(LOG_SEVERITY_ERROR, "Failed to close command list");
     upload_heap->lpVtbl->Release(upload_heap);
-    return;
+    free(layouts);
+    free(num_rows);
+    free(row_sizes);
+    free(subresources);
+    return 1;
   }
 
-  ID3D12CommandList* pp_command_lists[] = {(ID3D12CommandList*)api_common->directx_12_api.command_list};
-  api_common->directx_12_api.command_queue->lpVtbl->ExecuteCommandLists(api_common->directx_12_api.command_queue, 1, pp_command_lists);
-
+  ID3D12CommandList* lists[] = {(ID3D12CommandList*)command_list};
+  api_common->directx_12_api.command_queue->lpVtbl->ExecuteCommandLists(api_common->directx_12_api.command_queue, 1, lists);
   api_common->directx_12_api.fence_value++;
   api_common->directx_12_api.command_queue->lpVtbl->Signal(api_common->directx_12_api.command_queue, api_common->directx_12_api.fence, api_common->directx_12_api.fence_value);
 
-  if (api_common->directx_12_api.fence->lpVtbl->GetCompletedValue(api_common->directx_12_api.fence) < api_common->directx_12_api.fence_value) {
+  if (api_common->directx_12_api.fence->lpVtbl->GetCompletedValue(api_common->directx_12_api.fence) <
+      api_common->directx_12_api.fence_value) {
     api_common->directx_12_api.fence->lpVtbl->SetEventOnCompletion(api_common->directx_12_api.fence, api_common->directx_12_api.fence_value, api_common->directx_12_api.fence_event);
     WaitForSingleObject(api_common->directx_12_api.fence_event, INFINITE);
   }
 
   upload_heap->lpVtbl->Release(upload_heap);
+  free(layouts);
+  free(num_rows);
+  free(row_sizes);
+  free(subresources);
+  return 0;
 }
 
 uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, void* pixels) {
@@ -175,15 +239,16 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
   }
 
   uint32_t mip_levels = 1;
-  if (texture_settings.mip_type == MIP_GENERATE) {
-    uint32_t max_dim = texture_common->width > texture_common->height ? texture_common->width : texture_common->height;
-    mip_levels = (uint32_t)(floor(log2((double)max_dim))) + 1;
-  } else if (texture_settings.mip_type == MIP_CUSTOM) {
-    mip_levels = texture_settings.mip_count;
-  }
 
-  if (texture_settings.mip_type == MIP_NONE)
+  if (texture_settings.mip_type == MIP_CUSTOM) {
+    mip_levels = texture_settings.mip_count;
+    if (mip_levels < 1) mip_levels = 1;
+  } else if (texture_settings.mip_type == MIP_NONE) {
     mip_levels = 1;
+  } else if (texture_settings.mip_type == MIP_GENERATE) {
+    // DX12 mip generation not implemented yet
+    mip_levels = 1;
+  }
 
   D3D12_FILTER filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
   switch (texture_settings.filter_type) {
@@ -207,16 +272,24 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
   texture_common->texture_directx12.sampler_cpu_handle.ptr = texture_common->texture_manager_common->texture_manager_directx12.sampler_cpu_heap_handle.ptr + (texture_common->id * texture_common->texture_manager_common->texture_manager_directx12.sampler_descriptor_size);
   texture_common->texture_directx12.sampler_gpu_handle.ptr = texture_common->texture_manager_common->texture_manager_directx12.sampler_gpu_heap_handle.ptr + (texture_common->id * texture_common->texture_manager_common->texture_manager_directx12.sampler_descriptor_size);
 
+  UINT max_aniso = 1;
+  if (filter == D3D12_FILTER_ANISOTROPIC) {
+    float req = texture_settings.max_anisotropy;
+    if (req < 1.0f) req = 1.0f;
+    if (req > 16.0f) req = 16.0f;
+    max_aniso = (UINT)req;
+  }
+
   D3D12_SAMPLER_DESC sampler_desc = {0};
   sampler_desc.Filter = filter;
   sampler_desc.AddressU = mode;
   sampler_desc.AddressV = mode;
   sampler_desc.AddressW = mode;
   sampler_desc.MipLODBias = 0.0f;
-  sampler_desc.MaxAnisotropy = (filter == D3D12_FILTER_ANISOTROPIC) ? (UINT)texture_settings.max_anisotropy : 1;
+  sampler_desc.MaxAnisotropy = max_aniso;
   sampler_desc.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
   sampler_desc.MinLOD = 0.0f;
-  sampler_desc.MaxLOD = (FLOAT)(mip_levels - 1);
+  sampler_desc.MaxLOD = (mip_levels > 0) ? (FLOAT)(mip_levels - 1) : 0.0f;
   sampler_desc.BorderColor[0] = 0.0f;
   sampler_desc.BorderColor[1] = 0.0f;
   sampler_desc.BorderColor[2] = 0.0f;
@@ -247,8 +320,19 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
   if (FAILED(api_common->directx_12_api.device->lpVtbl->CreateCommittedResource(api_common->directx_12_api.device, &heap_properties, D3D12_HEAP_FLAG_NONE, &texture_desc, D3D12_RESOURCE_STATE_COPY_DEST, NULL, &IID_ID3D12Resource, (void**)&(texture_common->texture_directx12.texture_resource))))
     return 1;
 
-  texture_directx_12_upload_texture_data(api_common, api_common->directx_12_api.command_list, texture_common->texture_directx12.texture_resource, format, pixels, texture_common->width, texture_common->height, bytes_per_channel, channels);
-
+  if (texture_directx_12_upload_texture_data(
+          api_common,
+          api_common->directx_12_api.command_list,
+          texture_common->texture_directx12.texture_resource,
+          format,
+          pixels,
+          texture_common->width,
+          texture_common->height,
+          mip_levels,
+          bytes_per_channel,
+          channels) != 0) {
+    return 1;
+  }
   D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {0};
   srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
   srv_desc.Format = format;
