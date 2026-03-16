@@ -346,10 +346,12 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   if (delta_time > 0.05)
     delta_time = 0.05;
 
-  // Hardcoded to episode length of 1 minute before timeout
+  // Hardcoded to episode length of 45 seconds before timeout
+  // If I can complete course in about 30 secnds then AI should have 1.3x to 1.8x buffer
   game->timer++;
-  if (game->timer > 3600 && !EVAL_MODE) {
+  if (game->timer > 2700 && !EVAL_MODE) {
     printf("Episode timed out\n");
+    game->timer = 0;
     done = true;
   }
 
@@ -434,16 +436,19 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     // Start of reward calculation
     ///////////////////////////////////////////////////
     float reward = 0.0f;
-
     float speed_before_move = game->npcs[ai_num].speed;
+    vec3 prev_pos = game->npcs[ai_num].position;
 
     //  Move car
     game->npcs[ai_num].position.x += forward_vel.x * game->npcs[ai_num].speed * delta_time;
     game->npcs[ai_num].position.y += forward_vel.y * game->npcs[ai_num].speed * delta_time;
 
     const float TREE_RADIUS = 1.75f;
+    const float TREE_SKIN = 0.20f;  // extra push-out margin
     const float BOUNCE_RESTITUTION = 1.5f;
     const float MIN_BOUNCE_SPEED = 15.0f;
+    const float TREE_AVOID_TURN = 0.35f;  // about 20 degrees
+    const float TREE_SIDE_EPS = 0.05f;
 
     for (int t = 0; t < game->total_trees; t++) {
       vec3 tree_pos = game->trees[t]->sprite_common.position;
@@ -455,32 +460,72 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
       if (dist < TREE_RADIUS) {
         hit_tree = true;
 
+        // Start from pre-move position so we do not stay embedded in the tree
+        float resolve_x = prev_pos.x;
+        float resolve_y = prev_pos.y;
+
+        float rdx = resolve_x - tree_pos.x;
+        float rdy = resolve_y - tree_pos.y;
+        float rdist = sqrtf(rdx * rdx + rdy * rdy);
+
         float nx, ny;
-        if (dist > 1e-4f) {
+        if (rdist > 1e-4f) {
+          nx = rdx / rdist;
+          ny = rdy / rdist;
+        } else if (dist > 1e-4f) {
           nx = dx / dist;
           ny = dy / dist;
         } else {
-          // Fallback if car center somehow lands exactly on tree center
+          // Fallback: use opposite of forward direction
           nx = -forward_vel.x;
           ny = -forward_vel.y;
         }
 
-        // Push car out to the tree boundary
-        game->npcs[ai_num].position.x = tree_pos.x + nx * TREE_RADIUS;
-        game->npcs[ai_num].position.y = tree_pos.y + ny * TREE_RADIUS;
+        // Push slightly outside the tree, not exactly on the boundary
+        game->npcs[ai_num].position.x = tree_pos.x + nx * (TREE_RADIUS + TREE_SKIN);
+        game->npcs[ai_num].position.y = tree_pos.y + ny * (TREE_RADIUS + TREE_SKIN);
 
         // Estimate impact speed along the collision normal
         float vx = forward_vel.x * speed_before_move;
         float vy = forward_vel.y * speed_before_move;
         float impact_speed = fabsf(vx * nx + vy * ny);
 
-        // Reverse speed so the car bounces backward relative to its heading
+        // Bounce backward
         game->npcs[ai_num].speed = -fmaxf(MIN_BOUNCE_SPEED, impact_speed * BOUNCE_RESTITUTION);
+
+        // Turn slightly away from the tree so the AI does not keep rehitting it
+        float current_heading = game->npcs[ai_num].heading;
+
+        float fx = -cosf(current_heading);
+        float fy = -sinf(current_heading);
+        float rx = fy;
+        float ry = -fx;
+
+        // Tree position in carspace
+        float to_tree_x = tree_pos.x - game->npcs[ai_num].position.x;
+        float to_tree_y = tree_pos.y - game->npcs[ai_num].position.y;
+        float tree_side = to_tree_x * rx + to_tree_y * ry;
+
+        if (fabsf(tree_side) < TREE_SIDE_EPS) {
+          float to_marker_x = marker_pos.x - game->npcs[ai_num].position.x;
+          float to_marker_y = marker_pos.y - game->npcs[ai_num].position.y;
+          tree_side = to_marker_x * rx + to_marker_y * ry;
+        }
+
+        if (tree_side > 0.0f)
+          game->npcs[ai_num].heading += TREE_AVOID_TURN;
+        else
+          game->npcs[ai_num].heading -= TREE_AVOID_TURN;
+
+        game->npcs[ai_num].heading = wrap_angle_0_2pi(game->npcs[ai_num].heading);
+        game->player.camera.look_at_azimuth = game->npcs[ai_num].heading + M_PI;
 
         reward -= 4.0f;
         break;
       }
     }
+
+    heading = game->npcs[ai_num].heading;
 
     // Apply damping
     float damping = 2.0f;
@@ -513,34 +558,30 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
         game->npcs[ai_num].current_marker = 0;
         reward += 5.0f;  // lap bonus
         // done = true;
-        game->timer = 0;
+        // game->timer = 0;
       }
     }
 
     // Penalize reversing
     if (game->npcs[ai_num].speed < 0.0f)
       reward -= 0.05f;
-
     // Small time penalty
     reward -= 0.005f;
-
     // Steering penalty
     reward -= 0.01f * steer * steer;
     reward -= 0.02f * fabsf(angle);
 
-    // Use the CURRENT target marker after checkpoint update
+    // Use the current target marker after checkpoint update so we head towards the next one if we just passed the checkpoint
     vec3 next_marker = game->marker[game->npcs[ai_num].current_marker]->sprite_common.position;
 
-    // World delta to target
+    // World delta to target, basically aiming towards it
     float dxw = next_marker.x - game->npcs[ai_num].position.x;
     float dyw = next_marker.y - game->npcs[ai_num].position.y;
-
     // Car forward/right basis
     float fx = -cosf(game->npcs[ai_num].heading);
     float fy = -sinf(game->npcs[ai_num].heading);
     float rx = fy;
     float ry = -fx;
-
     // Marker error in car frame
     float forward_err = dxw * fx + dyw * fy;
     float right_err = dxw * rx + dyw * ry;
@@ -604,14 +645,14 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
     if (!EVAL_MODE) {
       struct Packet {
-        float dx;
-        float dy;
-        float speed;
-        float azimuth;
-        float tree_dx;
-        float tree_dy;
-        float reward;
-        int done;
+        float dx;       // Next checkpoint x relative to car direction
+        float dy;       // Next checkpoint y relative to car direction
+        float speed;    // Car speed
+        float azimuth;  // Car angle
+        float tree_dx;  // Next forward facing tree x relative to car direction
+        float tree_dy;  // Next forward facing tree y relative to car direction
+        float reward;   // Reward for this step
+        int done;       // Whether the episode is done
       };
 
       struct Packet packet;
@@ -633,7 +674,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
       }
 
       if (done) {
-        game->timer = 0;
+        // game->timer = 0;
 
         game->npcs[ai_num].speed = 0.0f;
         game->npcs[ai_num].position = (vec3){.x = 10.0f, .y = 95.0f, .z = 0.75};

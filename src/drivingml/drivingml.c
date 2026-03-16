@@ -72,16 +72,16 @@ void drivingml_start(struct DrivingML* drivingml) {
     int max_steps = 5;
     int steps = 0;
 
-#ifndef EVAL_MODE
-    // In training mode we want to run as many sim steps as possible to speed up training, but still render every frame so we can see what's going on
-    while (accumulator >= sim_dt && steps < max_steps) {
-      game_update(&(drivingml->game), &(drivingml->mana), sim_dt);
-      accumulator -= sim_dt;
-      steps++;
-    }
-#else
-    game_update(&(drivingml->game), &(drivingml->mana), 0.01666666666);
-#endif
+    if (EVAL_MODE) {
+      // In training mode we want to run as many sim steps as possible to speed up training, but still render every frame so we can see what's going on
+      while (accumulator >= sim_dt && steps < max_steps) {
+        game_update(&(drivingml->game), &(drivingml->mana), sim_dt);
+        accumulator -= sim_dt;
+        steps++;
+      }
+    } else
+      game_update(&(drivingml->game), &(drivingml->mana), 0.01666666666);
+
     // render once per displayed frame
     game_render(&(drivingml->game), &(drivingml->mana), frame_time);
     window_end_frame(&(drivingml->window));

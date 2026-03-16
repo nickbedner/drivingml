@@ -138,6 +138,8 @@ states = []
 old_log_probs = []
 # Past actual actions taken
 us = []
+# Prev state variables to store the most recent action and state, which will be used when the reward arrives in the next packet
+# This is because the reward we get from the environment corresponds to the previous action we took, so we need to keep track of it until we receive that reward
 prev_state = None
 prev_u = None
 prev_log_prob = None
@@ -186,7 +188,7 @@ while True:
         break
 
     # Break apart packet into variable
-    dx, dy, speed, azimuth,tree_dx, tree_dy, reward, done = struct.unpack("<7fi", data)
+    dx, dy, speed, azimuth, tree_dx, tree_dy, reward, done = struct.unpack("<7fi", data)
     # Normalize speed to help with training
     speed = np.tanh(speed / 120.0)
     # Simplifies and normalizes azimuth into sin and cos angles for model
@@ -309,7 +311,14 @@ while True:
             advantages = advantages * 0.0
         
         # PPO stands for Proximal Policy Optimization, reinforcement learning algorithm used to train policies(actor)
-        # PPO is used because it makes learning stable and safe
+        # PPO is used because it makes learning stable and safe, improve the AI’s behavior, but don’t let it change too much in one step
+        # Originally was REINFROCE but switched to PPO
+        # REINFORCE is a simpler policy gradient method, but it can be unstable and have high variance, which makes training difficult
+        # REINFROCE says do whatever you just again if it worked
+        # PPO says do it again but only a little bit, and if it worked really well then do it a bit more, if it didn’t work then maybe do it a bit less, but don’t change too much at once
+        # Policy = AI’s action plan
+        # Optimization = improving it
+        # Proximal = only changing it a little at a time
         # It prevents the policy from changing too much at once, which can break training
         # PPO hyperparameters
         # Limits how much the policy is allowed to change using clipping
@@ -349,6 +358,8 @@ while True:
             base_entropy = D.Normal(mean, std).entropy().sum(-1).mean()
 
             # All parts are combined into a singular loss
+            # Very high entropy for too long can mean the policy stays noisy and doesn’t settle
+            # Very low entropy too early can mean premature convergence / getting stuck
             loss = policy_loss + value_loss_coef * value_loss - entropy_coef * base_entropy
 
             # Zeroes our aka clears old gradients from the previous update
@@ -368,25 +379,20 @@ while True:
         # Print at episode end
         if done == 1:
             print(
-                f"Episode {episode} | "
-                f"returns_abs_mean: {returns.abs().mean().item():.4f} | "
-                f"value_loss: {value_loss.item():.4f}"
-            )
-
-            print(
                 f"Episode {episode} trained. "
-                f"Loss: {loss.item():.4f}, "
-                f"policy: {policy_loss.item():.4f}, "
-                f"value: {value_loss.item():.4f}, "
-                f"entropy: {base_entropy.item():.4f}, "
-                f"mean_std: {log_std.exp().mean().item():.4f}"
+                f"Loss: {loss.item():.4f}, " # Total loss combining actor and critic
+                f"policy: {policy_loss.item():.4f}, " # PPO actor loss, aka how much the policy update is helping according to PPO’s objective
+                f"value_loss: {value_loss.item():.4f}, " # How wrong the critic was
+                f"entropy: {base_entropy.item():.4f}, " # Average entropy of the Gaussian action distribution, higher is more random and explorative
+                f"mean_std: {log_std.exp().mean().item():.4f}, " # Action randomness similar to entropy?
+                f"returns_abs_mean: {returns.abs().mean().item():.4f}" # Discounted return over the rollout, aka reward total critic is trying to predict
             )
 
             checkpoint = {
-                "model_state_dict": model.state_dict(),
-                "log_std": log_std.detach().cpu(),
-                "optimizer_state_dict": optimizer.state_dict(),
-                "episode": episode
+                "model_state_dict": model.state_dict(), # All the neural network weights: shared layers, actor head, critic head
+                "log_std": log_std.detach().cpu(), # Learned action noise parameter, aka how random it's actions should be
+                "optimizer_state_dict": optimizer.state_dict(), # Adam optimizer state, includes things like moment estimates for adaptive learning rates
+                "episode": episode # Current episode number for tracking progress and resuming training
             }
 
             # Always update latest checkpoint
