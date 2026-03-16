@@ -47,7 +47,11 @@ enum VULKAN_RENDERER_STATUS {
 
 struct SamplerSettings {
   uint32_t mip_levels;
-  VkFilter filter;
+
+  VkFilter min_filter;
+  VkFilter mag_filter;
+  VkSamplerMipmapMode mipmap_mode;
+
   VkSamplerAddressMode address_mode;
 
   VkBool32 anisotropy_enable;

@@ -15,10 +15,15 @@ struct TextureManagerVulkan {
 
 #ifdef DIRECTX_12_API_SUPPORTED
 struct TextureManagerDirectX12 {
-  ID3D12DescriptorHeap *srv_heap;               // the descriptor heap containing the SRV for the texture
-  D3D12_CPU_DESCRIPTOR_HANDLE cpu_heap_handle;  // handle to the CPU-side descriptor heap
-  D3D12_GPU_DESCRIPTOR_HANDLE gpu_heap_handle;  // handle to the GPU-side descriptor heap
-  UINT descriptor_size;
+  ID3D12DescriptorHeap* srv_heap;
+  D3D12_CPU_DESCRIPTOR_HANDLE srv_cpu_heap_handle;
+  D3D12_GPU_DESCRIPTOR_HANDLE srv_gpu_heap_handle;
+  UINT srv_descriptor_size;
+
+  ID3D12DescriptorHeap* sampler_heap;
+  D3D12_CPU_DESCRIPTOR_HANDLE sampler_cpu_heap_handle;
+  D3D12_GPU_DESCRIPTOR_HANDLE sampler_gpu_heap_handle;
+  UINT sampler_descriptor_size;
 };
 #endif
 

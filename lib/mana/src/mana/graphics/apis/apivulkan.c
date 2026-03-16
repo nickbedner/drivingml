@@ -628,25 +628,29 @@ void vulkan_graphics_utils_end_single_time_commands(struct VkDevice_T* device, s
 uint_fast8_t vulkan_graphics_utils_create_sampler(struct VkDevice_T* device, VkSampler* texture_sampler, struct SamplerSettings sampler_settings) {
   VkSamplerCreateInfo sampler_info = {0};
   sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-  sampler_info.magFilter = sampler_settings.filter;
-  sampler_info.minFilter = sampler_settings.filter;
+
+  sampler_info.magFilter = sampler_settings.mag_filter;
+  sampler_info.minFilter = sampler_settings.min_filter;
+  sampler_info.mipmapMode = sampler_settings.mipmap_mode;
+
   sampler_info.addressModeU = sampler_settings.address_mode;
   sampler_info.addressModeV = sampler_settings.address_mode;
   sampler_info.addressModeW = sampler_settings.address_mode;
+
   sampler_info.anisotropyEnable = sampler_settings.anisotropy_enable;
-  sampler_info.maxAnisotropy = sampler_settings.max_anisotropy;
+  sampler_info.maxAnisotropy = sampler_settings.anisotropy_enable ? sampler_settings.max_anisotropy : 1.0f;
+
   sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
   sampler_info.unnormalizedCoordinates = VK_FALSE;
   sampler_info.compareEnable = VK_FALSE;
   sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
-  sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+
   sampler_info.minLod = 0.0f;
-  // sampler_info.maxLod = (float)(sampler_settings.mip_levels);
   sampler_info.maxLod = (float)(sampler_settings.mip_levels - 1);
   sampler_info.mipLodBias = 0.0f;
 
   if (vkCreateSampler(device, &sampler_info, NULL, texture_sampler) != VK_SUCCESS) {
-    printf("failed to create texture sampler!\n");
+    log_message(LOG_SEVERITY_ERROR, "failed to create texture sampler!\n");
     return 1;
   }
 

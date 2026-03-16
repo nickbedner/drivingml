@@ -45,7 +45,7 @@ void sprite_directx_12_render(struct SpriteCommon* sprite_common, struct GBuffer
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->RSSetViewports(gbuffer_common->gbuffer_directx12.command_list, 1, &(sprite_common->shader->shader_common.shader_directx12.viewport));
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->RSSetScissorRects(gbuffer_common->gbuffer_directx12.command_list, 1, &(sprite_common->shader->shader_common.shader_directx12.scissor_rect));
 
-  // Bind the pipeline state object (PSO) - which contains the shader stages, blend state, etc.
+  // Bind the pipeline state object
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->SetPipelineState(gbuffer_common->gbuffer_directx12.command_list, sprite_common->shader->shader_common.shader_directx12.pipeline_state);
 
   // Bind the root signature
@@ -63,16 +63,15 @@ void sprite_directx_12_render(struct SpriteCommon* sprite_common, struct GBuffer
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->SetDescriptorHeaps(gbuffer_common->gbuffer_directx12.command_list, _countof(descriptor_heaps), descriptor_heaps);
 
   // Bind the SRV for the texture
-  gbuffer_common->gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer_common->gbuffer_directx12.command_list, 1, sprite_common->image_texture->texture_common.texture_directx12.gpu_heap_handle);
-
+  gbuffer_common->gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer_common->gbuffer_directx12.command_list, 1, sprite_common->image_texture->texture_common.texture_directx12.srv_gpu_handle);
   // Bind the sampler for the texture
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer_common->gbuffer_directx12.command_list, 2, sprite_common->shader->shader_common.shader_directx12.sampler_handle_gpu);
 
-  // Bind the vertex buffer.
+  // Bind the vertex buffer
   D3D12_VERTEX_BUFFER_VIEW vbv = sprite_common->sprite_directx12.vertex_buffer_view;
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->IASetVertexBuffers(gbuffer_common->gbuffer_directx12.command_list, 0, 1, &vbv);
 
-  // Bind the index buffer.
+  // Bind the index buffer
   D3D12_INDEX_BUFFER_VIEW ibv = sprite_common->sprite_directx12.index_buffer_view;
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->IASetIndexBuffer(gbuffer_common->gbuffer_directx12.command_list, &ibv);
 

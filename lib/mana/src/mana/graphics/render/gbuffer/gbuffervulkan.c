@@ -1,6 +1,6 @@
 #include "mana/graphics/render/gbuffer/gbuffervulkan.h"
 
-static inline uint_fast8_t gbuffer_vulkan_init_common(struct GBufferCommon *gbuffer_common, struct APICommon *api_common, struct SwapChainCommon *swap_chain_common, const uint_fast32_t msaa_samples) {
+static inline uint_fast8_t gbuffer_vulkan_init_common(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   VkFormat image_format = VK_FORMAT_R8G8B8A8_UNORM;  // VK_FORMAT_R16G16B16A16_SFLOAT;
   VkImageUsageFlags image_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
   VkFormat depth_format = vulkan_graphics_utils_find_depth_format(api_common->vulkan_api.physical_device);
@@ -191,7 +191,7 @@ static inline uint_fast8_t gbuffer_vulkan_init_common(struct GBufferCommon *gbuf
   return 0;
 }
 
-uint_fast8_t gbuffer_vulkan_init(struct GBufferCommon *gbuffer_common, struct APICommon *api_common, struct SwapChainCommon *swap_chain_common, const uint_fast32_t msaa_samples) {
+uint_fast8_t gbuffer_vulkan_init(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   if (gbuffer_vulkan_init_common(gbuffer_common, api_common, swap_chain_common, msaa_samples) != 0)
     return 1;
 
@@ -200,8 +200,7 @@ uint_fast8_t gbuffer_vulkan_init(struct GBufferCommon *gbuffer_common, struct AP
     semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     vkCreateSemaphore(api_common->vulkan_api.device, &semaphore_info, NULL, &(gbuffer_common->gbuffer_vulkan.semaphore));
-    vulkan_graphics_utils_create_sampler(api_common->vulkan_api.device, &(gbuffer_common->gbuffer_vulkan.texture_sampler), (struct SamplerSettings){.mip_levels = 0, .filter = VK_FILTER_LINEAR, .address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE});
-
+    vulkan_graphics_utils_create_sampler(api_common->vulkan_api.device, &(gbuffer_common->gbuffer_vulkan.texture_sampler), (struct SamplerSettings){.mip_levels = 1, .min_filter = VK_FILTER_LINEAR, .mag_filter = VK_FILTER_LINEAR, .mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST, .address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, .anisotropy_enable = VK_FALSE, .max_anisotropy = 1.0f});
     gbuffer_common->projection_matrix = MAT4_ZERO;
     gbuffer_common->view_matrix = MAT4_ZERO;
 
@@ -221,8 +220,7 @@ uint_fast8_t gbuffer_vulkan_init(struct GBufferCommon *gbuffer_common, struct AP
     semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     vkCreateSemaphore(api_common->vulkan_api.device, &semaphore_info, NULL, &(gbuffer_common->gbuffer_vulkan.semaphore));
-    vulkan_graphics_utils_create_sampler(api_common->vulkan_api.device, &(gbuffer_common->gbuffer_vulkan.texture_sampler), (struct SamplerSettings){.mip_levels = 0, .filter = VK_FILTER_LINEAR, .address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE});
-
+    vulkan_graphics_utils_create_sampler(api_common->vulkan_api.device, &(gbuffer_common->gbuffer_vulkan.texture_sampler), (struct SamplerSettings){.mip_levels = 1, .min_filter = VK_FILTER_LINEAR, .mag_filter = VK_FILTER_LINEAR, .mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST, .address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, .anisotropy_enable = VK_FALSE, .max_anisotropy = 1.0f});
     gbuffer_common->projection_matrix = MAT4_ZERO;
     gbuffer_common->view_matrix = MAT4_ZERO;
 
@@ -242,7 +240,7 @@ uint_fast8_t gbuffer_vulkan_init(struct GBufferCommon *gbuffer_common, struct AP
   return 0;
 }
 
-static inline void gbuffer_vulkan_delete_common(struct GBufferCommon *gbuffer_common, struct APICommon *api_common, const uint_fast32_t msaa_samples) {
+static inline void gbuffer_vulkan_delete_common(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, const uint_fast32_t msaa_samples) {
   vkDestroyRenderPass(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.render_pass, NULL);
 
   vkDestroyFramebuffer(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.framebuffer, NULL);
@@ -272,21 +270,21 @@ static inline void gbuffer_vulkan_delete_common(struct GBufferCommon *gbuffer_co
   }
 }
 
-void gbuffer_vulkan_delete(struct GBufferCommon *gbuffer_common, struct APICommon *api_common, const uint_fast32_t msaa_samples) {
+void gbuffer_vulkan_delete(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, const uint_fast32_t msaa_samples) {
   gbuffer_vulkan_delete_common(gbuffer_common, api_common, msaa_samples);
 
   vkDestroySemaphore(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.semaphore, NULL);
   vkDestroySampler(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.texture_sampler, NULL);
 }
 
-uint_fast8_t gbuffer_vulkan_resize(struct GBufferCommon *gbuffer_common, struct APICommon *api_common, struct SwapChainCommon *swap_chain_common, const uint_fast32_t msaa_samples) {
+uint_fast8_t gbuffer_vulkan_resize(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   gbuffer_vulkan_delete_common(gbuffer_common, api_common, msaa_samples);
   gbuffer_vulkan_init_common(gbuffer_common, api_common, swap_chain_common, msaa_samples);
 
   return 0;
 }
 
-uint_fast8_t gbuffer_vulkan_start(struct GBufferCommon *gbuffer_common, struct SwapChainCommon *swap_chain_common, const uint_fast32_t msaa_samples) {
+uint_fast8_t gbuffer_vulkan_start(struct GBufferCommon* gbuffer_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   VkCommandBufferBeginInfo begin_info = {0};
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -354,7 +352,7 @@ uint_fast8_t gbuffer_vulkan_start(struct GBufferCommon *gbuffer_common, struct S
   return 0;
 }
 
-uint_fast8_t gbuffer_vulkan_stop(struct GBufferCommon *gbuffer_common, struct APICommon *api_common, const uint_fast32_t msaa_samples) {
+uint_fast8_t gbuffer_vulkan_stop(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, const uint_fast32_t msaa_samples) {
   vkCmdEndRenderPass(gbuffer_common->gbuffer_vulkan.command_buffer);
 
   if (vkEndCommandBuffer(gbuffer_common->gbuffer_vulkan.command_buffer) != VK_SUCCESS) {

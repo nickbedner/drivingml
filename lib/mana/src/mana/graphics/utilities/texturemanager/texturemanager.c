@@ -32,16 +32,7 @@ void texture_manager_delete(struct TextureManager* texture_manager, struct APICo
   texture_manager->texture_manager_func.texture_manager_delete(&(texture_manager->texture_manager_common), api_common);
 }
 
-#define MAX_PATH_LENGTH 512
-
-// Convert `char*` (UTF-8) to `wchar_t*` using a stack buffer
-static void utf8_to_wchar(const char* str, wchar_t* out, size_t out_size) {
-  size_t converted_size = 0;
-  mbstowcs_s(&converted_size, out, out_size, str, out_size - 1);
-  out[out_size - 1] = L'\0';  // Ensure null termination
-}
-
-void texture_manager_add(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings* texture_settings, const char* path) {
+void texture_manager_add(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings, const char* path) {
   struct Texture* texture = malloc(sizeof(struct Texture));
   texture_init(texture, &(texture_manager->texture_manager_common), api_common, texture_settings, path, texture_manager->texture_manager_common.texture_index);
 

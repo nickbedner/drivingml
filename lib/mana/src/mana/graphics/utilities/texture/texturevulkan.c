@@ -1,9 +1,10 @@
 #include "mana/graphics/utilities/texture/texturevulkan.h"
 
-uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, struct TextureSettings* texture_settings, void* pixels) {
-  VkFilter filter = (texture_settings->filter_type == FILTER_NEAREST) ? VK_FILTER_NEAREST : VK_FILTER_LINEAR;
-  VkSamplerAddressMode mode;
-  switch (texture_settings->mode_type) {
+uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, void* pixels) {
+  struct TextureSettings texture_settings = texture_common->texture_settings;
+
+  VkSamplerAddressMode mode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+  switch (texture_settings.mode_type) {
     case (MODE_REPEAT): {
       mode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
       break;
@@ -25,7 +26,7 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
   uint8_t bytes_per_channel = 1;
   uint8_t channels = 4;
   VkFormat format = VK_FORMAT_UNDEFINED;
-  switch (texture_settings->format_type) {
+  switch (texture_settings.format_type) {
     case (FORMAT_R8_UNORM): {
       format = VK_FORMAT_R8_UNORM;
       bytes_per_channel = 1;
@@ -62,23 +63,29 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
       channels = 4;
       break;
     }
+    default: {
+      format = VK_FORMAT_R8G8B8A8_UNORM;
+      bytes_per_channel = 1;
+      channels = 4;
+      break;
+    }
   }
 
   uint32_t mip_levels = 1;
-  if (texture_settings->mip_type == MIP_GENERATE)
+  if (texture_settings.mip_type == MIP_GENERATE)
     mip_levels = (uint32_t)(floor(log2(MAX(texture_common->width, texture_common->height)))) + 1;
-  else if (texture_settings->mip_type == MIP_CUSTOM)
-    mip_levels = texture_settings->mip_count;
+  else if (texture_settings.mip_type == MIP_CUSTOM)
+    mip_levels = texture_settings.mip_count;
 
   VkDeviceSize image_size = 0;
-  if (texture_settings->mip_type == MIP_CUSTOM) {
+  if (texture_settings.mip_type == MIP_CUSTOM) {
     for (uint32_t level = 0; level < mip_levels; level++) {
       uint32_t w = texture_common->width >> level;
-      if (!w)
-        w = 1;
       uint32_t h = texture_common->height >> level;
-      if (!h)
-        h = 1;
+
+      if (w == 0) w = 1;
+      if (h == 0) h = 1;
+
       image_size += (VkDeviceSize)w * h * channels * bytes_per_channel;
     }
   } else
@@ -96,8 +103,9 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
   vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, texture_common->width, texture_common->height, mip_levels, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(texture_common->texture_vulkan.texture_image), &(texture_common->texture_vulkan.texture_image_memory));
 
   vulkan_graphics_utils_transition_image_layout(api_common->vulkan_api.device, api_common->vulkan_api.graphics_queue, api_common->vulkan_api.command_pool, texture_common->texture_vulkan.texture_image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mip_levels);
-  if (texture_settings->mip_type == MIP_CUSTOM) {
+  if (texture_settings.mip_type == MIP_CUSTOM) {
     VkCommandBuffer cmd = vulkan_graphics_utils_begin_single_time_commands(api_common->vulkan_api.device, api_common->vulkan_api.command_pool);
+
     VkDeviceSize offset = 0;
 
     for (uint32_t level = 0; level < mip_levels; level++) {
@@ -109,38 +117,94 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
 
       VkBufferImageCopy region = {0};
       region.bufferOffset = offset;
+      region.bufferRowLength = 0;
+      region.bufferImageHeight = 0;
       region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
       region.imageSubresource.mipLevel = level;
       region.imageSubresource.baseArrayLayer = 0;
       region.imageSubresource.layerCount = 1;
+      region.imageOffset = (VkOffset3D){0, 0, 0};
       region.imageExtent.width = w;
       region.imageExtent.height = h;
       region.imageExtent.depth = 1;
-      region.bufferRowLength = 0;
-      region.bufferImageHeight = 0;
-      region.imageOffset = (VkOffset3D){0, 0, 0};
 
-      vkCmdCopyBufferToImage(cmd, staging_buffer, texture_common->texture_vulkan.texture_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+      vkCmdCopyBufferToImage(
+          cmd,
+          staging_buffer,
+          texture_common->texture_vulkan.texture_image,
+          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+          1,
+          &region);
 
       offset += (VkDeviceSize)w * h * channels * bytes_per_channel;
     }
 
     vulkan_graphics_utils_end_single_time_commands(api_common->vulkan_api.device, api_common->vulkan_api.graphics_queue, api_common->vulkan_api.command_pool, cmd);
     vulkan_graphics_utils_transition_image_layout(api_common->vulkan_api.device, api_common->vulkan_api.graphics_queue, api_common->vulkan_api.command_pool, texture_common->texture_vulkan.texture_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mip_levels);
-  } else
+  } else {
     vulkan_graphics_utils_copy_buffer_to_image(api_common->vulkan_api.device, api_common->vulkan_api.graphics_queue, api_common->vulkan_api.command_pool, &staging_buffer, &(texture_common->texture_vulkan.texture_image), texture_common->width, texture_common->height);
+
+    if (texture_settings.mip_type == MIP_GENERATE)
+      vulkan_graphics_utils_generate_mipmaps(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, api_common->vulkan_api.graphics_queue, api_common->vulkan_api.command_pool, texture_common->texture_vulkan.texture_image, format, texture_common->width, texture_common->height, mip_levels);
+    else
+      vulkan_graphics_utils_transition_image_layout(api_common->vulkan_api.device, api_common->vulkan_api.graphics_queue, api_common->vulkan_api.command_pool, texture_common->texture_vulkan.texture_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mip_levels);
+  }
 
   vkDestroyBuffer(api_common->vulkan_api.device, staging_buffer, NULL);
   vkFreeMemory(api_common->vulkan_api.device, staging_buffer_memory, NULL);
 
-  if (texture_settings->mip_type == MIP_GENERATE)
-    vulkan_graphics_utils_generate_mipmaps(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, api_common->vulkan_api.graphics_queue, api_common->vulkan_api.command_pool, texture_common->texture_vulkan.texture_image, format, texture_common->width, texture_common->height, mip_levels);
-
   vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, texture_common->texture_vulkan.texture_image, format, VK_IMAGE_ASPECT_COLOR_BIT, mip_levels, &(texture_common->texture_vulkan.texture_image_view));
 
-  VkBool32 anisotropy_enable_vulkan = texture_settings->anisotropy_enable ? VK_TRUE : VK_FALSE;
-  vulkan_graphics_utils_create_sampler(api_common->vulkan_api.device, &(texture_common->texture_vulkan.texture_sampler), (struct SamplerSettings){.mip_levels = mip_levels, .filter = filter, .address_mode = mode, .anisotropy_enable = anisotropy_enable_vulkan, .max_anisotropy = texture_settings->max_anisotropy});
+  VkFilter min_filter = VK_FILTER_NEAREST;
+  VkFilter mag_filter = VK_FILTER_NEAREST;
+  VkSamplerMipmapMode mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+  VkBool32 anisotropy_enable_vulkan = VK_FALSE;
+  float max_anisotropy = 1.0f;
 
+  switch (texture_settings.filter_type) {
+    case FILTER_NEAREST: {
+      min_filter = VK_FILTER_NEAREST;
+      mag_filter = VK_FILTER_NEAREST;
+      mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+      anisotropy_enable_vulkan = VK_FALSE;
+      max_anisotropy = 1.0f;
+      break;
+    }
+    case FILTER_BILINEAR: {
+      min_filter = VK_FILTER_LINEAR;
+      mag_filter = VK_FILTER_LINEAR;
+      mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+      anisotropy_enable_vulkan = VK_FALSE;
+      max_anisotropy = 1.0f;
+      break;
+    }
+    case FILTER_TRILINEAR: {
+      min_filter = VK_FILTER_LINEAR;
+      mag_filter = VK_FILTER_LINEAR;
+      mipmap_mode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+      anisotropy_enable_vulkan = VK_FALSE;
+      max_anisotropy = 1.0f;
+      break;
+    }
+    case FILTER_ANISOTROPIC: {
+      min_filter = VK_FILTER_LINEAR;
+      mag_filter = VK_FILTER_LINEAR;
+      mipmap_mode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+      anisotropy_enable_vulkan = VK_TRUE;
+      max_anisotropy = texture_settings.max_anisotropy;
+      break;
+    }
+    default: {
+      min_filter = VK_FILTER_NEAREST;
+      mag_filter = VK_FILTER_NEAREST;
+      mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+      anisotropy_enable_vulkan = VK_FALSE;
+      max_anisotropy = 1.0f;
+      break;
+    }
+  }
+
+  vulkan_graphics_utils_create_sampler(api_common->vulkan_api.device, &(texture_common->texture_vulkan.texture_sampler), (struct SamplerSettings){.mip_levels = mip_levels, .min_filter = min_filter, .mag_filter = mag_filter, .mipmap_mode = mipmap_mode, .address_mode = mode, .anisotropy_enable = anisotropy_enable_vulkan, .max_anisotropy = max_anisotropy});
   return 0;
 }
 

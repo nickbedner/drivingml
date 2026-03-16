@@ -5,8 +5,10 @@
 #include "mana/graphics/utilities/texturemanager/texturemanagercommon.h"
 
 enum FilterType {
-  FILTER_NEAREST = 0,
-  FILTER_LINEAR
+  FILTER_NEAREST = 0,  // point/point/point
+  FILTER_BILINEAR,     // linear/linear/point
+  FILTER_TRILINEAR,    // linear/linear/linear
+  FILTER_ANISOTROPIC
 };
 
 enum ModeType {
@@ -43,7 +45,6 @@ struct TextureSettings {
   // Does the image already have premultiplied alphas, 0: No 1: Yes
   bool premultiplied_alpha;
 
-  bool anisotropy_enable;
   float max_anisotropy;
 };
 
@@ -58,9 +59,13 @@ struct TextureVulkan {
 
 #ifdef DIRECTX_12_API_SUPPORTED
 struct TextureDirectX12 {
-  ID3D12Resource* texture_resource;             // the actual texture resource
-  D3D12_CPU_DESCRIPTOR_HANDLE cpu_heap_handle;  // handle to the CPU-side descriptor heap
-  D3D12_GPU_DESCRIPTOR_HANDLE gpu_heap_handle;  // handle to the GPU-side descriptor heap
+  ID3D12Resource* texture_resource;
+
+  D3D12_CPU_DESCRIPTOR_HANDLE srv_cpu_handle;
+  D3D12_GPU_DESCRIPTOR_HANDLE srv_gpu_handle;
+
+  D3D12_CPU_DESCRIPTOR_HANDLE sampler_cpu_handle;
+  D3D12_GPU_DESCRIPTOR_HANDLE sampler_gpu_handle;
 };
 #endif
 
@@ -71,6 +76,8 @@ struct TextureCommon {
   char* path;
   uint32_t width;
   uint32_t height;
+
+  struct TextureSettings texture_settings;
 
   struct TextureManagerCommon* texture_manager_common;
 

@@ -1,6 +1,6 @@
 #include "mana/graphics/entities/model/modeldirectx12.h"
 
-void model_directx_12_clone_init(struct ModelCommon *model_common, struct APICommon *api_common) {
+void model_directx_12_clone_init(struct ModelCommon* model_common, struct APICommon* api_common) {
   // Set up the vertex buffer
   directx_12_graphics_utils_setup_vertex_buffer(&(api_common->directx_12_api), model_common->model_mesh->mesh_common.vertices, &model_common->model_directx12.vertex_buffer);
 
@@ -24,10 +24,10 @@ void model_directx_12_clone_init(struct ModelCommon *model_common, struct APICom
     directx_12_graphics_utils_setup_constant_buffer(&(api_common->directx_12_api), sizeof(struct ModelAnimationUniformBufferObject), &(model_common->model_directx12.animation_constant_buffer));
 }
 
-void model_directx_12_clone_delete(struct ModelCommon *model_common, struct APICommon *api_common) {
+void model_directx_12_clone_delete(struct ModelCommon* model_common, struct APICommon* api_common) {
 }
 
-void model_directx_12_render(struct ModelCommon *model_common, struct GBuffer *gbuffer, double delta_time) {
+void model_directx_12_render(struct ModelCommon* model_common, struct GBuffer* gbuffer, double delta_time) {
   if (model_common->animated)
     animator_update(model_common->animator, delta_time);
 
@@ -48,15 +48,15 @@ void model_directx_12_render(struct ModelCommon *model_common, struct GBuffer *g
     gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootConstantBufferView(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 7, animation_cbv_address);
   }
 
-  ID3D12DescriptorHeap *descriptor_heaps[] = {model_common->model_diffuse_texture->texture_common.texture_manager_common->texture_manager_directx12.srv_heap, model_common->shader_handle->shader_common.shader_directx12.sampler_heap};
+  ID3D12DescriptorHeap* descriptor_heaps[] = {model_common->model_diffuse_texture->texture_common.texture_manager_common->texture_manager_directx12.srv_heap, model_common->shader_handle->shader_common.shader_directx12.sampler_heap};
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetDescriptorHeaps(gbuffer->gbuffer_common.gbuffer_directx12.command_list, _countof(descriptor_heaps), descriptor_heaps);
 
   // Bind the sampler and SRV for the texture
-  gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 2, model_common->model_diffuse_texture->texture_common.texture_directx12.gpu_heap_handle);
-  gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 3, model_common->model_normal_texture->texture_common.texture_directx12.gpu_heap_handle);
-  gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 4, model_common->model_metallic_texture->texture_common.texture_directx12.gpu_heap_handle);
-  gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 5, model_common->model_roughness_texture->texture_common.texture_directx12.gpu_heap_handle);
-  gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 6, model_common->model_ao_texture->texture_common.texture_directx12.gpu_heap_handle);
+  gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 2, model_common->model_diffuse_texture->texture_common.texture_directx12.srv_gpu_handle);
+  gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 3, model_common->model_normal_texture->texture_common.texture_directx12.srv_gpu_handle);
+  gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 4, model_common->model_metallic_texture->texture_common.texture_directx12.srv_gpu_handle);
+  gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 5, model_common->model_roughness_texture->texture_common.texture_directx12.srv_gpu_handle);
+  gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 6, model_common->model_ao_texture->texture_common.texture_directx12.srv_gpu_handle);
   if (model_common->animated)
     gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 8, model_common->shader_handle->shader_common.shader_directx12.sampler_handle_gpu);
   else
@@ -77,7 +77,7 @@ void model_directx_12_render(struct ModelCommon *model_common, struct GBuffer *g
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->DrawIndexedInstanced(gbuffer->gbuffer_common.gbuffer_directx12.command_list, (UINT)model_common->model_mesh->mesh_common.indices->size, 1, 0, 0, 0);
 }
 
-void model_directx_12_update_uniforms(struct ModelCommon *model_common, struct APICommon *api_common, struct GBuffer *gbuffer, vec3d position, vec3 light_pos) {
+void model_directx_12_update_uniforms(struct ModelCommon* model_common, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec3 light_pos) {
   struct LightingUniformBufferObject light_ubo = {0};
   // light_ubo.direction = light_pos;
   light_ubo.direction = vec3d_to_vec3(position);
@@ -103,7 +103,7 @@ void model_directx_12_update_uniforms(struct ModelCommon *model_common, struct A
   ubom.model = mat4_transpose(ubom.model);
 
   // Map the constant buffer to update it
-  void *data;
+  void* data;
   HRESULT hr = model_common->model_directx12.constant_buffer->lpVtbl->Map(model_common->model_directx12.constant_buffer, 0, NULL, &data);
   if (SUCCEEDED(hr)) {
     memcpy(data, &ubom, sizeof(struct ModelUniformBufferObject));
@@ -117,7 +117,7 @@ void model_directx_12_update_uniforms(struct ModelCommon *model_common, struct A
     for (size_t joint_num = 0; joint_num < MAX_JOINTS; joint_num++)
       uboa.joint_transforms[joint_num] = mat4_transpose(uboa.joint_transforms[joint_num]);
 
-    void *animation_data;
+    void* animation_data;
     hr = model_common->model_directx12.animation_constant_buffer->lpVtbl->Map(model_common->model_directx12.animation_constant_buffer, 0, NULL, &animation_data);
     if (SUCCEEDED(hr)) {
       memcpy(animation_data, &uboa, sizeof(struct ModelAnimationUniformBufferObject));
@@ -126,7 +126,7 @@ void model_directx_12_update_uniforms(struct ModelCommon *model_common, struct A
       log_message(LOG_SEVERITY_ERROR, "Failed to map constant buffer.\n");
   }
 
-  void *lighting_data;
+  void* lighting_data;
   hr = model_common->model_directx12.lighting_constant_buffer->lpVtbl->Map(model_common->model_directx12.lighting_constant_buffer, 0, NULL, &lighting_data);
   if (SUCCEEDED(hr)) {
     memcpy(lighting_data, &light_ubo, sizeof(struct LightingUniformBufferObject));

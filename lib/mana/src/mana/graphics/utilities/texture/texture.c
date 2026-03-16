@@ -656,8 +656,9 @@ static char* build_mip_path(const char* base_path, uint32_t level) {
 }
 
 // TODO: This needs to have missing file error check
-uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, struct TextureSettings* texture_settings, const char* path, size_t texture_index) {
+uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, struct TextureSettings texture_settings, const char* path, size_t texture_index) {
   struct TextureCommon* texture_common = &(texture->texture_common);
+  texture_common->texture_settings = texture_settings;
 
   texture_common->path = strdup(path);
 
@@ -690,10 +691,10 @@ uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* textu
   // Pick format from bit depth + channels
   switch (bit0) {
     case 8:
-      texture_settings->format_type = (ch0 == 1) ? FORMAT_R8_UNORM : FORMAT_R8G8B8A8_UNORM;
+      texture_common->texture_settings.format_type = (ch0 == 1) ? FORMAT_R8_UNORM : FORMAT_R8G8B8A8_UNORM;
       break;
     case 16:
-      texture_settings->format_type = (ch0 == 1) ? FORMAT_R16_UNORM : FORMAT_R16G16B16A16_UNORM;
+      texture_common->texture_settings.format_type = (ch0 == 1) ? FORMAT_R16_UNORM : FORMAT_R16G16B16A16_UNORM;
       break;
     default:
       log_message(LOG_SEVERITY_WARNING, "Unsupported bit depth: %d\n", bit0);
@@ -707,8 +708,8 @@ uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* textu
   void* upload_pixels = pixels0;
   uint32_t mip_count = 1;
 
-  if (texture_settings->mip_type == MIP_CUSTOM) {
-    mip_count = texture_settings->mip_count;
+  if (texture_common->texture_settings.mip_type == MIP_CUSTOM) {
+    mip_count = texture_common->texture_settings.mip_count;
     if (mip_count < 1) mip_count = 1;
 
     uint32_t bytes_per_channel = (bit0 == 16) ? 2 : 1;
@@ -739,7 +740,7 @@ uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* textu
 
     // load + copy levels 1..N-1
     for (uint32_t level = 1; level < mip_count; level++) {
-      wchar_t* mip_path = build_mip_path(texture_common->path, level);
+      char* mip_path = build_mip_path(texture_common->path, level);
       if (!mip_path) {
         free(combined);
         log_message(LOG_SEVERITY_ERROR, "Failed to build mip path\n");
@@ -793,11 +794,12 @@ uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* textu
   if (api_common->api_type == API_DIRECTX12) texture->texture_func = directx_12_TEXTURE;
 #endif
 
-  texture->texture_func.texture_init(&(texture->texture_common), texture_common->texture_manager_common, api_common, texture_settings, upload_pixels);
+  texture->texture_func.texture_init(&(texture->texture_common), texture_common->texture_manager_common, api_common, upload_pixels);
 
-  if (texture_settings->mip_type == MIP_CUSTOM) free(upload_pixels);  // combined
-  // else pixels0 already freed by caller? (we kept upload_pixels=pixels0) -> free it:
+  if (texture_common->texture_settings.mip_type == MIP_CUSTOM)
+    free(upload_pixels);
   else
+    // TODO: This could be bug so watch this
     free(upload_pixels);
 
   return 0;

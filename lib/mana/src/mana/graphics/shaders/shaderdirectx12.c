@@ -123,7 +123,6 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
   rasterizer_desc.ForcedSampleCount = 0;
   rasterizer_desc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
-  /////////////////////////////////////////////////////////////////////////////
   D3D12_ROOT_PARAMETER root_parameters[SHADER_ATTACHMENT_LIMIT * 3];
   ZeroMemory(root_parameters, sizeof(root_parameters));
   D3D12_DESCRIPTOR_RANGE descriptor_table_ranges[SHADER_ATTACHMENT_LIMIT];
@@ -164,24 +163,6 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
   root_parameters[root_param_index].DescriptorTable.pDescriptorRanges = &sampler_table_range;
   root_parameters[root_param_index].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
   root_param_index++;
-  //
-  // D3D12_DESCRIPTOR_RANGE sampler_table_range[SHADER_ATTACHMENT_LIMIT];
-  // ZeroMemory(sampler_table_range, sizeof(sampler_table_range));
-  // for (uint_fast8_t sample_num = 0; sample_num < shader_common->shader_settings.samples; sample_num++) {
-  //  sampler_table_range[sample_num].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
-  //  sampler_table_range[sample_num].NumDescriptors = 1;
-  //  sampler_table_range[sample_num].BaseShaderRegister = sample_num;
-  //  sampler_table_range[sample_num].RegisterSpace = 0;
-  //  sampler_table_range[sample_num].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-  //
-  //  root_parameters[sample_num + shader_common->shader_settings.constants + shader_common->shader_settings.num_textures].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-  //  root_parameters[sample_num + shader_common->shader_settings.constants + shader_common->shader_settings.num_textures].DescriptorTable.NumDescriptorRanges = 1;
-  //  root_parameters[sample_num + shader_common->shader_settings.constants + shader_common->shader_settings.num_textures].DescriptorTable.pDescriptorRanges = &sampler_table_range[sample_num];
-  //  if (shader_common->shader_settings.sample_state[sample_num] == SHADER_STAGE_VERTEX)
-  //    root_parameters[sample_num + shader_common->shader_settings.constants + shader_common->shader_settings.num_textures].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-  //  else if (shader_common->shader_settings.sample_state[sample_num] == SHADER_STAGE_FRAGMENT)
-  //    root_parameters[sample_num + shader_common->shader_settings.constants + shader_common->shader_settings.num_textures].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-  //}
 
   D3D12_ROOT_SIGNATURE_DESC root_signature_desc;
   ZeroMemory(&root_signature_desc, sizeof(root_signature_desc));
@@ -223,8 +204,7 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
     serialized_root_sig->lpVtbl->Release(serialized_root_sig);
   if (error_blob)
     error_blob->lpVtbl->Release(error_blob);
-  /////////////////////////////////////////////////////////////////////////////
-  // Assume you have a valid ID3D12Device pointer named 'device' and ID3D12RootSignature pointer named 'rootSignature'
+
   D3D12_INPUT_ELEMENT_DESC input_element_descs[32] = {0};
   uint32_t num_attributes = mesh_get_input_layout(shader_common->shader_settings.mesh_type, input_element_descs);
 
@@ -321,7 +301,7 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
     log_message(LOG_SEVERITY_ERROR, "Failed to create graphics pipeline state\n");
     return 1;
   }
-  /////////////////////////////////////////////////////////////////////////////
+
   D3D12_DESCRIPTOR_HEAP_DESC sampler_heap_desc = {0};
   sampler_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
   sampler_heap_desc.NumDescriptors = 1;  // Adjust this number as per your requirement.
@@ -349,73 +329,6 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
   sampler_desc.MinLOD = 0.0f;
   sampler_desc.MaxLOD = D3D12_FLOAT32_MAX;
   api_common->directx_12_api.device->lpVtbl->CreateSampler(api_common->directx_12_api.device, &sampler_desc, shader_common->shader_directx12.sampler_handle_cpu);
-  /////////////////////////////////////////////////////////////////////////////
-  // D3D12_DESCRIPTOR_HEAP_DESC srv_heap_desc = {0};
-  // srv_heap_desc.NumDescriptors = shader_common->shader_settings.render_pass->descriptors * shader_common->shader_settings.num_textures; // Or however many you need
-  // srv_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-  // srv_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-  // HRESULT result = api_common->directx_12_api.device->lpVtbl->CreateDescriptorHeap(api_common->directx_12_api.device, &srv_heap_desc, &IID_ID3D12DescriptorHeap, (void **)&(shader_common->shader_directx12.srv_heap));
-  //
-  // if (result != S_OK)
-  //  return 1;
-  //
-  // D3D12_RESOURCE_DESC texture_desc = {0};
-  // texture_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-  // texture_desc.Width = swap_chain_common->swap_chain_extent.width;
-  // texture_desc.Height = swap_chain_common->swap_chain_extent.height;
-  // texture_desc.DepthOrArraySize = 1;
-  // texture_desc.MipLevels = 1;
-  // texture_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // Adjust as needed
-  // texture_desc.SampleDesc.Count = 1;
-  // texture_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-  // texture_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
-  //
-  // D3D12_HEAP_PROPERTIES heap_properties;
-  // heap_properties.Type = D3D12_HEAP_TYPE_DEFAULT;
-  // heap_properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-  // heap_properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-  // heap_properties.CreationNodeMask = 1;
-  // heap_properties.VisibleNodeMask = 1;
-  //
-  // for (int desc = 0; desc < shader_common->shader_settings.render_pass->descriptors; desc++) {
-  //  HRESULT hr = api_common->directx_12_api.device->lpVtbl->CreateCommittedResource(api_common->directx_12_api.device, &heap_properties, D3D12_HEAP_FLAG_NONE, &texture_desc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, &IID_ID3D12Resource, (void **)&(shader_common->shader_settings.render_pass->directx_12_render_pass.intermediate_buffers[desc]));
-  //
-  //  if (FAILED(hr))
-  //    log_message(LOG_SEVERITY_ERROR, "Failed to create intermediate buffer for shader\n");
-  //}
-  //
-  // UINT descriptor_size = api_common->directx_12_api.device->lpVtbl->GetDescriptorHandleIncrementSize(api_common->directx_12_api.device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-  //
-  // shader_common->shader_directx12.srv_heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(shader_common->shader_directx12.srv_heap, &(shader_common->shader_directx12.srv_cpu_handle));
-  //
-  // shader_common->shader_directx12.srv_heap->lpVtbl->GetGPUDescriptorHandleForHeapStart(shader_common->shader_directx12.srv_heap, &(shader_common->shader_directx12.srv_gpu_handle));
-  //
-  // UINT total_heap_size = srv_heap_desc.NumDescriptors * descriptor_size;
-  // UINT current_offset = 0;
-
-  /// Create SRVs for each of your resources
-  // or (UINT desc = 0; desc < shader_common->shader_settings.render_pass->descriptors; desc++) {
-  //  D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {0};
-  //  srv_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // Adjust this based on your resource's format
-  //  srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-  //  srv_desc.Texture2D.MipLevels = 1;
-  //  srv_desc.Texture2D.MostDetailedMip = 0;
-  //  srv_desc.Texture2D.ResourceMinLODClamp = 0.0f;
-  //  srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-
-  // api_common->directx_12_api.device->lpVtbl->CreateShaderResourceView(api_common->directx_12_api.device, shader_common->shader_settings.render_pass->directx_12_render_pass.intermediate_buffers[desc], &srv_desc, shader_common->shader_directx12.srv_cpu_handle);
-
-  // current_offset += descriptor_size;
-
-  // if (current_offset > total_heap_size) {
-  //   // Print an error message or halt execution in some way
-  //   printf("Error: Exceeded bounds of the descriptor heap!\n");
-  //   break;
-  // }
-
-  // // Move to the next descriptor slot
-  // shader_common->shader_directx12.srv_cpu_handle.ptr += descriptor_size;
-  //}
 
   return 0;
 }
