@@ -42,6 +42,34 @@ void texture_manager_add(struct TextureManager* texture_manager, struct APICommo
   texture_manager->texture_manager_common.texture_index++;
 }
 
+void texture_manager_add_array(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings, const char* texture_name, const char* const* paths, uint32_t layer_count) {
+  if (!texture_name || !paths || layer_count == 0) {
+    log_message(LOG_SEVERITY_WARNING, "texture_manager_add_array got invalid args\n");
+    return;
+  }
+
+  struct Texture* texture = malloc(sizeof(struct Texture));
+  if (!texture) {
+    log_message(LOG_SEVERITY_ERROR, "Failed to allocate texture\n");
+    return;
+  }
+
+  memset(texture, 0, sizeof(struct Texture));
+
+  uint8_t result = texture_array_init(texture, &(texture_manager->texture_manager_common), api_common, texture_settings, paths, layer_count, texture_manager->texture_manager_common.texture_index);
+
+  if (result != 0) {
+    free(texture);
+    return;
+  }
+
+  map_set(&(texture_manager->texture_manager_common.textures), texture_name, &texture);
+
+  texture_manager->texture_manager_func.texture_manager_add(&(texture_manager->texture_manager_common), api_common, texture_settings);
+
+  texture_manager->texture_manager_common.texture_index++;
+}
+
 struct Texture* texture_manager_get(struct TextureManager* texture_manager, const char* texture_name) {
   return *((struct Texture**)map_get(&(texture_manager->texture_manager_common.textures), texture_name));
 }

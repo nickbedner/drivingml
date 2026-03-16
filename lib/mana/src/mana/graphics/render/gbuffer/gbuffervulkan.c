@@ -9,14 +9,14 @@ static inline uint_fast8_t gbuffer_vulkan_init_common(struct GBufferCommon* gbuf
   uint32_t gbuffer_height = swap_chain_common->swap_chain_extent.height * swap_chain_common->supersample_scale;
 
   // Resolve or standard if not multisampling
-  vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, gbuffer_width, gbuffer_height, 1, VK_SAMPLE_COUNT_1_BIT, image_format, VK_IMAGE_TILING_OPTIMAL, image_usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(gbuffer_common->gbuffer_vulkan.color_image), &(gbuffer_common->gbuffer_vulkan.color_image_memory));
-  vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.color_image, image_format, VK_IMAGE_ASPECT_COLOR_BIT, 1, &(gbuffer_common->gbuffer_vulkan.color_image_view));
+  vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, gbuffer_width, gbuffer_height, 1, 1, VK_SAMPLE_COUNT_1_BIT, image_format, VK_IMAGE_TILING_OPTIMAL, image_usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(gbuffer_common->gbuffer_vulkan.color_image), &(gbuffer_common->gbuffer_vulkan.color_image_memory));
+  vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.color_image, image_format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, &(gbuffer_common->gbuffer_vulkan.color_image_view));
 
-  vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, gbuffer_width, gbuffer_height, 1, VK_SAMPLE_COUNT_1_BIT, image_format, VK_IMAGE_TILING_OPTIMAL, image_usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(gbuffer_common->gbuffer_vulkan.normal_image), &(gbuffer_common->gbuffer_vulkan.normal_image_memory));
-  vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.normal_image, image_format, VK_IMAGE_ASPECT_COLOR_BIT, 1, &(gbuffer_common->gbuffer_vulkan.normal_image_view));
+  vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, gbuffer_width, gbuffer_height, 1, 1, VK_SAMPLE_COUNT_1_BIT, image_format, VK_IMAGE_TILING_OPTIMAL, image_usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(gbuffer_common->gbuffer_vulkan.normal_image), &(gbuffer_common->gbuffer_vulkan.normal_image_memory));
+  vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.normal_image, image_format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, &(gbuffer_common->gbuffer_vulkan.normal_image_view));
 
-  vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, gbuffer_width, gbuffer_height, 1, (VkSampleCountFlagBits)msaa_samples, depth_format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(gbuffer_common->gbuffer_vulkan.depth_image), &(gbuffer_common->gbuffer_vulkan.depth_image_memory));
-  vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.depth_image, depth_format, VK_IMAGE_ASPECT_DEPTH_BIT, 1, &(gbuffer_common->gbuffer_vulkan.depth_image_view));
+  vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, gbuffer_width, gbuffer_height, 1, 1, (VkSampleCountFlagBits)msaa_samples, depth_format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(gbuffer_common->gbuffer_vulkan.depth_image), &(gbuffer_common->gbuffer_vulkan.depth_image_memory));
+  vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.depth_image, depth_format, VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1, &(gbuffer_common->gbuffer_vulkan.depth_image_view));
 
   VkAttachmentDescription color_attachment = {0};
   vulkan_graphics_utils_create_color_attachment(swap_chain_common->swap_chain_vulkan.swap_chain_image_format, &color_attachment);
@@ -48,11 +48,11 @@ static inline uint_fast8_t gbuffer_vulkan_init_common(struct GBufferCommon* gbuf
     depth_attachment_ref.attachment = 2;
 
     // Multisample
-    vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, gbuffer_width, gbuffer_height, 1, (VkSampleCountFlagBits)msaa_samples, image_format, VK_IMAGE_TILING_OPTIMAL, image_usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(gbuffer_common->gbuffer_vulkan.multisample_color_image), &(gbuffer_common->gbuffer_vulkan.multisample_color_image_memory));
-    vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.multisample_color_image, image_format, VK_IMAGE_ASPECT_COLOR_BIT, 1, &(gbuffer_common->gbuffer_vulkan.multisample_color_image_view));
+    vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, gbuffer_width, gbuffer_height, 1, 1, (VkSampleCountFlagBits)msaa_samples, image_format, VK_IMAGE_TILING_OPTIMAL, image_usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(gbuffer_common->gbuffer_vulkan.multisample_color_image), &(gbuffer_common->gbuffer_vulkan.multisample_color_image_memory));
+    vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.multisample_color_image, image_format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, &(gbuffer_common->gbuffer_vulkan.multisample_color_image_view));
 
-    vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, gbuffer_width, gbuffer_height, 1, (VkSampleCountFlagBits)msaa_samples, image_format, VK_IMAGE_TILING_OPTIMAL, image_usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(gbuffer_common->gbuffer_vulkan.multisample_normal_image), &(gbuffer_common->gbuffer_vulkan.multisample_normal_image_memory));
-    vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.multisample_normal_image, image_format, VK_IMAGE_ASPECT_COLOR_BIT, 1, &(gbuffer_common->gbuffer_vulkan.multisample_normal_image_view));
+    vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, gbuffer_width, gbuffer_height, 1, 1, (VkSampleCountFlagBits)msaa_samples, image_format, VK_IMAGE_TILING_OPTIMAL, image_usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(gbuffer_common->gbuffer_vulkan.multisample_normal_image), &(gbuffer_common->gbuffer_vulkan.multisample_normal_image_memory));
+    vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.multisample_normal_image, image_format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, &(gbuffer_common->gbuffer_vulkan.multisample_normal_image_view));
 
     VkAttachmentDescription multisample_color_attachment = {0};
     vulkan_graphics_utils_create_color_attachment(swap_chain_common->swap_chain_vulkan.swap_chain_image_format, &multisample_color_attachment);

@@ -59,10 +59,10 @@ struct SamplerSettings {
 };
 
 VkSampleCountFlagBits vulkan_graphics_utils_get_max_msaa_samples(struct VulkanAPI* vulkan_api);
-uint_fast8_t vulkan_graphics_utils_create_image_view(struct VkDevice_T* device, VkImage image, VkFormat format, VkImageAspectFlags aspect_flags, uint32_t mip_levels, VkImageView* image_view);
-uint_fast8_t vulkan_graphics_utils_create_image(struct VkDevice_T* device, struct VkPhysicalDevice_T* physical_device, uint32_t width, uint32_t height, uint32_t mip_levels, VkSampleCountFlagBits num_samples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* image_memory);
+uint_fast8_t vulkan_graphics_utils_create_image_view(struct VkDevice_T* device, VkImage image, VkFormat format, VkImageAspectFlags aspect_flags, uint32_t mip_levels, uint32_t layer_count, VkImageView* image_view);
+uint_fast8_t vulkan_graphics_utils_create_image(struct VkDevice_T* device, struct VkPhysicalDevice_T* physical_device, uint32_t width, uint32_t height, uint32_t mip_levels, uint32_t layer_count, VkSampleCountFlagBits num_samples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* image_memory);
 uint_fast8_t vulkan_graphics_utils_create_buffer(struct VkDevice_T* device, struct VkPhysicalDevice_T* physical_device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer* buffer, VkDeviceMemory* buffer_memory);
-uint_fast8_t vulkan_graphics_utils_transition_image_layout(struct VkDevice_T* device, struct VkQueue_T* graphics_queue, struct VkCommandPool_T* command_pool, VkImage image, VkImageLayout old_layout, VkImageLayout new_layout, uint32_t mip_levels);
+uint_fast8_t vulkan_graphics_utils_transition_image_layout(struct VkDevice_T* device, struct VkQueue_T* graphics_queue, struct VkCommandPool_T* command_pool, VkImage image, VkImageLayout old_layout, VkImageLayout new_layout, uint32_t mip_levels, uint32_t layer_count);
 uint32_t vulkan_graphics_utils_find_memory_type(struct VkPhysicalDevice_T* physical_device, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 VkCommandBuffer vulkan_graphics_utils_begin_single_time_commands(struct VkDevice_T* device, struct VkCommandPool_T* command_pool);
 void vulkan_graphics_utils_end_single_time_commands(struct VkDevice_T* device, struct VkQueue_T* graphics_queue, struct VkCommandPool_T* command_pool, VkCommandBuffer command_buffer);

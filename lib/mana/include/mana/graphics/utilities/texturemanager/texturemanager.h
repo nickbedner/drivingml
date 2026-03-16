@@ -29,4 +29,5 @@ struct TextureManager {
 void texture_manager_init(struct TextureManager* texture_manager, struct APICommon* api_common);
 void texture_manager_delete(struct TextureManager* texture_manager, struct APICommon* api_common);
 void texture_manager_add(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings, const char* path);
+void texture_manager_add_array(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings, const char* texture_name, const char* const* paths, uint32_t layer_count);
 struct Texture* texture_manager_get(struct TextureManager* texture_manager, const char* texture_name);

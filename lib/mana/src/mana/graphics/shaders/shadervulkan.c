@@ -247,6 +247,23 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
   pipeline_layout_info.setLayoutCount = 1;
   pipeline_layout_info.pSetLayouts = &(shader_common->shader_vulkan.descriptor_set_layout);
 
+  ////////////////// HACK TO GET IT WORKING
+  VkPushConstantRange push_constant_range = {0};
+  push_constant_range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+  push_constant_range.offset = 0;
+  push_constant_range.size = sizeof(int32_t);
+
+  if (shader_common->shader_settings.descriptors > 0) {
+    pipeline_layout_info.setLayoutCount = 1;
+    pipeline_layout_info.pSetLayouts = &(shader_common->shader_vulkan.descriptor_set_layout);
+  } else {
+    pipeline_layout_info.setLayoutCount = 0;
+    pipeline_layout_info.pSetLayouts = NULL;
+  }
+
+  pipeline_layout_info.pushConstantRangeCount = 1;
+  pipeline_layout_info.pPushConstantRanges = &push_constant_range;
+  //////////////////
   if (vkCreatePipelineLayout(api_common->vulkan_api.device, &pipeline_layout_info, NULL, &(shader_common->shader_vulkan.pipeline_layout)) != VK_SUCCESS)
     return 0;
 

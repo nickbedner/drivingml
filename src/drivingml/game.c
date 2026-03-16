@@ -120,6 +120,19 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/map.png");
   sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_TRILINEAR, .mode_type = MODE_REPEAT, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_CUSTOM, .mip_count = 5, .premultiplied_alpha = true, .max_anisotropy = 1.0f};
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/waterm1.png");
+  sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_NEAREST, .mode_type = MODE_CLAMP_TO_EDGE, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_NONE, .mip_count = 1, .premultiplied_alpha = true, .max_anisotropy = 1.0f};
+  const char* kart_frames[] = {
+      "/textures/aikart/tile000.png",
+      "/textures/aikart/tile001.png",
+      "/textures/aikart/tile002.png",
+      "/textures/aikart/tile003.png",
+      "/textures/aikart/tile004.png",
+      "/textures/aikart/tile005.png",
+      "/textures/aikart/tile006.png",
+      "/textures/aikart/tile007.png",
+      "/textures/aikart/tile008.png",
+      "/textures/aikart/tile009.png"};
+  texture_manager_add_array(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/aikart", kart_frames, 10);
 
   sprite_manager_init(&(game->sprite_manager), &(game->texture_manager), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 128);
 
@@ -190,7 +203,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   else
     game->current_npcs += 1;
   for (int npc_num = 0; npc_num < game->current_npcs; npc_num++) {
-    game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/rb.png");
+    game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikart");
     game->npcs[npc_num].speed = 0.0f;
     game->npcs[npc_num].position = (vec3){.x = 10.0f + (npc_num * 10), .y = 95.0f + ((npc_num % 4) * 3.0f), .z = 0.75};
     game->npcs[npc_num].sprite->sprite_common.position = game->npcs[npc_num].position;
@@ -286,6 +299,10 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     }
 
     float angle = -rotation_speed * delta_time * steer;
+
+    game->npcs[ai_num].sprite->sprite_common.frame_layer++;
+    if (game->npcs[ai_num].sprite->sprite_common.frame_layer >= 10)
+      game->npcs[ai_num].sprite->sprite_common.frame_layer = 0;
 
     // Update car heading
     game->npcs[ai_num].heading += angle;

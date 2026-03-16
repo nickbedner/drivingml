@@ -69,15 +69,23 @@ struct TextureDirectX12 {
 };
 #endif
 
+enum TextureDimension {
+  TEXTURE_DIMENSION_2D,
+  TEXTURE_DIMENSION_2D_ARRAY
+};
+
 struct TextureCommon {
   size_t id;
+  uint32_t width;
+  uint32_t height;
+  uint32_t channels;
+  uint32_t layer_count;
+  uint32_t mip_levels;
+  uint8_t bit_depth;
   char* name;
   char* type;
   char* path;
-  uint32_t width;
-  uint32_t height;
-  uint8_t bit_depth;
-  uint32_t channels;
+  enum TextureDimension dimension;
 
   struct TextureSettings texture_settings;
 

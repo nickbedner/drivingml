@@ -447,17 +447,21 @@ static bool api_vulkan_check_validation_layer_support(void) {
   return true;
 }
 
-uint_fast8_t vulkan_graphics_utils_create_image_view(struct VkDevice_T* device, VkImage image, VkFormat format, VkImageAspectFlags aspect_flags, uint32_t mip_levels, VkImageView* image_view) {
+uint_fast8_t vulkan_graphics_utils_create_image_view(struct VkDevice_T* device, VkImage image, VkFormat format, VkImageAspectFlags aspect_flags, uint32_t mip_levels, uint32_t layer_count, VkImageView* image_view) {
+  if (layer_count == 0)
+    layer_count = 1;
+
   VkImageViewCreateInfo view_info = {0};
   view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   view_info.image = image;
-  view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+  view_info.viewType = (layer_count > 1) ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
   view_info.format = format;
+
   view_info.subresourceRange.aspectMask = aspect_flags;
   view_info.subresourceRange.baseMipLevel = 0;
   view_info.subresourceRange.levelCount = mip_levels;
   view_info.subresourceRange.baseArrayLayer = 0;
-  view_info.subresourceRange.layerCount = 1;
+  view_info.subresourceRange.layerCount = layer_count;
 
   if (vkCreateImageView(device, &view_info, NULL, image_view) != VK_SUCCESS) {
     log_message(LOG_SEVERITY_ERROR, "failed to create texture image view!\n");
@@ -467,7 +471,7 @@ uint_fast8_t vulkan_graphics_utils_create_image_view(struct VkDevice_T* device, 
   return VULKAN_API_SUCCESS;
 }
 
-uint_fast8_t vulkan_graphics_utils_create_image(struct VkDevice_T* device, struct VkPhysicalDevice_T* physical_device, uint32_t width, uint32_t height, uint32_t mip_levels, VkSampleCountFlagBits num_samples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* image_memory) {
+uint_fast8_t vulkan_graphics_utils_create_image(struct VkDevice_T* device, struct VkPhysicalDevice_T* physical_device, uint32_t width, uint32_t height, uint32_t mip_levels, uint32_t layer_count, VkSampleCountFlagBits num_samples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* image_memory) {
   VkImageCreateInfo image_info = {0};
   image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   image_info.imageType = VK_IMAGE_TYPE_2D;
@@ -475,7 +479,7 @@ uint_fast8_t vulkan_graphics_utils_create_image(struct VkDevice_T* device, struc
   image_info.extent.height = height;
   image_info.extent.depth = 1;
   image_info.mipLevels = mip_levels;
-  image_info.arrayLayers = 1;
+  image_info.arrayLayers = layer_count;
   image_info.format = format;
   image_info.tiling = tiling;
   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -536,7 +540,7 @@ uint_fast8_t vulkan_graphics_utils_create_buffer(struct VkDevice_T* device, stru
   return VULKAN_API_SUCCESS;
 }
 
-uint_fast8_t vulkan_graphics_utils_transition_image_layout(struct VkDevice_T* device, struct VkQueue_T* graphics_queue, struct VkCommandPool_T* command_pool, VkImage image, VkImageLayout old_layout, VkImageLayout new_layout, uint32_t mip_levels) {
+uint_fast8_t vulkan_graphics_utils_transition_image_layout(struct VkDevice_T* device, struct VkQueue_T* graphics_queue, struct VkCommandPool_T* command_pool, VkImage image, VkImageLayout old_layout, VkImageLayout new_layout, uint32_t mip_levels, uint32_t layer_count) {
   VkCommandBuffer commandBuffer = vulkan_graphics_utils_begin_single_time_commands(device, command_pool);
 
   VkImageMemoryBarrier barrier = {0};
@@ -550,7 +554,7 @@ uint_fast8_t vulkan_graphics_utils_transition_image_layout(struct VkDevice_T* de
   barrier.subresourceRange.baseMipLevel = 0;
   barrier.subresourceRange.levelCount = mip_levels;
   barrier.subresourceRange.baseArrayLayer = 0;
-  barrier.subresourceRange.layerCount = 1;
+  barrier.subresourceRange.layerCount = layer_count;
 
   VkPipelineStageFlags source_stage = {0};
   VkPipelineStageFlags destination_stage = {0};
