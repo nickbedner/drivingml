@@ -59,13 +59,13 @@ void sprite_directx_12_render(struct SpriteCommon* sprite_common, struct GBuffer
   // Set the descriptor heap
   // ID3D12DescriptorHeap *heaps[] = {sprite_common->image_texture->texture_common.texture_directx12.srv_heap};
   // gbuffer_common->gbuffer_directx12.command_list->lpVtbl->SetDescriptorHeaps(gbuffer_common->gbuffer_directx12.command_list, 1, heaps);
-  ID3D12DescriptorHeap* descriptor_heaps[] = {sprite_common->image_texture->texture_common.texture_manager_common->texture_manager_directx12.srv_heap, sprite_common->shader->shader_common.shader_directx12.sampler_heap};
+  ID3D12DescriptorHeap* descriptor_heaps[] = {sprite_common->image_texture->texture_common.texture_manager_common->texture_manager_directx12.srv_heap, sprite_common->image_texture->texture_common.texture_manager_common->texture_manager_directx12.sampler_heap};
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->SetDescriptorHeaps(gbuffer_common->gbuffer_directx12.command_list, _countof(descriptor_heaps), descriptor_heaps);
 
   // Bind the SRV for the texture
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer_common->gbuffer_directx12.command_list, 1, sprite_common->image_texture->texture_common.texture_directx12.srv_gpu_handle);
   // Bind the sampler for the texture
-  gbuffer_common->gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer_common->gbuffer_directx12.command_list, 2, sprite_common->shader->shader_common.shader_directx12.sampler_handle_gpu);
+  gbuffer_common->gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer_common->gbuffer_directx12.command_list, 2, sprite_common->image_texture->texture_common.texture_directx12.sampler_gpu_handle);
 
   // Bind the vertex buffer
   D3D12_VERTEX_BUFFER_VIEW vbv = sprite_common->sprite_directx12.vertex_buffer_view;

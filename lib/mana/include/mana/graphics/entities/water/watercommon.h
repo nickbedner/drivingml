@@ -45,11 +45,14 @@ struct WaterVulkan {
 
 #ifdef DIRECTX_12_API_SUPPORTED
 struct WaterDirectX12 {
-  ID3D12Resource* vertex_buffer;                // Vertex Buffer Resource
-  D3D12_VERTEX_BUFFER_VIEW vertex_buffer_view;  // View into the Vertex Buffer
-  ID3D12Resource* index_buffer;                 // Index Buffer Resource
-  D3D12_INDEX_BUFFER_VIEW index_buffer_view;    // View into the Index Buffer
-  ID3D12Resource* constant_buffer;              // Constant Buffer Resource
+  ID3D12Resource* vertex_buffer;
+  D3D12_VERTEX_BUFFER_VIEW vertex_buffer_view;
+
+  ID3D12Resource* index_buffer;
+  D3D12_INDEX_BUFFER_VIEW index_buffer_view;
+
+  ID3D12Resource* vertex_constant_buffer;
+  ID3D12Resource* fragment_constant_buffer;
 };
 #endif
 

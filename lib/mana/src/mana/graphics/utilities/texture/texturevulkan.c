@@ -3,6 +3,87 @@
 uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, void* pixels) {
   struct TextureSettings texture_settings = texture_common->texture_settings;
 
+  // build packed pixel buffer if custom mip chain
+  void* upload_pixels = pixels;
+  uint32_t mip_count = 1;
+
+  if (texture_common->texture_settings.mip_type == MIP_CUSTOM) {
+    mip_count = texture_common->texture_settings.mip_count;
+    if (mip_count < 1) mip_count = 1;
+
+    uint32_t bytes_per_channel = (texture_common->bit_depth == 16) ? 2 : 1;
+
+    // compute total bytes for all levels (must match exactly what Vulkan copy loop uses)
+    VkDeviceSize total = 0;
+    for (uint32_t level = 0; level < mip_count; level++) {
+      uint32_t w = texture_common->width >> level;
+      if (!w) w = 1;
+      uint32_t h = texture_common->height >> level;
+      if (!h) h = 1;
+      total += (VkDeviceSize)w * (VkDeviceSize)h * (VkDeviceSize)texture_common->channels * (VkDeviceSize)bytes_per_channel;
+    }
+
+    uint8_t* combined = (uint8_t*)malloc((size_t)total);
+    if (!combined) {
+      log_message(LOG_SEVERITY_ERROR, "Failed to alloc combined mip buffer\n");
+      return 1;
+    }
+
+    // copy level 0 first
+    VkDeviceSize off = 0;
+    VkDeviceSize sz0 = (VkDeviceSize)texture_common->width * (VkDeviceSize)texture_common->height * (VkDeviceSize)texture_common->channels * (VkDeviceSize)bytes_per_channel;
+    memcpy(combined + off, pixels, (size_t)sz0);
+    off += sz0;
+
+    // load + copy levels 1..N-1
+    for (uint32_t level = 1; level < mip_count; level++) {
+      char* mip_path = build_mip_path(texture_common->path, level);
+      if (!mip_path) {
+        free(combined);
+        log_message(LOG_SEVERITY_ERROR, "Failed to build mip path\n");
+        return 1;
+      }
+
+      uint32_t wl = 0, hl = 0, chl = 0;
+      uint8_t bitl = 0, ctl = 0;
+      void* pixelsL = texture_read_png(mip_path, api_common->asset_directory, &wl, &hl, &chl, &bitl, &ctl);
+      free(mip_path);
+
+      if (!pixelsL) {
+        free(combined);
+        log_message(LOG_SEVERITY_ERROR, "Failed to load mip level %u\n", level);
+        return 1;
+      }
+      if (ctl == 2) chl = 4;  // same RGB->RGBA fix
+
+      // Validate consistency (bit depth + channels) and expected sizes
+      if (bitl != texture_common->bit_depth || chl != texture_common->channels) {
+        free(pixelsL);
+        free(combined);
+        log_message(LOG_SEVERITY_ERROR, "Mip %u format mismatch\n", level);
+        return 1;
+      }
+
+      uint32_t exp_w = texture_common->width >> level;
+      if (!exp_w) exp_w = 1;
+      uint32_t exp_h = texture_common->height >> level;
+      if (!exp_h) exp_h = 1;
+      if (wl != exp_w || hl != exp_h) {
+        free(pixelsL);
+        free(combined);
+        log_message(LOG_SEVERITY_ERROR, "Mip %u size mismatch (got %ux%u expected %ux%u)\n", level, wl, hl, exp_w, exp_h);
+        return 1;
+      }
+
+      VkDeviceSize sz = (VkDeviceSize)wl * (VkDeviceSize)hl * (VkDeviceSize)texture_common->channels * (VkDeviceSize)bytes_per_channel;
+      memcpy(combined + off, pixelsL, (size_t)sz);
+      off += sz;
+      free(pixelsL);
+    }
+
+    upload_pixels = combined;  // Vulkan will read all mips sequentially from this
+  }
+
   VkSamplerAddressMode mode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
   switch (texture_settings.mode_type) {
     case (MODE_REPEAT): {
@@ -97,7 +178,7 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
 
   void* data;
   vkMapMemory(api_common->vulkan_api.device, staging_buffer_memory, 0, image_size, 0, &data);
-  memcpy(data, pixels, image_size);
+  memcpy(data, upload_pixels, image_size);
   vkUnmapMemory(api_common->vulkan_api.device, staging_buffer_memory);
 
   vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, texture_common->width, texture_common->height, mip_levels, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(texture_common->texture_vulkan.texture_image), &(texture_common->texture_vulkan.texture_image_memory));
@@ -205,6 +286,10 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
   }
 
   vulkan_graphics_utils_create_sampler(api_common->vulkan_api.device, &(texture_common->texture_vulkan.texture_sampler), (struct SamplerSettings){.mip_levels = mip_levels, .min_filter = min_filter, .mag_filter = mag_filter, .mipmap_mode = mipmap_mode, .address_mode = mode, .anisotropy_enable = anisotropy_enable_vulkan, .max_anisotropy = max_anisotropy});
+
+  if (texture_settings.mip_type == MIP_CUSTOM)
+    free(upload_pixels);
+
   return 0;
 }
 

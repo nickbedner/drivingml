@@ -93,8 +93,11 @@ struct ShaderDirectX12 {
   ID3DBlob* vertex_shader_blob;
   ID3DBlob* fragment_shader_blob;
   ID3D12DescriptorHeap* sampler_heap;
+  // TODO: These two need to be removed from here and instead be put into custom locations
+  //////////////
   D3D12_CPU_DESCRIPTOR_HANDLE sampler_handle_cpu;
   D3D12_GPU_DESCRIPTOR_HANDLE sampler_handle_gpu;
+  //////////////
   D3D12_VIEWPORT viewport;
   D3D12_RECT scissor_rect;
 };

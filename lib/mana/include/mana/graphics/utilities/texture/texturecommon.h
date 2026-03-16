@@ -76,6 +76,8 @@ struct TextureCommon {
   char* path;
   uint32_t width;
   uint32_t height;
+  uint8_t bit_depth;
+  uint32_t channels;
 
   struct TextureSettings texture_settings;
 

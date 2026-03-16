@@ -48,7 +48,9 @@ void model_directx_12_render(struct ModelCommon* model_common, struct GBuffer* g
     gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootConstantBufferView(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 7, animation_cbv_address);
   }
 
-  ID3D12DescriptorHeap* descriptor_heaps[] = {model_common->model_diffuse_texture->texture_common.texture_manager_common->texture_manager_directx12.srv_heap, model_common->shader_handle->shader_common.shader_directx12.sampler_heap};
+  // TODO: These will need to be changed like with sprite, need to put a sampler heap from texture manager?
+  ID3D12DescriptorHeap* descriptor_heaps[] = {model_common->model_diffuse_texture->texture_common.texture_manager_common->texture_manager_directx12.srv_heap, model_common->model_diffuse_texture->texture_common.texture_manager_common->texture_manager_directx12.sampler_heap};
+  // ID3D12DescriptorHeap* descriptor_heaps[] = {model_common->model_diffuse_texture->texture_common.texture_manager_common->texture_manager_directx12.srv_heap, model_common->shader_handle->shader_common.shader_directx12.sampler_heap};
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetDescriptorHeaps(gbuffer->gbuffer_common.gbuffer_directx12.command_list, _countof(descriptor_heaps), descriptor_heaps);
 
   // Bind the sampler and SRV for the texture
@@ -57,10 +59,14 @@ void model_directx_12_render(struct ModelCommon* model_common, struct GBuffer* g
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 4, model_common->model_metallic_texture->texture_common.texture_directx12.srv_gpu_handle);
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 5, model_common->model_roughness_texture->texture_common.texture_directx12.srv_gpu_handle);
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 6, model_common->model_ao_texture->texture_common.texture_directx12.srv_gpu_handle);
-  if (model_common->animated)
-    gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 8, model_common->shader_handle->shader_common.shader_directx12.sampler_handle_gpu);
-  else
-    gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 7, model_common->shader_handle->shader_common.shader_directx12.sampler_handle_gpu);
+  // TODO: These will need to be changed like with sprite, need to bind the sampler from the specific texture, not the shader(it should be gone from there too)
+  if (model_common->animated) {
+    gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 8, model_common->model_diffuse_texture->texture_common.texture_directx12.sampler_gpu_handle);
+    // gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 8, model_common->shader_handle->shader_common.shader_directx12.sampler_handle_gpu);
+  } else {
+    gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 7, model_common->model_diffuse_texture->texture_common.texture_directx12.sampler_gpu_handle);
+    // gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 7, model_common->shader_handle->shader_common.shader_directx12.sampler_handle_gpu);
+  }
 
   // Bind the vertex buffer.
   D3D12_VERTEX_BUFFER_VIEW vbv = model_common->model_directx12.vertex_buffer_view;

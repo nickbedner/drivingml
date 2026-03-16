@@ -23,16 +23,7 @@ static uint64_t texture_directx_12_upload_texture_data(struct APICommon* api_com
   }
 
   UINT64 upload_size = 0;
-  device->lpVtbl->GetCopyableFootprints(
-      device,
-      &tex_desc,
-      0,
-      num_subresources,
-      0,
-      layouts,
-      num_rows,
-      row_sizes,
-      &upload_size);
+  device->lpVtbl->GetCopyableFootprints(device, &tex_desc, 0, num_subresources, 0, layouts, num_rows, row_sizes, &upload_size);
 
   const uint8_t* src = (const uint8_t*)data;
   for (UINT mip = 0; mip < num_subresources; ++mip) {
@@ -178,6 +169,87 @@ static uint64_t texture_directx_12_upload_texture_data(struct APICommon* api_com
 uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, void* pixels) {
   struct TextureSettings texture_settings = texture_common->texture_settings;
 
+  void* upload_pixels = pixels;
+
+  if (texture_settings.mip_type == MIP_CUSTOM) {
+    uint32_t mip_count = texture_settings.mip_count;
+    if (mip_count < 1) mip_count = 1;
+
+    uint32_t bytes_per_channel_local = (texture_common->bit_depth == 16) ? 2 : 1;
+
+    size_t total = 0;
+    for (uint32_t level = 0; level < mip_count; ++level) {
+      uint32_t w = texture_common->width >> level;
+      uint32_t h = texture_common->height >> level;
+      if (w == 0) w = 1;
+      if (h == 0) h = 1;
+
+      total += (size_t)w * (size_t)h *
+               (size_t)texture_common->channels *
+               (size_t)bytes_per_channel_local;
+    }
+
+    uint8_t* combined = (uint8_t*)malloc(total);
+    if (!combined)
+      return 1;
+
+    size_t off = 0;
+    size_t sz0 = (size_t)texture_common->width *
+                 (size_t)texture_common->height *
+                 (size_t)texture_common->channels *
+                 (size_t)bytes_per_channel_local;
+
+    memcpy(combined + off, pixels, sz0);
+    off += sz0;
+
+    for (uint32_t level = 1; level < mip_count; ++level) {
+      char* mip_path = build_mip_path(texture_common->path, level);
+      if (!mip_path) {
+        free(combined);
+        return 1;
+      }
+
+      uint32_t wl = 0, hl = 0, chl = 0;
+      uint8_t bitl = 0, ctl = 0;
+      void* pixelsL = texture_read_png(mip_path, api_common->asset_directory, &wl, &hl, &chl, &bitl, &ctl);
+      free(mip_path);
+
+      if (!pixelsL) {
+        free(combined);
+        return 1;
+      }
+
+      if (ctl == 2) chl = 4;
+
+      if (bitl != texture_common->bit_depth || chl != texture_common->channels) {
+        free(pixelsL);
+        free(combined);
+        return 1;
+      }
+
+      uint32_t exp_w = texture_common->width >> level;
+      uint32_t exp_h = texture_common->height >> level;
+      if (exp_w == 0) exp_w = 1;
+      if (exp_h == 0) exp_h = 1;
+
+      if (wl != exp_w || hl != exp_h) {
+        free(pixelsL);
+        free(combined);
+        return 1;
+      }
+
+      size_t sz = (size_t)wl * (size_t)hl *
+                  (size_t)texture_common->channels *
+                  (size_t)bytes_per_channel_local;
+
+      memcpy(combined + off, pixelsL, sz);
+      off += sz;
+      free(pixelsL);
+    }
+
+    upload_pixels = combined;
+  }
+
   D3D12_TEXTURE_ADDRESS_MODE mode = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
   switch (texture_settings.mode_type) {
     case MODE_REPEAT:
@@ -320,19 +392,9 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
   if (FAILED(api_common->directx_12_api.device->lpVtbl->CreateCommittedResource(api_common->directx_12_api.device, &heap_properties, D3D12_HEAP_FLAG_NONE, &texture_desc, D3D12_RESOURCE_STATE_COPY_DEST, NULL, &IID_ID3D12Resource, (void**)&(texture_common->texture_directx12.texture_resource))))
     return 1;
 
-  if (texture_directx_12_upload_texture_data(
-          api_common,
-          api_common->directx_12_api.command_list,
-          texture_common->texture_directx12.texture_resource,
-          format,
-          pixels,
-          texture_common->width,
-          texture_common->height,
-          mip_levels,
-          bytes_per_channel,
-          channels) != 0) {
+  if (texture_directx_12_upload_texture_data(api_common, api_common->directx_12_api.command_list, texture_common->texture_directx12.texture_resource, format, upload_pixels, texture_common->width, texture_common->height, mip_levels, bytes_per_channel, channels) != 0)
     return 1;
-  }
+
   D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {0};
   srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
   srv_desc.Format = format;
@@ -347,8 +409,13 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
 
   api_common->directx_12_api.device->lpVtbl->CreateShaderResourceView(api_common->directx_12_api.device, texture_common->texture_directx12.texture_resource, &srv_desc, texture_common->texture_directx12.srv_cpu_handle);
 
+  if (texture_settings.mip_type == MIP_CUSTOM)
+    free(upload_pixels);
+
   return 0;
 }
 
 void texture_directx_12_delete(struct TextureCommon* texture_common, struct APICommon* api_common) {
+  if (texture_common->texture_directx12.texture_resource)
+    texture_common->texture_directx12.texture_resource->lpVtbl->Release(texture_common->texture_directx12.texture_resource);
 }
