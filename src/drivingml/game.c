@@ -7,6 +7,65 @@
 
 #include "drivingml/game.h"
 
+static float wrap_angle_0_2pi(float a) {
+  const float tau = 2.0f * (float)M_PI;
+
+  while (a < 0.0f) a += tau;
+  while (a >= tau) a -= tau;
+
+  return a;
+}
+
+static float yaw_from_xy(float x, float y) {
+  return atan2f(y, x);
+}
+
+static uint32_t car_frame_from_camera(float heading, float steer, vec3 car_pos, vec3d camera_pos) {
+  const uint32_t BASE_FRAME_COUNT = 8;
+  const uint32_t TURN_LEFT_FRAME = 8;
+  const uint32_t TURN_RIGHT_FRAME = 9;
+  const uint32_t FRONT_FRAME = 4;
+
+  const float TURN_DEADZONE = 0.25f;
+
+  // Direction from car -> camera in world xy
+  float to_cam_x = (float)(camera_pos.x - car_pos.x);
+  float to_cam_y = (float)(camera_pos.y - car_pos.y);
+  float camera_yaw = yaw_from_xy(to_cam_x, to_cam_y);
+
+  // Car forward direction in world XY
+  float car_forward_yaw = yaw_from_xy(-cosf(heading), -sinf(heading));
+
+  // 0 means camera is looking at the FRONT of the car
+  float relative_yaw = wrap_angle_0_2pi(camera_yaw - car_forward_yaw);
+
+  float step = (2.0f * (float)M_PI) / (float)BASE_FRAME_COUNT;
+
+  uint32_t frame = (uint32_t)floorf((relative_yaw + 0.5f * step) / step) % BASE_FRAME_COUNT;
+
+  // Only use the extra steering frames when we're looking at the front
+  if (frame == FRONT_FRAME) {
+    if (steer < -TURN_DEADZONE)
+      return TURN_LEFT_FRAME;
+    if (steer > TURN_DEADZONE)
+      return TURN_RIGHT_FRAME;
+  }
+
+  return frame;
+}
+static quat car_billboard_rotation(vec3 car_pos, vec3d camera_pos) {
+  float to_cam_x = (float)(camera_pos.x - car_pos.x);
+  float to_cam_y = (float)(camera_pos.y - car_pos.y);
+  float camera_yaw = yaw_from_xy(to_cam_x, to_cam_y);
+
+  mat4 rot = mat4_rotate(MAT4_IDENTITY, -M_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
+
+  // Use camera yaw instead of heading
+  rot = mat4_rotate(rot, -camera_yaw - M_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
+
+  return mat4_to_quaternion(rot);
+}
+
 static int recv_all(SOCKET sock, char* buffer, int size) {
   int total = 0;
   int bytes;
@@ -263,6 +322,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
   float move_speed = 30.0f;
   float rotation_speed = 1.5f;  // - game->mario_speed / 50.0f;
+  vec3d cam_pos = camera_get_pos(&game->player.camera);
 
   for (int ai_num = 0; ai_num < game->current_npcs; ai_num++) {
     float steer = game->npcs[ai_num].last_action[0];
@@ -300,16 +360,10 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
     float angle = -rotation_speed * delta_time * steer;
 
-    game->npcs[ai_num].sprite->sprite_common.frame_layer++;
-    if (game->npcs[ai_num].sprite->sprite_common.frame_layer >= 10)
-      game->npcs[ai_num].sprite->sprite_common.frame_layer = 0;
-
     // Update car heading
     game->npcs[ai_num].heading += angle;
     game->player.camera.look_at_azimuth = game->npcs[ai_num].heading + M_PI;
-    mat4 mario_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){0.5f, 0.0f, 0.0f});
-    mario_rotation = mat4_rotate(mario_rotation, -game->npcs[ai_num].heading - M_PI / 2, (vec3){0.0f, 1.0f, 0.0f});
-    game->npcs[ai_num].sprite->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
+
     game->npcs[ai_num].speed += throttle * move_speed * delta_time;
 
     // Clamp speed
@@ -341,6 +395,9 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     // Update sprite + camera
     game->npcs[ai_num].sprite->sprite_common.position = game->npcs[ai_num].position;
     game->player.look_at_pos = (vec3d){.x = game->npcs[ai_num].position.x, .y = game->npcs[ai_num].position.y, .z = game->npcs[ai_num].position.z};
+
+    game->npcs[ai_num].sprite->sprite_common.rotation = car_billboard_rotation(game->npcs[ai_num].position, cam_pos);
+    game->npcs[ai_num].sprite->sprite_common.frame_layer = car_frame_from_camera(game->npcs[ai_num].heading, steer, game->npcs[ai_num].position, cam_pos);
 
     //  Distance AFTER movement
     float dx_after = marker_pos.x - game->npcs[ai_num].position.x;
@@ -437,9 +494,8 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
         game->npcs[ai_num].sprite->sprite_common.position = game->npcs[ai_num].position;
         game->npcs[ai_num].sprite->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
         game->npcs[ai_num].heading = 0.0f;  // M_PI / 2.0f;  // facing down -Y
-        mat4 mario_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){0.5f, 0.0f, 0.0f});
-        mario_rotation = mat4_rotate(mario_rotation, -game->npcs[ai_num].heading + M_PI / 2, (vec3){0.0f, 1.0f, 0.0f});
-        game->npcs[ai_num].sprite->sprite_common.rotation = mat4_to_quaternion(mario_rotation);
+        game->npcs[ai_num].sprite->sprite_common.rotation = car_billboard_rotation(game->npcs[ai_num].position, cam_pos);
+        game->npcs[ai_num].sprite->sprite_common.frame_layer = car_frame_from_camera(game->npcs[ai_num].heading, steer, game->npcs[ai_num].position, cam_pos);
 
         game->npcs[ai_num].last_action[0] = 0.0f;
         game->npcs[ai_num].last_action[1] = 0.0f;
