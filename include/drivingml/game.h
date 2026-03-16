@@ -15,10 +15,11 @@
 #include "drivingml/core/ac_model.h"
 #include "drivingml/core/player.h"
 
-#define EVAL_MODE true
+#define EVAL_MODE false
 
 #define MAX_MARKERS 32
 #define MAX_NPCS 8
+#define MAX_TREES 32
 
 struct NPC {
   ACModel model;
@@ -71,6 +72,9 @@ struct Game {
 
   int current_npcs;
   struct NPC npcs[MAX_NPCS];
+
+  struct Sprite* trees[MAX_TREES];
+  int total_trees;
 };
 
 void game_init(struct Game* game, struct Mana* mana, struct Window* window);

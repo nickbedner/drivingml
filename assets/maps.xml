@@ -18,6 +18,9 @@
 			<marker x="110" y="65"/>
 			<marker x="110" y="100"/>
 		</markers>
+		<obstacle>
+			<tree x="-90" y="-90"/>
+		</obstacle>
 	</map>
 	<map name="track2">
 		<track texture="/textures/circuit.png" x="0" y="0" scale="20"/>

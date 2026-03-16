@@ -53,7 +53,7 @@ static uint32_t car_frame_from_camera(float heading, float steer, vec3 car_pos, 
 
   return frame;
 }
-static quat car_billboard_rotation(vec3 car_pos, vec3d camera_pos) {
+static quat sprite_billboard_rotation(vec3 car_pos, vec3d camera_pos) {
   float to_cam_x = (float)(camera_pos.x - car_pos.x);
   float to_cam_y = (float)(camera_pos.y - car_pos.y);
   float camera_yaw = yaw_from_xy(to_cam_x, to_cam_y);
@@ -151,6 +151,41 @@ static void load_map_from_xml(struct Game* game, struct Mana* mana, const char* 
     }
   }
 
+  struct XmlNode* obstacle_node = xml_node_get_child(map_node, "obstacle");
+
+  if (obstacle_node) {
+    struct ArrayList* tree_list = xml_node_get_children(obstacle_node, "tree");
+
+    if (tree_list) {
+      size_t count = array_list_size(tree_list);
+      game->total_trees = (int)count;
+
+      for (size_t i = 0; i < count && i < MAX_TREES; i++) {
+        struct XmlNode* tree = (struct XmlNode*)array_list_get(tree_list, i);
+
+        char* x_str = xml_node_get_attribute(tree, "x");
+        char* y_str = xml_node_get_attribute(tree, "y");
+
+        if (!x_str || !y_str)
+          continue;
+
+        float x = (float)atof(x_str);
+        float y = (float)atof(y_str);
+
+        game->trees[i] = sprite_manager_add_sprite(
+            &(game->sprite_manager),
+            &(mana->api.api_common),
+            "/textures/tree.png");
+
+        game->trees[i]->sprite_common.position = (vec3){x, y, 4.5f};
+        game->trees[i]->sprite_common.scale = (vec3){5.0f, 5.0f, 0.0f};
+
+        mat4 rot = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){0.5, 0, 0});
+        game->trees[i]->sprite_common.rotation = mat4_to_quaternion(rot);
+      }
+    }
+  }
+
   xml_parser_delete(root);
 }
 
@@ -171,6 +206,9 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/fence.png");
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/marker.png");
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/floor_plane.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/barrel1.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/barrel2.png");
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/tree.png");
   sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_ANISOTROPIC, .mode_type = MODE_CLAMP_TO_EDGE, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_GENERATE, .mip_count = 5, .premultiplied_alpha = true, .max_anisotropy = 16.0f};
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/track.png");
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/circuit.png");
@@ -324,6 +362,11 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   float rotation_speed = 1.5f;  // - game->mario_speed / 50.0f;
   vec3d cam_pos = camera_get_pos(&game->player.camera);
 
+  for (int t = 0; t < game->total_trees; t++) {
+    game->trees[t]->sprite_common.rotation =
+        sprite_billboard_rotation(game->trees[t]->sprite_common.position, cam_pos);
+  }
+
   for (int ai_num = 0; ai_num < game->current_npcs; ai_num++) {
     float steer = game->npcs[ai_num].last_action[0];
     float throttle = game->npcs[ai_num].last_action[1];
@@ -384,9 +427,36 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     float dy_before = marker_pos.y - game->npcs[ai_num].position.y;
     float dist_before = sqrtf(dx_before * dx_before + dy_before * dy_before);
 
+    // Reward Calculation
+    float reward = 0.0f;
+
     //  Move car
     game->npcs[ai_num].position.x += forward_vel.x * game->npcs[ai_num].speed * delta_time;
     game->npcs[ai_num].position.y += forward_vel.y * game->npcs[ai_num].speed * delta_time;
+
+    const float TREE_RADIUS = 1.75f;
+    for (int t = 0; t < game->total_trees; t++) {
+      vec3 tree_pos = game->trees[t]->sprite_common.position;
+
+      float dx = game->npcs[ai_num].position.x - tree_pos.x;
+      float dy = game->npcs[ai_num].position.y - tree_pos.y;
+
+      float dist = sqrtf(dx * dx + dy * dy);
+
+      if (dist < TREE_RADIUS) {
+        // push car back out
+        float nx = dx / dist;
+        float ny = dy / dist;
+
+        game->npcs[ai_num].position.x = tree_pos.x + nx * TREE_RADIUS;
+        game->npcs[ai_num].position.y = tree_pos.y + ny * TREE_RADIUS;
+
+        // stop the car
+        game->npcs[ai_num].speed *= -0.2f;
+
+        reward -= 1.0f;  // penalty
+      }
+    }
 
     // Apply damping
     float damping = 2.0f;
@@ -396,16 +466,13 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     game->npcs[ai_num].sprite->sprite_common.position = game->npcs[ai_num].position;
     game->player.look_at_pos = (vec3d){.x = game->npcs[ai_num].position.x, .y = game->npcs[ai_num].position.y, .z = game->npcs[ai_num].position.z};
 
-    game->npcs[ai_num].sprite->sprite_common.rotation = car_billboard_rotation(game->npcs[ai_num].position, cam_pos);
+    game->npcs[ai_num].sprite->sprite_common.rotation = sprite_billboard_rotation(game->npcs[ai_num].position, cam_pos);
     game->npcs[ai_num].sprite->sprite_common.frame_layer = car_frame_from_camera(game->npcs[ai_num].heading, steer, game->npcs[ai_num].position, cam_pos);
 
     //  Distance AFTER movement
     float dx_after = marker_pos.x - game->npcs[ai_num].position.x;
     float dy_after = marker_pos.y - game->npcs[ai_num].position.y;
     float dist_after = sqrtf(dx_after * dx_after + dy_after * dy_after);
-
-    // Reward Calculation
-    float reward = 0.0f;
 
     // Main dense signal: reward distance reduction
     float progress = dist_before - dist_after;
@@ -494,7 +561,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
         game->npcs[ai_num].sprite->sprite_common.position = game->npcs[ai_num].position;
         game->npcs[ai_num].sprite->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
         game->npcs[ai_num].heading = 0.0f;  // M_PI / 2.0f;  // facing down -Y
-        game->npcs[ai_num].sprite->sprite_common.rotation = car_billboard_rotation(game->npcs[ai_num].position, cam_pos);
+        game->npcs[ai_num].sprite->sprite_common.rotation = sprite_billboard_rotation(game->npcs[ai_num].position, cam_pos);
         game->npcs[ai_num].sprite->sprite_common.frame_layer = car_frame_from_camera(game->npcs[ai_num].heading, steer, game->npcs[ai_num].position, cam_pos);
 
         game->npcs[ai_num].last_action[0] = 0.0f;
