@@ -2,3 +2,4 @@ build/
 .cache/
 checkpoints/
 .idea/
+.DS_Store

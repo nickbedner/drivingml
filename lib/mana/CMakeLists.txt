@@ -10,10 +10,15 @@ file(GLOB_RECURSE mana_SRC include/*.h src/*.c)
 
 add_library(mana STATIC ${mana_SRC})
 
-set(MANA_BUILD_LIBRARIES mana "$ENV{VULKAN_SDK}/Lib/vulkan-1.lib" d3d12 dxgi d3dcompiler xinput winusb setupapi ws2_32)
+target_include_directories(mana PUBLIC {CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(${MANA_BUILD_LIBRARIES})
-
-set(includeList ${CMAKE_CURRENT_SOURCE_DIR}/include "$ENV{VULKAN_SDK}/Include")
-
-target_include_directories(mana PUBLIC ${includeList})
+if (WIN32)
+    target_include_directories(mana PUBLIC "$ENV{VULKAN_SDK}/Include")
+    target_link_libraries(mana "$ENV{VULKAN_SDK}/Lib/vulkan-1.lib" d3d12 dxgi d3dcompiler xinput winusb setupapi ws2_32)
+elseif(APPLE)
+    find_library(METAL_FRAMEWORK Metal)
+    find_library(FOUNDATION_FRAMEWORK Foundation)
+    find_library(QUARTZCORE_FRAMEWORK QuartzCore)
+    find_library(APPKIT_FRAMEWORK AppKit)
+    target_link_libraries(mana ${METAL_FRAMEWORK} ${FOUNDATION_FRAMEWORK} ${QUARTZCORE_FRAMEWORK} ${APPKIT_FRAMEWORK})
+endif()
