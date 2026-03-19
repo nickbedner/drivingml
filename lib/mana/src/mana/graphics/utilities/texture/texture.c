@@ -23,7 +23,7 @@ uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* textu
   uint32_t w0 = 0, h0 = 0, ch0 = 0;
   uint8_t bit0 = 0, ct0 = 0;
 
-  void* pixels0 = texture_read_png(texture_common->path, api_common->asset_directory, &w0, &h0, &ch0, &bit0, &ct0);
+  void* pixels0 = png_loader_read_png(texture_common->path, api_common->asset_directory, &w0, &h0, &ch0, &bit0, &ct0);
 
   if (!pixels0) {
     log_message(LOG_SEVERITY_WARNING, "Failed to load texture image: %s\n", texture_common->path);
@@ -119,7 +119,7 @@ uint8_t texture_array_init(struct Texture* texture, struct TextureManagerCommon*
   uint32_t w0 = 0, h0 = 0, ch0 = 0;
   uint8_t bit0 = 0, ct0 = 0;
 
-  void* pixels0 = texture_read_png(paths[0], api_common->asset_directory, &w0, &h0, &ch0, &bit0, &ct0);
+  void* pixels0 = png_loader_read_png(paths[0], api_common->asset_directory, &w0, &h0, &ch0, &bit0, &ct0);
   if (!pixels0) {
     log_message(LOG_SEVERITY_WARNING, "Failed to load texture array frame 0: %s\n", paths[0]);
     free(texture_common->path);
@@ -173,7 +173,7 @@ uint8_t texture_array_init(struct Texture* texture, struct TextureManagerCommon*
     uint32_t w = 0, h = 0, ch = 0;
     uint8_t bit = 0, ct = 0;
 
-    void* pixels = texture_read_png(paths[layer], api_common->asset_directory, &w, &h, &ch, &bit, &ct);
+    void* pixels = png_loader_read_png(paths[layer], api_common->asset_directory, &w, &h, &ch, &bit, &ct);
     if (!pixels) {
       log_message(LOG_SEVERITY_WARNING, "Failed to load texture array frame %u: %s\n", layer, paths[layer]);
       free(combined_pixels);

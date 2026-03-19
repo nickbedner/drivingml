@@ -44,10 +44,8 @@ def tanh_correction(a, eps=1e-6):
 
 # Writes the weights to a bin file which is loaded in sum and actions are generated via custom forward pass
 def export_weights_bin(model, log_std, path):
-    """
-    Export model weights to a simple float32 binary format
-    readable from pure C with fread().
-    """
+    # Export model weights to a simple float32 binary format eadable from pure C with fread().
+
     sd = model.state_dict()
 
     def write_tensor(f, t):

@@ -1,36 +1,4 @@
-#pragma once
-
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "mana/graphics/apis/api.h"
-#include "mana/utilities/zlib.h"
-
-#define PNG_SIGNATURE_SIZE 8
-
-static inline char* build_mip_path(const char* base_path, uint32_t level) {
-  // base_path is something like: "/textures/waterm1.png"
-
-  char* out = strdup(base_path);
-  if (!out) return NULL;
-
-  // Find the extension
-  char* dot = strrchr(out, '.');
-  if (!dot) return out;
-
-  // Walk backwards to find the first digit before the extension
-  char* p = dot;
-  while (p > out) {
-    p--;
-    if (*p >= '0' && *p <= '9') {
-      *p = '1' + level;  // level 0 → '1', level 1 → '2', etc.
-      break;
-    }
-  }
-
-  return out;
-}
+#include "mana/graphics/utilities/texture/pngloader.h"
 
 // Helper function for Paeth filter
 static inline unsigned char paeth_predictor(int a, int b, int c) {
@@ -491,14 +459,16 @@ static inline void process_IHDR(const unsigned char* ihdr_data, uint32_t* tex_wi
   interlace_method = ihdr_data[12];
 
   // Print the extracted information
-  // printf("IHDR Chunk:\n");
-  // printf("Width: %u\n", *tex_width);
-  // printf("Height: %u\n", *tex_height);
-  // printf("Bit Depth: %d\n", *bit_depth);
-  // printf("Color Type: %d\n", *color_type);
-  // printf("Compression Method: %d\n", compression_method);
-  // printf("Filter Method: %d\n", filter_method);
-  // printf("Interlace Method: %d\n", interlace_method);
+  if (PNG_DEBUG) {
+    log_message(LOG_SEVERITY_DEBUG, "IHDR Chunk:");
+    log_message(LOG_SEVERITY_DEBUG, "Width: %u", *tex_width);
+    log_message(LOG_SEVERITY_DEBUG, "Height: %u", *tex_height);
+    log_message(LOG_SEVERITY_DEBUG, "Bit Depth: %d", *bit_depth);
+    log_message(LOG_SEVERITY_DEBUG, "Color Type: %d", *color_type);
+    log_message(LOG_SEVERITY_DEBUG, "Compression Method: %d", compression_method);
+    log_message(LOG_SEVERITY_DEBUG, "Filter Method: %d", filter_method);
+    log_message(LOG_SEVERITY_DEBUG, "Interlace Method: %d", interlace_method);
+  }
 
   // Determine the number of channels based on the color type
   *tex_channels = get_png_color_type_channels(*color_type);
@@ -578,7 +548,7 @@ static inline int check_png_signature(FILE* fp) {
   return 1;  // Valid PNG signature
 }
 
-static inline void* texture_read_png(const char* filename, const char* asset_directory, uint32_t* tex_width, uint32_t* tex_height, uint32_t* tex_channels, uint8_t* bit_depth, uint8_t* color_type) {
+void* png_loader_read_png(const char* filename, const char* asset_directory, uint32_t* tex_width, uint32_t* tex_height, uint32_t* tex_channels, uint8_t* bit_depth, uint8_t* color_type) {
   unsigned char* idat_concatenated = NULL;
   unsigned int idat_length = 0;
   unsigned int idat_buffer_size = 0;

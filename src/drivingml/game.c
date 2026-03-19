@@ -336,7 +336,6 @@ void game_delete(struct Game* game, struct Mana* mana) {
 }
 
 void game_update(struct Game* game, struct Mana* mana, double delta_time) {
-  struct APICommon* api_common = &(mana->api.api_common);
   struct Window* window = game->window;
   struct InputManager* input_manager = &window->input_manager;
 
@@ -714,7 +713,6 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 void game_render(struct Game* game, struct Mana* mana, double delta_time) {
   struct APICommon* api_common = &(mana->api.api_common);
   struct Window* window = game->window;
-  struct InputManager* input_manager = &window->input_manager;
 
   window->gbuffer->gbuffer_common.projection_matrix = camera_get_projection_matrix(&(game->player.camera), window);
   window->gbuffer->gbuffer_common.view_matrix = camera_get_view_matrix(&(game->player.camera));

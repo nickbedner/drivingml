@@ -100,3 +100,26 @@ struct TextureCommon {
 #endif
   };
 };
+
+static inline char* texture_common_build_mip_path(const char* base_path, uint32_t level) {
+  // base_path is something like: "/textures/waterm1.png"
+
+  char* out = strdup(base_path);
+  if (!out) return NULL;
+
+  // Find the extension
+  char* dot = strrchr(out, '.');
+  if (!dot) return out;
+
+  // Walk backwards to find the first digit before the extension
+  char* p = dot;
+  while (p > out) {
+    p--;
+    if (*p >= '0' && *p <= '9') {
+      *p = '1' + level;  // level 0 → '1', level 1 → '2', etc.
+      break;
+    }
+  }
+
+  return out;
+}

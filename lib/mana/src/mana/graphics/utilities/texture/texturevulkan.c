@@ -45,7 +45,7 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common,
     off += sz0;
 
     for (uint32_t level = 1; level < mip_count; level++) {
-      char* mip_path = build_mip_path(texture_common->path, level);
+      char* mip_path = texture_common_build_mip_path(texture_common->path, level);
       if (!mip_path) {
         free(combined);
         log_message(LOG_SEVERITY_ERROR, "Failed to build mip path\n");
@@ -54,7 +54,7 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common,
 
       uint32_t wl = 0, hl = 0, chl = 0;
       uint8_t bitl = 0, ctl = 0;
-      void* pixelsL = texture_read_png(mip_path, api_common->asset_directory, &wl, &hl, &chl, &bitl, &ctl);
+      void* pixelsL = png_loader_read_png(mip_path, api_common->asset_directory, &wl, &hl, &chl, &bitl, &ctl);
       free(mip_path);
 
       if (!pixelsL) {

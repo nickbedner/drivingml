@@ -10,7 +10,7 @@ file(GLOB_RECURSE mana_SRC include/*.h src/*.c)
 
 add_library(mana STATIC ${mana_SRC})
 
-target_include_directories(mana PUBLIC {CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(mana PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 if (WIN32)
     target_include_directories(mana PUBLIC "$ENV{VULKAN_SDK}/Include")

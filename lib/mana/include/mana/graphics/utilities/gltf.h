@@ -5,7 +5,6 @@
 #include <string.h>
 
 #include "mana/core/corecommon.h"
-#include "mana/utilities/jsmn.h"
 
 struct AnimationChannel {
   int target_node;

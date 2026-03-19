@@ -66,7 +66,7 @@ void drivingml_start(struct DrivingML* drivingml) {
 
     if (frame_time > 0.25) frame_time = 0.25;  // avoid giant catch-up
     accumulator += frame_time;
-
+    // window->minimized
     window_prepare_frame(&(drivingml->window));
 
     int max_steps = 5;
@@ -78,6 +78,14 @@ void drivingml_start(struct DrivingML* drivingml) {
         game_update(&(drivingml->game), &(drivingml->mana), sim_dt);
         accumulator -= sim_dt;
         steps++;
+      }
+
+      if (drivingml->window.minimized) {
+        double sleep_s = sim_dt - accumulator;
+        // More than 1 ms left
+        if (sleep_s > 0.001) {
+          Sleep((int)((sleep_s - 0.001) * 1000.0));
+        }
       }
     } else
       game_update(&(drivingml->game), &(drivingml->mana), 0.01666666666);

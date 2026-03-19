@@ -5,7 +5,9 @@
 #include <stdlib.h>
 
 #include "mana/graphics/apis/api.h"
+#include "mana/graphics/utilities/texture/pngloader.h"
 #include "mana/utilities/zlib.h"
+
 
 #ifdef VULKAN_API_SUPPORTED
 #include "mana/graphics/utilities/texture/texturevulkan.h"
