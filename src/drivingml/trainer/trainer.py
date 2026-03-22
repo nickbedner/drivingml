@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+# https://docs.aws.amazon.com/deepracer/latest/developerguide/deepracer-how-it-works-reinforcement-learning-algorithm.html
 # https://www.datacamp.com/tutorial/proximal-policy-optimization?utm_source=chatgpt.com
 # https://docs.pytorch.org/tutorials/intermediate/reinforcement_ppo.html?utm_source=chatgpt.com
 # https://www.codegenes.net/blog/actor-critic-pytorch/?utm_source=chatgpt.com

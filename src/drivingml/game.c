@@ -403,13 +403,13 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
       }
     }
 
-    float angle = -rotation_speed * delta_time * steer;
+    float angle = -rotation_speed * (float)delta_time * steer;
 
     // Update car heading
     game->npcs[ai_num].heading += angle;
-    game->player.camera.look_at_azimuth = game->npcs[ai_num].heading + M_PI;
+    game->player.camera.look_at_azimuth = (double)game->npcs[ai_num].heading + M_PI;
 
-    game->npcs[ai_num].speed += throttle * move_speed * delta_time;
+    game->npcs[ai_num].speed += throttle * move_speed * (float)delta_time;
 
     // Clamp speed
     if (game->npcs[ai_num].speed > 50.0f * speed_scale)
@@ -419,7 +419,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
     // Movement + progress based reward
     float heading = game->npcs[ai_num].heading;
-    vec3 forward_vel = {-cosf(heading), -sinf(heading), 0.0f};
+    vec3 forward_vel = (vec3){.x = -(float)cosf(heading), .y = -(float)sinf(heading), .z = 0.0f};
 
     // Current marker position
     vec3 marker_pos = game->marker[game->npcs[ai_num].current_marker]->sprite_common.position;
@@ -439,8 +439,8 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     vec3 prev_pos = game->npcs[ai_num].position;
 
     //  Move car
-    game->npcs[ai_num].position.x += forward_vel.x * game->npcs[ai_num].speed * delta_time;
-    game->npcs[ai_num].position.y += forward_vel.y * game->npcs[ai_num].speed * delta_time;
+    game->npcs[ai_num].position.x += forward_vel.x * game->npcs[ai_num].speed * (float)delta_time;
+    game->npcs[ai_num].position.y += forward_vel.y * game->npcs[ai_num].speed * (float)delta_time;
 
     const float TREE_RADIUS = 1.75f;
     const float TREE_SKIN = 0.20f;  // extra push-out margin
@@ -517,7 +517,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
           game->npcs[ai_num].heading -= TREE_AVOID_TURN;
 
         game->npcs[ai_num].heading = wrap_angle_0_2pi(game->npcs[ai_num].heading);
-        game->player.camera.look_at_azimuth = game->npcs[ai_num].heading + M_PI;
+        game->player.camera.look_at_azimuth = (double)game->npcs[ai_num].heading + M_PI;
 
         reward -= 4.0f;
         break;
@@ -528,11 +528,11 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
     // Apply damping
     float damping = 2.0f;
-    game->npcs[ai_num].speed *= expf(-damping * delta_time);
+    game->npcs[ai_num].speed *= expf((float)((double)-damping * delta_time));
 
     // Update sprite + camera
     game->npcs[ai_num].sprite->sprite_common.position = game->npcs[ai_num].position;
-    game->player.look_at_pos = (vec3d){.x = game->npcs[ai_num].position.x, .y = game->npcs[ai_num].position.y, .z = game->npcs[ai_num].position.z};
+    game->player.look_at_pos = (vec3d){.x = (double)game->npcs[ai_num].position.x, .y = (double)game->npcs[ai_num].position.y, .z = (double)game->npcs[ai_num].position.z};
 
     game->npcs[ai_num].sprite->sprite_common.rotation = sprite_billboard_rotation(game->npcs[ai_num].position, cam_pos);
     game->npcs[ai_num].sprite->sprite_common.frame_layer = car_frame_from_camera(game->npcs[ai_num].heading, steer, game->npcs[ai_num].position, cam_pos);
@@ -702,9 +702,9 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
   // Make this always facing toward the camera
   for (int marker_num = 0; marker_num < game->total_markers; marker_num++) {
-    mat4 marker_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-    marker_rotation = mat4_rotate(marker_rotation, M_PI / 2, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-    game->marker[marker_num]->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(marker_rotation, -game->player.camera.look_at_azimuth, (vec3){0.0f, 1.0f, 0.0f}));
+    mat4 marker_rotation = mat4_rotate(MAT4_IDENTITY, -(float)M_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
+    marker_rotation = mat4_rotate(marker_rotation, (float)M_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
+    game->marker[marker_num]->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(marker_rotation, (float)-game->player.camera.look_at_azimuth, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f}));
     if (EVAL_MODE)
       game->marker[marker_num]->sprite_common.position.z = -10000.0f;
   }

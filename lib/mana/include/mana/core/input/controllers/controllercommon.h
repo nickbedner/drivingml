@@ -224,6 +224,7 @@ struct XboxController {
 
 #ifdef PLAYSATION_CONTROLLER_SUPPORTED
 struct PlaystationController {
+  float placeholder;
 };
 #endif
 
@@ -241,12 +242,15 @@ struct GamecubeController {
   OVERLAPPED overlapped;
   BYTE buffer[GC_ADAPTER_TOTAL_BUFFER_SIZE];
   bool reading_pending;
+#else
+  float placeholder;
 #endif
 };
 #endif
 
 #ifdef JOYSTICK_CONTROLLER_SUPPORTED
 struct JoystickController {
+  float placeholder;
 };
 #endif
 
@@ -260,12 +264,6 @@ struct ControllerAction {
 };
 
 struct ControllerCommon {
-  enum CONTROLLER_TYPE controller_type;
-  // Note: player 0 is unassigned
-  uint_fast8_t player_num;
-  struct ControllerAction controller_action_list[16];
-  uint_fast8_t controller_action_list_size;
-
   union {
 #ifdef KEYBOARD_MOUSE_CONTROLLER_SUPPORTED
     struct KeyboardMouseController keyboard_mouse_controller;
@@ -283,4 +281,10 @@ struct ControllerCommon {
     struct JoystickController joystick_controller;
 #endif
   };
+
+  struct ControllerAction controller_action_list[16];
+  enum CONTROLLER_TYPE controller_type;
+  // Note: player 0 is unassigned
+  uint_fast8_t player_num;
+  uint_fast8_t controller_action_list_size;
 };
