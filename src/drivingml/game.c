@@ -79,8 +79,8 @@ static int recv_all(SOCKET sock, char* buffer, int size) {
 }
 
 static inline void place_marker(struct Sprite* marker, float x, float y) {
-  marker->sprite_common.position = (vec3){.x = x, .y = y, .z = 2.35f};
-  marker->sprite_common.scale = (vec3){.x = 1.0f, .y = 1.0f, .z = 0.0f};
+  marker->sprite_common.position = (vec3){.x = x, .y = y, .z = 2.35f * 2.5f};
+  marker->sprite_common.scale = (vec3){.x = 2.5f, .y = 2.5f, .z = 0.0f};
   mat4 marker_rotation_0 = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
   marker_rotation_0 = mat4_rotate(marker_rotation_0, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
   marker->sprite_common.rotation = mat4_to_quaternion(marker_rotation_0);
@@ -218,31 +218,79 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_TRILINEAR, .mode_type = MODE_REPEAT, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_CUSTOM, .mip_count = 5, .premultiplied_alpha = true, .max_anisotropy = 1.0f};
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/waterm1.png");
   sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_NEAREST, .mode_type = MODE_CLAMP_TO_EDGE, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_NONE, .mip_count = 1, .premultiplied_alpha = true, .max_anisotropy = 1.0f};
-  const char* kart_frames[] = {
-      "/textures/aikart/tile000.png",
-      "/textures/aikart/tile001.png",
-      "/textures/aikart/tile002.png",
-      "/textures/aikart/tile003.png",
-      "/textures/aikart/tile004.png",
-      "/textures/aikart/tile005.png",
-      "/textures/aikart/tile006.png",
-      "/textures/aikart/tile007.png",
-      "/textures/aikart/tile008.png",
-      "/textures/aikart/tile009.png"};
-  texture_manager_add_array(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/aikart", kart_frames, 10);
+  const char* grey_kart_frames[] = {
+      "/textures/aikartgrey/tile000.png",
+      "/textures/aikartgrey/tile001.png",
+      "/textures/aikartgrey/tile002.png",
+      "/textures/aikartgrey/tile003.png",
+      "/textures/aikartgrey/tile004.png",
+      "/textures/aikartgrey/tile005.png",
+      "/textures/aikartgrey/tile006.png",
+      "/textures/aikartgrey/tile007.png",
+      "/textures/aikartgrey/tile008.png",
+      "/textures/aikartgrey/tile009.png"};
+  texture_manager_add_array(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/aikartgrey", grey_kart_frames, 10);
+  const char* red_kart_frames[] = {
+      "/textures/aikartred/tile000.png",
+      "/textures/aikartred/tile001.png",
+      "/textures/aikartred/tile002.png",
+      "/textures/aikartred/tile003.png",
+      "/textures/aikartred/tile004.png",
+      "/textures/aikartred/tile005.png",
+      "/textures/aikartred/tile006.png",
+      "/textures/aikartred/tile007.png",
+      "/textures/aikartred/tile008.png",
+      "/textures/aikartred/tile009.png"};
+  texture_manager_add_array(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/aikartred", red_kart_frames, 10);
+  const char* cyan_kart_frames[] = {
+      "/textures/aikartcyan/tile000.png",
+      "/textures/aikartcyan/tile001.png",
+      "/textures/aikartcyan/tile002.png",
+      "/textures/aikartcyan/tile003.png",
+      "/textures/aikartcyan/tile004.png",
+      "/textures/aikartcyan/tile005.png",
+      "/textures/aikartcyan/tile006.png",
+      "/textures/aikartcyan/tile007.png",
+      "/textures/aikartcyan/tile008.png",
+      "/textures/aikartcyan/tile009.png"};
+  texture_manager_add_array(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/aikartcyan", cyan_kart_frames, 10);
+  const char* green_kart_frames[] = {
+      "/textures/aikartgreen/tile000.png",
+      "/textures/aikartgreen/tile001.png",
+      "/textures/aikartgreen/tile002.png",
+      "/textures/aikartgreen/tile003.png",
+      "/textures/aikartgreen/tile004.png",
+      "/textures/aikartgreen/tile005.png",
+      "/textures/aikartgreen/tile006.png",
+      "/textures/aikartgreen/tile007.png",
+      "/textures/aikartgreen/tile008.png",
+      "/textures/aikartgreen/tile009.png"};
+  texture_manager_add_array(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/aikartgreen", green_kart_frames, 10);
+  const char* purple_kart_frames[] = {
+      "/textures/aikartpurple/tile000.png",
+      "/textures/aikartpurple/tile001.png",
+      "/textures/aikartpurple/tile002.png",
+      "/textures/aikartpurple/tile003.png",
+      "/textures/aikartpurple/tile004.png",
+      "/textures/aikartpurple/tile005.png",
+      "/textures/aikartpurple/tile006.png",
+      "/textures/aikartpurple/tile007.png",
+      "/textures/aikartpurple/tile008.png",
+      "/textures/aikartpurple/tile009.png"};
+  texture_manager_add_array(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/aikartpurple", purple_kart_frames, 10);
 
   sprite_manager_init(&(game->sprite_manager), &(game->texture_manager), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 128);
 
   char path[MAX_LENGTH_OF_PATH] = {0};
   snprintf(path, MAX_LENGTH_OF_PATH, "%s/maps.xml", mana->api.api_common.asset_directory);
-  load_map_from_xml(game, mana, path, "track1");
+  load_map_from_xml(game, mana, path, "track0");
 
-  game->fence = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/fence.png");
-  game->fence->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = 2.5f};
-  game->fence->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
-  mat4 fence_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  fence_rotation = mat4_rotate(fence_rotation, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-  game->fence->sprite_common.rotation = mat4_to_quaternion(fence_rotation);
+  // game->fence = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/fence.png");
+  // game->fence->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = 2.5f};
+  // game->fence->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
+  // mat4 fence_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
+  // fence_rotation = mat4_rotate(fence_rotation, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+  // game->fence->sprite_common.rotation = mat4_to_quaternion(fence_rotation);
 
   // game->cloud = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/cloud.png");
   // game->cloud->sprite_common.position = (vec3){.x = 0, .y = -5000.0f, .z = 2.5f};
@@ -295,23 +343,43 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->timer = 0;
   game->start_timer = 0;
 
+  game->starting_pos = (vec3){.x = 175.0f, .y = 20.0f, .z = 0.75f};
+  game->starting_heading = 0.0f;
+
   if (EVAL_MODE)
     game->current_npcs += MAX_NPCS;
   else
     game->current_npcs += 1;
   for (int npc_num = 0; npc_num < game->current_npcs; npc_num++) {
-    game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikart");
+    if (npc_num == 0)
+      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartgrey");
+    else if (npc_num == 1) {
+      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartred");
+      load_ac_model("checkpoints/ac_weights100.bin", &(game->npcs[npc_num].model));
+    } else if (npc_num == 2) {
+      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartcyan");
+      load_ac_model("checkpoints/ac_weights300.bin", &(game->npcs[npc_num].model));
+    } else if (npc_num == 3) {
+      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartgreen");
+      load_ac_model("checkpoints/ac_weights500.bin", &(game->npcs[npc_num].model));
+    }
     game->npcs[npc_num].speed = 0.0f;
-    game->npcs[npc_num].position = (vec3){.x = 10.0f + (npc_num * 10), .y = 95.0f + ((npc_num % 4) * 3.0f), .z = 0.75};
+    game->npcs[npc_num].position = (vec3){.x = game->starting_pos.x - (npc_num * 8), .y = game->starting_pos.y + ((npc_num % 4) * 5.0f), .z = game->starting_pos.z};
     game->npcs[npc_num].sprite->sprite_common.position = game->npcs[npc_num].position;
     game->npcs[npc_num].sprite->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
-    game->npcs[npc_num].heading = 0.0f;  // M_PI / 2.0f;  // facing down -Y
+    game->npcs[npc_num].heading = game->starting_heading;  // M_PI / 2.0f;  // facing down -Y
     game->npcs[npc_num].current_marker = 0;
     game->npcs[npc_num].last_action[0] = 0.0f;
     game->npcs[npc_num].last_action[1] = 0.0f;
     game->npcs[npc_num].prev_y = game->npcs[npc_num].position.y;
-    load_ac_model("checkpoints/ac_weights.bin", &(game->npcs[npc_num].model));
   }
+
+  game->camera_current_follow_kart = 0;
+
+  game->flag1 = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/marker.png");
+  place_marker(game->flag1, 165.0f, 0.0f);
+  game->flag2 = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/marker.png");
+  place_marker(game->flag2, -165.0f, 0.0f);
 
   water_shader_init(&(game->water_shader), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 3);
   water_init(&(game->water), &(mana->api.api_common), &(game->water_shader.shader), texture_manager_get(game->sprite_manager.sprite_manager_common.texture_manager, "/textures/waterm1.png"));
@@ -369,6 +437,56 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
         sprite_billboard_rotation(game->trees[t]->sprite_common.position, cam_pos);
   }
 
+  static bool prev_left_pressed = false;
+  static bool prev_right_pressed = false;
+
+  bool left_pressed = false;
+  bool right_pressed = false;
+
+  bool w_pressed = false;
+  bool a_pressed = false;
+  bool s_pressed = false;
+  bool d_pressed = false;
+
+  for (size_t i = 0; i < input_manager->controllers.size; i++) {
+    struct Controller* controller = array_list_get(&(input_manager->controllers), i);
+    if (controller->controller_common.controller_type == CONTROLLER_KEYBOARD_MOUSE) {
+      struct KeyboardMouseController* keyboard_mouse_controller =
+          &(controller->controller_common.keyboard_mouse_controller);
+
+      if (keyboard_mouse_controller->keys[KEY_LEFT].state == PRESSED)
+        left_pressed = true;
+      if (keyboard_mouse_controller->keys[KEY_RIGHT].state == PRESSED)
+        right_pressed = true;
+
+      if (keyboard_mouse_controller->keys[KEY_W].state == PRESSED)
+        w_pressed = true;
+      if (keyboard_mouse_controller->keys[KEY_S].state == PRESSED)
+        s_pressed = true;
+      if (keyboard_mouse_controller->keys[KEY_A].state == PRESSED)
+        a_pressed = true;
+      if (keyboard_mouse_controller->keys[KEY_D].state == PRESSED)
+        d_pressed = true;
+    }
+  }
+
+  if (game->current_npcs > 0) {
+    if (left_pressed && !prev_left_pressed) {
+      game->camera_current_follow_kart--;
+      if (game->camera_current_follow_kart < 0)
+        game->camera_current_follow_kart = game->current_npcs - 1;
+    }
+
+    if (right_pressed && !prev_right_pressed) {
+      game->camera_current_follow_kart++;
+      if (game->camera_current_follow_kart >= game->current_npcs)
+        game->camera_current_follow_kart = 0;
+    }
+  }
+
+  prev_left_pressed = left_pressed;
+  prev_right_pressed = right_pressed;
+
   for (int ai_num = 0; ai_num < game->current_npcs; ai_num++) {
     float steer = game->npcs[ai_num].last_action[0];
     float throttle = game->npcs[ai_num].last_action[1];
@@ -384,30 +502,24 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
     // printf("Steer: %f, Throttle: %f\n", steer, throttle);
 
-    for (size_t i = 0; i < input_manager->controllers.size; i++) {
-      struct Controller* controller = array_list_get(&(input_manager->controllers), i);
-      if (controller->controller_common.controller_type == CONTROLLER_KEYBOARD_MOUSE) {
-        struct KeyboardMouseController* keyboard_mouse_controller = &(controller->controller_common.keyboard_mouse_controller);
-        if (keyboard_mouse_controller->keys[KEY_W].state == PRESSED) {
-          throttle = 1.0f;
-        }
-        if (keyboard_mouse_controller->keys[KEY_S].state == PRESSED) {
-          throttle = -1.0f;
-        }
-        if (keyboard_mouse_controller->keys[KEY_A].state == PRESSED) {
-          steer = -1.0f;
-        }
-        if (keyboard_mouse_controller->keys[KEY_D].state == PRESSED) {
-          steer = 1.0f;
-        }
-      }
+    if (ai_num == 0) {
+      steer = 0.0f;
+      throttle = 0.0f;
+
+      if (w_pressed)
+        throttle = 1.0f;
+      if (s_pressed)
+        throttle = -1.0f;
+      if (a_pressed)
+        steer = -1.0f;
+      if (d_pressed)
+        steer = 1.0f;
     }
 
     float angle = -rotation_speed * (float)delta_time * steer;
 
     // Update car heading
     game->npcs[ai_num].heading += angle;
-    game->player.camera.look_at_azimuth = (double)game->npcs[ai_num].heading + M_PI;
 
     game->npcs[ai_num].speed += throttle * move_speed * (float)delta_time;
 
@@ -517,7 +629,6 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
           game->npcs[ai_num].heading -= TREE_AVOID_TURN;
 
         game->npcs[ai_num].heading = wrap_angle_0_2pi(game->npcs[ai_num].heading);
-        game->player.camera.look_at_azimuth = (double)game->npcs[ai_num].heading + M_PI;
 
         reward -= 4.0f;
         break;
@@ -532,8 +643,6 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
     // Update sprite + camera
     game->npcs[ai_num].sprite->sprite_common.position = game->npcs[ai_num].position;
-    game->player.look_at_pos = (vec3d){.x = (double)game->npcs[ai_num].position.x, .y = (double)game->npcs[ai_num].position.y, .z = (double)game->npcs[ai_num].position.z};
-
     game->npcs[ai_num].sprite->sprite_common.rotation = sprite_billboard_rotation(game->npcs[ai_num].position, cam_pos);
     game->npcs[ai_num].sprite->sprite_common.frame_layer = car_frame_from_camera(game->npcs[ai_num].heading, steer, game->npcs[ai_num].position, cam_pos);
 
@@ -676,10 +785,10 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
         // game->timer = 0;
 
         game->npcs[ai_num].speed = 0.0f;
-        game->npcs[ai_num].position = (vec3){.x = 10.0f, .y = 95.0f, .z = 0.75};
+        game->npcs[ai_num].position = game->starting_pos;
         game->npcs[ai_num].sprite->sprite_common.position = game->npcs[ai_num].position;
         game->npcs[ai_num].sprite->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
-        game->npcs[ai_num].heading = 0.0f;  // M_PI / 2.0f;  // facing down -Y
+        game->npcs[ai_num].heading = game->starting_heading;
         game->npcs[ai_num].sprite->sprite_common.rotation = sprite_billboard_rotation(game->npcs[ai_num].position, cam_pos);
         game->npcs[ai_num].sprite->sprite_common.frame_layer = car_frame_from_camera(game->npcs[ai_num].heading, steer, game->npcs[ai_num].position, cam_pos);
 
@@ -698,6 +807,19 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
       }
     }
   }
+
+  if (game->current_npcs > 0) {
+    int follow = game->camera_current_follow_kart;
+
+    if (follow < 0)
+      follow = 0;
+    if (follow >= game->current_npcs)
+      follow = game->current_npcs - 1;
+
+    game->player.look_at_pos = (vec3d){.x = (double)game->npcs[follow].position.x, .y = (double)game->npcs[follow].position.y, .z = (double)game->npcs[follow].position.z};
+    game->player.camera.look_at_azimuth = (double)game->npcs[follow].heading + M_PI;
+  }
+
   player_update(&(game->player), input_manager_get_controller_actions(input_manager), input_manager_get_controller_action_list_length(input_manager));
 
   // Make this always facing toward the camera
@@ -708,6 +830,12 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     if (EVAL_MODE)
       game->marker[marker_num]->sprite_common.position.z = -10000.0f;
   }
+  mat4 flag1_rotation = mat4_rotate(MAT4_IDENTITY, -(float)M_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
+  flag1_rotation = mat4_rotate(flag1_rotation, (float)M_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
+  game->flag1->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(flag1_rotation, (float)-game->player.camera.look_at_azimuth, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f}));
+  mat4 flag2_rotation = mat4_rotate(MAT4_IDENTITY, -(float)M_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
+  flag2_rotation = mat4_rotate(flag2_rotation, (float)M_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
+  game->flag2->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(flag2_rotation, (float)-game->player.camera.look_at_azimuth, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f}));
 }
 
 void game_render(struct Game* game, struct Mana* mana, double delta_time) {

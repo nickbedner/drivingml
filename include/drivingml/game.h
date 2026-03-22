@@ -19,7 +19,7 @@
 #define EVAL_MODE true
 
 #define MAX_MARKERS 32
-#define MAX_NPCS 8
+#define MAX_NPCS 4
 #define MAX_TREES 32
 
 struct NPC {
@@ -62,17 +62,24 @@ struct Game {
   // vec3 mario_position;
   // struct Sprite* mario;
   struct Sprite* track;
-  struct Sprite* start;
-  struct Sprite* finish;
-  struct Sprite* fence;
+  // struct Sprite* start;
+  // struct Sprite* finish;
+  // struct Sprite* fence;
   struct Sprite* floor_plane;
-  struct Sprite* cloud;
+  // struct Sprite* cloud;
+  struct Sprite* flag1;
+  struct Sprite* flag2;
+
+  int camera_current_follow_kart;
 
   int total_markers;
   struct Sprite* marker[MAX_MARKERS];
 
   int current_npcs;
   struct NPC npcs[MAX_NPCS];
+
+  vec3 starting_pos;
+  float starting_heading;
 
   struct Sprite* trees[MAX_TREES];
   int total_trees;
