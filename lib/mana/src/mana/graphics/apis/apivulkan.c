@@ -210,28 +210,29 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverity
       break;
     }
   }
-  switch (message_severity) {
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT: {
-      log_message(LOG_SEVERITY_DEBUG, "Validation Layer[%s]: %s\n", type, p_callback_data->pMessage);
-      break;
-    }
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT: {
-      log_message(LOG_SEVERITY_DEBUG, "Validation Layer[%s]: %s\n", type, p_callback_data->pMessage);
-      break;
-    }
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: {
-      log_message(LOG_SEVERITY_WARNING, "Validation Layer[%s]: %s\n", type, p_callback_data->pMessage);
-      break;
-    }
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT: {
-      log_message(LOG_SEVERITY_ERROR, "Validation Layer[%s]: %s\n", type, p_callback_data->pMessage);
-      break;
-    }
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT: {
-      log_message(LOG_SEVERITY_CRITICAL, "Validation Layer[%s]: %s\n", type, p_callback_data->pMessage);
-      break;
-    }
-  }
+  // TODO: HIDING FOR NOW
+  // switch (message_severity) {
+  //   case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT: {
+  //     log_message(LOG_SEVERITY_DEBUG, "Validation Layer[%s]: %s\n", type, p_callback_data->pMessage);
+  //     break;
+  //   }
+  //   case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT: {
+  //     log_message(LOG_SEVERITY_DEBUG, "Validation Layer[%s]: %s\n", type, p_callback_data->pMessage);
+  //     break;
+  //   }
+  //   case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: {
+  //     log_message(LOG_SEVERITY_WARNING, "Validation Layer[%s]: %s\n", type, p_callback_data->pMessage);
+  //     break;
+  //   }
+  //   case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT: {
+  //     log_message(LOG_SEVERITY_ERROR, "Validation Layer[%s]: %s\n", type, p_callback_data->pMessage);
+  //     break;
+  //   }
+  //   case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT: {
+  //     log_message(LOG_SEVERITY_CRITICAL, "Validation Layer[%s]: %s\n", type, p_callback_data->pMessage);
+  //     break;
+  //   }
+  // }
 
   return VK_FALSE;
 }

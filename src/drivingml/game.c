@@ -350,10 +350,13 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
     game->current_npcs += MAX_NPCS;
   else
     game->current_npcs += 1;
+
   for (int npc_num = 0; npc_num < game->current_npcs; npc_num++) {
-    if (npc_num == 0)
+    if (npc_num == 0) {
+      if (EVAL_MODE == false)
+        load_ac_model("checkpoints/ac_weights.bin", &(game->npcs[npc_num].model));
       game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartgrey");
-    else if (npc_num == 1) {
+    } else if (npc_num == 1) {
       game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartred");
       load_ac_model("checkpoints/ac_weights100.bin", &(game->npcs[npc_num].model));
     } else if (npc_num == 2) {
@@ -502,7 +505,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
     // printf("Steer: %f, Throttle: %f\n", steer, throttle);
 
-    if (ai_num == 0) {
+    if (ai_num == 0 && EVAL_MODE == true) {
       steer = 0.0f;
       throttle = 0.0f;
 
@@ -827,8 +830,9 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     mat4 marker_rotation = mat4_rotate(MAT4_IDENTITY, -(float)M_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
     marker_rotation = mat4_rotate(marker_rotation, (float)M_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
     game->marker[marker_num]->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(marker_rotation, (float)-game->player.camera.look_at_azimuth, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f}));
-    if (EVAL_MODE)
-      game->marker[marker_num]->sprite_common.position.z = -10000.0f;
+    // TODO: Commented out temporarily because we just want to hide markers for now
+    // if (EVAL_MODE)
+    game->marker[marker_num]->sprite_common.position.z = -10000.0f;
   }
   mat4 flag1_rotation = mat4_rotate(MAT4_IDENTITY, -(float)M_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
   flag1_rotation = mat4_rotate(flag1_rotation, (float)M_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
