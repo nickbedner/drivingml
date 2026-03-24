@@ -8,7 +8,7 @@ uint_fast8_t gbuffer_init(struct GBuffer* gbuffer, struct APICommon* api_common,
     gbuffer->gbuffer_func = VULKAN_GBUFFER;
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-  if (api_common->api_type == API_DIRECTX12)
+  if (api_common->api_type == API_DIRECTX_12)
     gbuffer->gbuffer_func = DIRECTX_12_GBUFFER;
 #endif
 

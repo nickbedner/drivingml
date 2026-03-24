@@ -8,7 +8,8 @@ static inline uint_fast8_t swap_chain_directx_12_init_common(struct SwapChainCom
 
     // Create descriptor heaps.
     // Describe and create a render target view (RTV) descriptor heap.
-    D3D12_DESCRIPTOR_HEAP_DESC rtv_heap_desc = {0};
+    D3D12_DESCRIPTOR_HEAP_DESC rtv_heap_desc;
+    memset(&rtv_heap_desc, 0, sizeof(rtv_heap_desc));
     rtv_heap_desc.NumDescriptors = MAX_SWAP_CHAIN_FRAMES;
     rtv_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     rtv_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
@@ -105,7 +106,7 @@ uint_fast8_t swap_chain_directx_12_init(struct SwapChainCommon* swap_chain_commo
 
   // TODO: There should be some kinda error checking here
   // ThrowIfFailed(factory->MakeWindowAssociation(Win32Application::GetHwnd(), DXGI_MWA_NO_ALT_ENTER));
-  hr = api_common->directx_12_api.factory->lpVtbl->MakeWindowAssociation(api_common->directx_12_api.factory, extra_data, 0);
+  hr = api_common->directx_12_api.factory->lpVtbl->MakeWindowAssociation(api_common->directx_12_api.factory, (HWND)extra_data, 0);
   if (FAILED(hr))
     return 1;
 
@@ -236,7 +237,8 @@ uint_fast8_t swap_chain_directx_12_blit_render(struct SwapChainCommon* swap_chai
   ID3D12Resource* back_buffer;
   swap_chain_common->swap_chain_directx12.swap_chain->lpVtbl->GetBuffer(swap_chain_common->swap_chain_directx12.swap_chain, swap_chain_num, &IID_ID3D12Resource, (void**)&back_buffer);
 
-  D3D12_RESOURCE_BARRIER barrier = {0};
+  D3D12_RESOURCE_BARRIER barrier;
+  memset(&barrier, 0, sizeof(barrier));
   barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
   barrier.Transition.pResource = back_buffer;
   barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
@@ -276,7 +278,8 @@ uint_fast8_t swap_chain_directx_12_blit_render(struct SwapChainCommon* swap_chai
   swap_chain_common->swap_chain_directx12.command_list[swap_chain_num]->lpVtbl->IASetPrimitiveTopology(swap_chain_common->swap_chain_directx12.command_list[swap_chain_num], D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   swap_chain_common->swap_chain_directx12.command_list[swap_chain_num]->lpVtbl->DrawIndexedInstanced(swap_chain_common->swap_chain_directx12.command_list[swap_chain_num], (uint32_t)swap_chain_common->blit_fullscreen_triangle.mesh_common.indices->size, 1, 0, 0, 0);
 
-  D3D12_RESOURCE_BARRIER to_present_barrier = {0};
+  D3D12_RESOURCE_BARRIER to_present_barrier;
+  memset(&to_present_barrier, 0, sizeof(D3D12_RESOURCE_BARRIER));
   to_present_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
   to_present_barrier.Transition.pResource = back_buffer;
   to_present_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;

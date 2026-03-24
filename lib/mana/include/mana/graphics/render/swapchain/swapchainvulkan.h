@@ -9,9 +9,9 @@
 #include "mana/graphics/utilities/mesh/mesh.h"
 
 struct SwapChainSupportDetails {
-  struct VkSurfaceCapabilitiesKHR capabilities;
   struct Vector formats;
   struct Vector present_modes;
+  struct VkSurfaceCapabilitiesKHR capabilities;
 };
 
 uint_fast8_t swap_chain_vulkan_init(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, uint_fast32_t width, uint_fast32_t height, bool vsync, void* extra_data);

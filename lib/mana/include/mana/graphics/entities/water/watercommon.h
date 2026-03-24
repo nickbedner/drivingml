@@ -61,14 +61,15 @@ struct WaterCommon {
   struct Mesh* water_mesh;
   struct Texture* wave_texture;
 
+  quat rotation;
   vec3 position;
   vec3 scale;
-  quat rotation;
 
   float width;
   float height;
-
   float time;
+  // Interal padding to ensure 16 byte alignment of uniform buffer data
+  float _pad0;
 
   union {
 #ifdef VULKAN_API_SUPPORTED

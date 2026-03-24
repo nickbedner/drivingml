@@ -6,11 +6,11 @@ uint_fast8_t water_init(struct Water* water, struct APICommon* api_common, struc
     water->water_func = VULKAN_WATER;
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-  if (api_common->api_type == API_DIRECTX12)
+  if (api_common->api_type == API_DIRECTX_12)
     water->water_func = DIRECTX_12_WATER;
 #endif
 
-  water->water_common.water_mesh = calloc(1, sizeof(struct Mesh));
+  water->water_common.water_mesh = (struct Mesh*)calloc(1, sizeof(struct Mesh));
   mesh_init(water->water_common.water_mesh, MESH_TYPE_QUAD, api_common);
 
   water->water_common.wave_texture = texture;
@@ -25,15 +25,15 @@ uint_fast8_t water_init(struct Water* water, struct APICommon* api_common, struc
   float half_w = width * 0.5f;
   float half_h = height * 0.5f;
 
-  vec3 pos1 = {-half_w, -half_h, 0.0f};
-  vec3 pos2 = {half_w, -half_h, 0.0f};
-  vec3 pos3 = {half_w, half_h, 0.0f};
-  vec3 pos4 = {-half_w, half_h, 0.0f};
+  vec3 pos1 = {.x = -half_w, .y = -half_h, .z = 0.0f};
+  vec3 pos2 = {.x = half_w, .y = -half_h, .z = 0.0f};
+  vec3 pos3 = {.x = half_w, .y = half_h, .z = 0.0f};
+  vec3 pos4 = {.x = -half_w, .y = half_h, .z = 0.0f};
 
-  vec2 uv1 = {0.0f, 0.0f};
-  vec2 uv2 = {1.0f, 0.0f};
-  vec2 uv3 = {1.0f, 1.0f};
-  vec2 uv4 = {0.0f, 1.0f};
+  vec2 uv1 = {.x = 0.0f, .y = 0.0f};
+  vec2 uv2 = {.x = 1.0f, .y = 0.0f};
+  vec2 uv3 = {.x = 1.0f, .y = 1.0f};
+  vec2 uv4 = {.x = 0.0f, .y = 1.0f};
 
   struct VertexSprite v1 = {pos1, uv1};
   struct VertexSprite v2 = {pos2, uv2};

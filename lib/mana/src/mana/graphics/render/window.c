@@ -1,15 +1,9 @@
 #include "mana/graphics/render/window.h"
 
-#ifdef DIRECTX_12_API_SUPPORTED
-// Define the interface identifiers
-extern const IID IID_ID3D12CommandList;
-extern const IID IID_ID3D12Fence;
-#endif
-
 static LRESULT CALLBACK window_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param);
 
 #ifdef _WIN64
-static uint8_t window_pc_window(struct Window *window, uint_fast32_t width, uint_fast32_t height) {
+static uint8_t window_pc_window(struct Window* window, uint_fast32_t width, uint_fast32_t height) {
   window->new_window = true;
   window->minimized = false;
   window->surface.hinstance = GetModuleHandle(NULL);
@@ -68,7 +62,7 @@ static uint8_t window_pc_window(struct Window *window, uint_fast32_t width, uint
 
 static LRESULT CALLBACK window_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param) {
   LONG_PTR value = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
-  struct Window *window = (struct Window *)value;
+  struct Window* window = (struct Window*)value;
 
   LRESULT result = 0;
   switch (u_msg) {
@@ -87,7 +81,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARA
       break;
     }
     case WM_MOUSEMOVE: {
-      struct KeyboardMouseController *keyboard_mouse_controller_move = input_manager_find_keyboard_mouse(&window->input_manager);
+      struct KeyboardMouseController* keyboard_mouse_controller_move = input_manager_find_keyboard_mouse(&window->input_manager);
       keyboard_mouse_controller_move->mouse_x_pos_prev = keyboard_mouse_controller_move->mouse_x_pos;
       keyboard_mouse_controller_move->mouse_y_pos_prev = keyboard_mouse_controller_move->mouse_y_pos;
       keyboard_mouse_controller_move->mouse_x_pos = GET_X_LPARAM(l_param);
@@ -113,7 +107,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARA
       break;
     }
     case WM_MOUSEWHEEL: {
-      struct KeyboardMouseController *keyboard_mouse_controller_wheel = input_manager_find_keyboard_mouse(&window->input_manager);
+      struct KeyboardMouseController* keyboard_mouse_controller_wheel = input_manager_find_keyboard_mouse(&window->input_manager);
       keyboard_mouse_controller_wheel->mouse_wheel = -(GET_WHEEL_DELTA_WPARAM(w_param) / 120);
       break;
     }
@@ -130,16 +124,16 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARA
   return result;
 }
 
-uint_fast8_t window_init(struct Window *window, struct APICommon *api_common, char *title, struct RendererSettings *renderer_settings) {
+uint_fast8_t window_init(struct Window* window, struct APICommon* api_common, char* title, struct RendererSettings* renderer_settings) {
   window->title = title;
   window->api_common = api_common;
   window->renderer.renderer_settings.width = renderer_settings->width;
   window->renderer.renderer_settings.height = renderer_settings->height;
   window->renderer.renderer_settings.msaa_samples = renderer_settings->msaa_samples;
   window->vsync = renderer_settings->vsync;
-  window->swap_chain = calloc(1, sizeof(struct SwapChain));
-  window->gbuffer = calloc(1, sizeof(struct GBuffer));
-  window->post_process = calloc(1, sizeof(struct PostProcess));
+  window->swap_chain = (struct SwapChain*)calloc(1, sizeof(struct SwapChain));
+  window->gbuffer = (struct GBuffer*)calloc(1, sizeof(struct GBuffer));
+  window->post_process = (struct PostProcess*)calloc(1, sizeof(struct PostProcess));
   input_manager_init(&window->input_manager, &(window->surface));
 #ifdef _WIN64
   if (window_pc_window(window, renderer_settings->width, renderer_settings->height) == WINDOW_ERROR) {
@@ -160,7 +154,7 @@ uint_fast8_t window_init(struct Window *window, struct APICommon *api_common, ch
   }
 }
 
-void window_delete(struct Window *window) {
+void window_delete(struct Window* window) {
   renderer_delete(&(window->renderer), window->api_common, &(window->surface), window->swap_chain, window->gbuffer, window->post_process);
   free(window->post_process);
   free(window->gbuffer);
@@ -172,7 +166,7 @@ void window_delete(struct Window *window) {
   UnregisterClass(window->surface.class_name, window->surface.hinstance);
 }
 
-void window_prepare_frame(struct Window *window) {
+void window_prepare_frame(struct Window* window) {
   // TODO: Put this in window platform stuff function
   MSG msg = {0};
   while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -191,7 +185,7 @@ void window_prepare_frame(struct Window *window) {
     window_recreate_swap_chain(window);
 }
 
-void window_end_frame(struct Window *window) {
+void window_end_frame(struct Window* window) {
   if (!window->minimized) {
     uint_fast8_t result = window->swap_chain->swap_chain_func.swap_chain_end_frame(&(window->swap_chain->swap_chain_common), &(window->post_process->post_process_common), window->api_common);
     if (result == SWAP_CHAIN_UPDATE_FRAMERBUFFER || window->framebuffer_resized) {
@@ -212,7 +206,7 @@ void window_end_frame(struct Window *window) {
   }
 }
 
-void window_recreate_swap_chain(struct Window *window) {
+void window_recreate_swap_chain(struct Window* window) {
   // NOTE: When window is minimized will pause thread and gpu
   // renderer_wait_for_device(&(window->renderer), window->api_common);
 

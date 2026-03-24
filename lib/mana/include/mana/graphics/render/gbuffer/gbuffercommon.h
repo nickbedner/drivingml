@@ -40,54 +40,63 @@ struct GBufferVulkan {
 
 #ifdef DIRECTX_12_API_SUPPORTED
 struct GBufferDirectX12 {
-  // Resolve or standard
-  ID3D12Resource *color_texture;
-  ID3D12Resource *normal_texture;
-  ID3D12Resource *depth_texture;
-  // Multisample
-  ID3D12Resource *multisample_color_texture;
-  ID3D12Resource *multisample_normal_texture;
+  // Resources
+  ID3D12Resource* color_texture;
+  ID3D12Resource* normal_texture;
+  ID3D12Resource* depth_texture;
 
-  ID3D12DescriptorHeap *rtv_descriptor_heap;
-  UINT rtv_descriptor_size;
+  ID3D12Resource* multisample_color_texture;
+  ID3D12Resource* multisample_normal_texture;
+
+  // Descriptor heaps
+  ID3D12DescriptorHeap* rtv_descriptor_heap;
+  ID3D12DescriptorHeap* dsv_descriptor_heap;
+  ID3D12DescriptorHeap* srv_heap;
+
+  // Command
+  ID3D12CommandAllocator* command_allocator;
+  ID3D12GraphicsCommandList* command_list;
+
+  // Sync
+  ID3D12Fence* fence;
+  HANDLE fence_event;
+  UINT64 fence_value;
+
+  // Handles
   D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle_color;
   D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle_normal;
-  // Multisample
   D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle_multisample_color;
   D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle_multisample_normal;
 
-  ID3D12DescriptorHeap *dsv_descriptor_heap;
-  UINT dsv_descriptor_size;
   D3D12_CPU_DESCRIPTOR_HANDLE dsv_handle;
 
-  ID3D12DescriptorHeap *srv_heap;
   D3D12_CPU_DESCRIPTOR_HANDLE srv_cpu_handle;
   D3D12_GPU_DESCRIPTOR_HANDLE srv_gpu_handle;
 
-  ID3D12CommandAllocator *command_allocator;
-  ID3D12GraphicsCommandList *command_list;
-
-  ID3D12Fence *fence;
-  HANDLE fence_event;
-  UINT64 fence_value;
+  UINT rtv_descriptor_size;
+  UINT dsv_descriptor_size;
   UINT frame_index;
 
   D3D12_CLEAR_VALUE color_clear_value;
   D3D12_CLEAR_VALUE normal_clear_value;
   D3D12_CLEAR_VALUE depth_clear_value;
+
   D3D12_VIEWPORT viewport;
   D3D12_RECT scissor_rect;
 };
 #endif
 
 struct GBufferCommon {
-  uint_fast8_t descriptors;
   mat4 projection_matrix;
   mat4 view_matrix;
 
   vec4 color_clear_value;
   vec4 normal_clear_value;
+
   float depth_clear_value;
+  uint_fast8_t descriptors;
+  // Note: Padding for alignment
+  uint8_t _pad0[3];
 
   union {
 #ifdef VULKAN_API_SUPPORTED

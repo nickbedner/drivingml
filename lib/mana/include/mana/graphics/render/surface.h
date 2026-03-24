@@ -6,6 +6,6 @@ struct Surface {
 #ifdef _WIN64
   HINSTANCE hinstance;
   HWND hwnd;
-  wchar_t class_name[256];
+  WCHAR class_name[256];
 #endif
 };

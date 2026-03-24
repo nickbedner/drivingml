@@ -6,7 +6,7 @@ void texture_manager_init(struct TextureManager* texture_manager, struct APIComm
     texture_manager->texture_manager_func = VULKAN_TEXTURE_MANAGER;
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-  if (api_common->api_type == API_DIRECTX12)
+  if (api_common->api_type == API_DIRECTX_12)
     texture_manager->texture_manager_func = directx_12_TEXTURE_MANAGER;
 #endif
 
@@ -33,7 +33,7 @@ void texture_manager_delete(struct TextureManager* texture_manager, struct APICo
 }
 
 void texture_manager_add(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings, const char* path) {
-  struct Texture* texture = malloc(sizeof(struct Texture));
+  struct Texture* texture = (struct Texture*)malloc(sizeof(struct Texture));
   texture_init(texture, &(texture_manager->texture_manager_common), api_common, texture_settings, path, texture_manager->texture_manager_common.texture_index);
 
   map_set(&(texture_manager->texture_manager_common.textures), path, &texture);  // Store full path in case of models having same texture name like diffuse
@@ -48,7 +48,7 @@ void texture_manager_add_array(struct TextureManager* texture_manager, struct AP
     return;
   }
 
-  struct Texture* texture = malloc(sizeof(struct Texture));
+  struct Texture* texture = (struct Texture*)malloc(sizeof(struct Texture));
   if (!texture) {
     log_message(LOG_SEVERITY_ERROR, "Failed to allocate texture\n");
     return;

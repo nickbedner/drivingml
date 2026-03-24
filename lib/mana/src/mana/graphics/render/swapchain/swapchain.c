@@ -10,7 +10,7 @@ uint_fast8_t swap_chain_init(struct SwapChain* swap_chain, struct APICommon* api
     swap_chain->swap_chain_func = VULKAN_SWAP_CHAIN;
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-  if (api_common->api_type == API_DIRECTX12)
+  if (api_common->api_type == API_DIRECTX_12)
     swap_chain->swap_chain_func = DIRECTX_12_SWAP_CHAIN;
 #endif
 
@@ -20,7 +20,7 @@ uint_fast8_t swap_chain_init(struct SwapChain* swap_chain, struct APICommon* api
   swap_chain->swap_chain_common.current_frame = 0;
   swap_chain->swap_chain_common.descriptors = POST_PROCESS_PING_PONG;
 
-  swap_chain->swap_chain_common.blit_shader = calloc(1, sizeof(struct BlitShader));
+  swap_chain->swap_chain_common.blit_shader = (struct BlitShader*)calloc(1, sizeof(struct BlitShader));
 
   return swap_chain->swap_chain_func.swap_chain_init(&(swap_chain->swap_chain_common), api_common, width, height, vsync, extra_data);
 }

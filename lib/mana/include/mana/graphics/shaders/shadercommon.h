@@ -11,8 +11,6 @@
 #include "mana/graphics/utilities/mesh/mesh.h"
 #include "mana/utilities/fileio.h"
 
-#define MAX_PATH_LENGTH 2048
-
 #define SHADER_ATTACHMENT_LIMIT 8
 
 enum SHADER_STAGE {
@@ -47,27 +45,35 @@ struct ShaderAttributeSettings {
 };
 
 struct ShaderSettings {
-  uint_fast32_t descriptors;
   const char* vertex_shader;
   const char* fragment_shader;
+  void* extra_data;
+
+  struct ShaderAttributeSettings uniform_constant_state[SHADER_ATTACHMENT_LIMIT];
+  struct ShaderAttributeSettings texture_sample_state[SHADER_ATTACHMENT_LIMIT];
+  enum SHADER_RENDER_TARGET_FORMAT render_target_format[SHADER_ATTACHMENT_LIMIT];
+
+  uint32_t descriptors;
+  uint32_t mesh_memory_size;
+  uint32_t num_msaa_samples;
+
+  enum SHADER_FRONT_FACE front_face;
+  enum SHADER_CULL_MODE cull_mode;
+  enum MESH_TYPE mesh_type;
+
+  uint8_t color_attachments;
+  uint8_t vertex_attributes;
+  uint8_t uniforms_constants;
+  uint8_t texture_samples;
+  uint8_t render_targets;
+
   bool depth_test;
   bool depth_write;
   bool supersampled;
   bool blend;
-  uint32_t mesh_memory_size;
-  uint_fast32_t num_msaa_samples;
-  uint_fast8_t color_attachments;
-  uint_fast8_t vertex_attributes;
-  uint_fast8_t uniforms_constants;
-  struct ShaderAttributeSettings uniform_constant_state[SHADER_ATTACHMENT_LIMIT];
-  uint_fast8_t texture_samples;
-  struct ShaderAttributeSettings texture_sample_state[SHADER_ATTACHMENT_LIMIT];
-  uint_fast8_t render_targets;
-  enum SHADER_RENDER_TARGET_FORMAT render_target_format[SHADER_ATTACHMENT_LIMIT];
-  enum SHADER_FRONT_FACE front_face;
-  enum SHADER_CULL_MODE cull_mode;
-  enum MESH_TYPE mesh_type;
-  void* extra_data;
+
+  // Note: Padding for 4 byte boundary
+  uint8_t _pad0[3];
 };
 
 struct ShaderSettingsCompute {

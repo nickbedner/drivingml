@@ -1,6 +1,8 @@
 #include "mana/core/input/controllers/gamecubecontroller.h"
 
 #ifdef _WIN64
+DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE, 0xA5DCBF10, 0x6530, 0x11D2, 0x90, 0x1F, 0x00, 0xC0, 0x4F, 0xB9, 0x51, 0xED);
+
 static BOOL gamecube_controller_is_gamecube_controller_adapter(HANDLE deviceHandle) {
   // Replace with the VID and PID of the GameCube controller adapter
 
@@ -18,80 +20,9 @@ static BOOL gamecube_controller_is_gamecube_controller_adapter(HANDLE deviceHand
   return is_match;
 }
 
-/*static BOOL GetDeviceDescriptor(WINUSB_INTERFACE_HANDLE handle) {
-  UCHAR deviceDescriptor[18]; // Typically 18 bytes for USB device descriptor
-  ULONG transferred = 0;
-  WINUSB_SETUP_PACKET setupPacket = {
-      .RequestType = 0x80, // Standard, Device to Host, Device
-      .Request = 0x06,     // GET_DESCRIPTOR
-      .Value = 0x0100,     // Device Descriptor Type (0x01) and Index (0x00)
-      .Index = 0,
-      .Length = sizeof(deviceDescriptor)};
-
-  BOOL result = WinUsb_ControlTransfer(handle, setupPacket, deviceDescriptor, sizeof(deviceDescriptor), &transferred, NULL);
-  if (!result || transferred != sizeof(deviceDescriptor)) {
-    printf("Failed to get device descriptor.\n");
-    return FALSE;
-  }
-  return TRUE;
-}
-
-static BOOL GetConfigurationDescriptor(WINUSB_INTERFACE_HANDLE handle) {
-  UCHAR configDescriptor[41]; // Size can vary, ensure to capture the correct size from the descriptor
-  ULONG transferred = 0;
-  WINUSB_SETUP_PACKET setupPacket = {
-      .RequestType = 0x80, // Standard, Device to Host, Device
-      .Request = 0x06,     // GET_DESCRIPTOR
-      .Value = 0x0200,     // Configuration Descriptor Type (0x02) and Index (0x00)
-      .Index = 0,
-      .Length = sizeof(configDescriptor)};
-
-  BOOL result = WinUsb_ControlTransfer(handle, setupPacket, configDescriptor, sizeof(configDescriptor), &transferred, NULL);
-  if (!result || transferred != sizeof(configDescriptor)) {
-    printf("Failed to get configuration descriptor.\n");
-    return FALSE;
-  }
-  return TRUE;
-}
-
-static BOOL SetConfiguration(WINUSB_INTERFACE_HANDLE handle) {
-  WINUSB_SETUP_PACKET setupPacket = {
-      .RequestType = 0x00, // Standard, Host to Device, Device
-      .Request = 0x09,     // SET_CONFIGURATION
-      .Value = 0x0001,     // Configuration Value 1
-      .Index = 0,
-      .Length = 0};
-
-  ULONG transferred = 0;
-  BOOL result = WinUsb_ControlTransfer(handle, setupPacket, NULL, 0, &transferred, NULL);
-  if (!result) {
-    printf("Failed to set configuration.\n");
-    return FALSE;
-  }
-  return TRUE;
-}*/
 // Note: Needed for certain other gamecube adapters to work or something
 static bool SendHIDReport(WINUSB_INTERFACE_HANDLE winusbHandle) {
-  // Correct data for the HID report based on your packet capture details
-  // unsigned char hidReport[] = {0x10, 0x01, 0x06, 0x0A, 0x00, 0x00, 0x00};
-  // WINUSB_SETUP_PACKET setupPacket = {
-  //    .RequestType = 0x21, // Host to device, class, interface
-  //    .Request = 0x09,     // SET_REPORT
-  //    .Value = 0x0210,     // Report type and report ID (0x02, 0x10)
-  //    .Index = 0x0002,     // Interface 2
-  //    .Length = sizeof(hidReport)};
-  //
-  // ULONG bytesSent = 0;
-  // BOOL result = WinUsb_ControlTransfer(
-  //    winusbHandle,
-  //    setupPacket,
-  //    hidReport,         // Data buffer containing the HID report
-  //    sizeof(hidReport), // Length of the HID report
-  //    &bytesSent,
-  //    NULL // No overlapped structure
-  //);
-
-  WINUSB_SETUP_PACKET setupPacket = {
+  WINUSB_SETUP_PACKET setup_packet = {
       .RequestType = 0x21,  // Class-specific request to interface
       .Request = 0x0B,      // SET_PROTOCOL
       .Value = 0x0001,      // Protocol 1
@@ -99,14 +30,13 @@ static bool SendHIDReport(WINUSB_INTERFACE_HANDLE winusbHandle) {
       .Length = 0           // No data phase
   };
 
-  ULONG bytesSent = 0;
-  UCHAR buffer[0];  // No data for this setup, just configuring the device
+  ULONG bytes_sent = 0;
   BOOL result = WinUsb_ControlTransfer(
       winusbHandle,
-      setupPacket,
-      buffer,  // No data buffer since wLength is 0
-      0,       // No data to transfer
-      &bytesSent,
+      setup_packet,
+      NULL,  // No data buffer since wLength is 0
+      0,     // No data to transfer
+      &bytes_sent,
       NULL  // No overlapped structure
   );
 
@@ -132,7 +62,7 @@ static uint_fast8_t gamecube_controller_initialize_winusb(WINUSB_INTERFACE_HANDL
   dev_info_data.cbSize = sizeof(SP_DEVINFO_DATA);
   BOOL found = FALSE;
 
-  for (DWORD i = 0; SetupDiEnumDeviceInfo(h_dev_info, i, &dev_info_data) && !found; i++) {
+  for (DWORD device_index = 0; SetupDiEnumDeviceInfo(h_dev_info, device_index, &dev_info_data) && !found; device_index++) {
     TCHAR device_iD[MAX_DEVICE_ID_LEN];
     if (CM_Get_Device_ID(dev_info_data.DevInst, device_iD, MAX_DEVICE_ID_LEN, 0) == CR_SUCCESS) {
       // Check if this is the device we are looking for
@@ -159,9 +89,9 @@ static uint_fast8_t gamecube_controller_initialize_winusb(WINUSB_INTERFACE_HANDL
                   // Now enumerate the pipes
                   USB_INTERFACE_DESCRIPTOR interface_descriptor;
                   if (WinUsb_QueryInterfaceSettings(*winusb_handle, 0, &interface_descriptor)) {
-                    for (UCHAR i = 0; i < interface_descriptor.bNumEndpoints; i++) {
+                    for (UCHAR interface_index = 0; interface_index < interface_descriptor.bNumEndpoints; interface_index++) {
                       WINUSB_PIPE_INFORMATION pipe_info;
-                      if (WinUsb_QueryPipe(*winusb_handle, 0, i, &pipe_info)) {
+                      if (WinUsb_QueryPipe(*winusb_handle, 0, interface_index, &pipe_info)) {
                         // Check the type and direction of the pipe
                         if (pipe_info.PipeType == UsbdPipeTypeInterrupt && USB_ENDPOINT_DIRECTION_IN(pipe_info.PipeId)) {
                           // This is an interrupt IN pipe, which is typically used for device input

@@ -1,7 +1,8 @@
 #include "mana/graphics/utilities/texturemanager/texturemanagerdirectx12.h"
 uint_fast8_t texture_manager_directx_12_init(struct TextureManagerCommon* texture_manager, struct APICommon* api_common) {
   // SRV heap
-  D3D12_DESCRIPTOR_HEAP_DESC srv_heap_desc = {0};
+  D3D12_DESCRIPTOR_HEAP_DESC srv_heap_desc;
+  memset(&srv_heap_desc, 0, sizeof(srv_heap_desc));
   srv_heap_desc.NumDescriptors = TEXTURE_MANAGER_HEAP_SIZE_MAX;
   srv_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
   srv_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
@@ -15,7 +16,8 @@ uint_fast8_t texture_manager_directx_12_init(struct TextureManagerCommon* textur
   texture_manager->texture_manager_directx12.srv_heap->lpVtbl->GetGPUDescriptorHandleForHeapStart(texture_manager->texture_manager_directx12.srv_heap, &(texture_manager->texture_manager_directx12.srv_gpu_heap_handle));
 
   // Sampler heap
-  D3D12_DESCRIPTOR_HEAP_DESC sampler_heap_desc = {0};
+  D3D12_DESCRIPTOR_HEAP_DESC sampler_heap_desc;
+  memset(&sampler_heap_desc, 0, sizeof(sampler_heap_desc));
   sampler_heap_desc.NumDescriptors = TEXTURE_MANAGER_HEAP_SIZE_MAX;
   sampler_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
   sampler_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;

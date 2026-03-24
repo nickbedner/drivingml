@@ -1,15 +1,15 @@
 #include "mana/graphics/utilities/modelcache.h"
 
-void model_cache_init(struct ModelCache *model_cache) {
+void model_cache_init(struct ModelCache* model_cache) {
   // Note: Store as references because it would be dangerous to realloc in linear memory
-  map_init(&model_cache->models, sizeof(struct Model *));
+  map_init(&model_cache->models, sizeof(struct Model*));
 }
 
-void model_cache_delete(struct ModelCache *model_cache, struct APICommon *api_common) {
-  const char *model_key;
+void model_cache_delete(struct ModelCache* model_cache, struct APICommon* api_common) {
+  const char* model_key;
   struct MapIter model_iter = map_iter();
   while ((model_key = map_next(&model_cache->models, &model_iter))) {
-    struct Model *model = *(struct Model **)map_get(&model_cache->models, model_key);
+    struct Model* model = *(struct Model**)map_get(&model_cache->models, model_key);
     model_delete(model, api_common);
     free(model);
   }
@@ -18,8 +18,8 @@ void model_cache_delete(struct ModelCache *model_cache, struct APICommon *api_co
 }
 
 // TODO: Maybe allow for init from structs instead out outside
-void model_cache_add(struct ModelCache *model_cache, struct APICommon *api_common, struct ModelSettings *model_settings, size_t num) {
-  struct Model *model = malloc(sizeof(struct Model));
+void model_cache_add(struct ModelCache* model_cache, struct APICommon* api_common, struct ModelSettings* model_settings, size_t num) {
+  struct Model* model = (struct Model*)malloc(sizeof(struct Model));
   model_init(model, api_common, model_settings, num);
   map_set(&(model_cache->models), model->model_common.path, &model);  // Store full path in case of models having same texture name like diffuse
 }
@@ -39,8 +39,8 @@ void model_cache_add(struct ModelCache *model_cache, struct APICommon *api_commo
 //   va_end(args);
 // }
 
-struct Model *model_cache_get(struct ModelCache *model_cache, struct APICommon *api_common, char *model_name) {
-  return model_get_clone(*((struct Model **)map_get(&(model_cache->models), model_name)), api_common);
+struct Model* model_cache_get(struct ModelCache* model_cache, struct APICommon* api_common, char* model_name) {
+  return model_get_clone(*((struct Model**)map_get(&(model_cache->models), model_name)), api_common);
 }
 
 // TODO: Maybe get instanced/batched where specific vertex data is not needed

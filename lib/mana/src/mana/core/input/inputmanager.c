@@ -1,11 +1,11 @@
 #include "mana/core/input/inputmanager.h"
 
 // Note: Register all controllers to player 1 only if playing solo, otherwise world select allow hop in and then let them select controller they're using
-void input_manager_init(struct InputManager *input_manager, struct Surface *surface) {
+void input_manager_init(struct InputManager* input_manager, struct Surface* surface) {
   array_list_init(&(input_manager->controllers));
   // TODO: For now hard code keyboard and mouse till I know how to find one
 #ifdef _WIN64
-  struct Controller *keyboard_mouse_controller = calloc(1, sizeof(struct Controller));
+  struct Controller* keyboard_mouse_controller = (struct Controller*)calloc(1, sizeof(struct Controller));
   keyboard_mouse_controller->controller_common.controller_type = CONTROLLER_KEYBOARD_MOUSE;
   controller_init(keyboard_mouse_controller);  // Keyboard and mouse controller
   array_list_add(&(input_manager->controllers), keyboard_mouse_controller);
@@ -21,25 +21,25 @@ void input_manager_init(struct InputManager *input_manager, struct Surface *surf
   // Enumerate all controllers, xbox, playstation, and gamecube controllers get rumble support, otherwise controller gets relegated to generic joystick
 }
 
-void input_manager_delete(struct InputManager *input_manager) {
+void input_manager_delete(struct InputManager* input_manager) {
   for (size_t i = 0; i < input_manager->controllers.size; i++) {
-    struct Controller *controller = array_list_get(&(input_manager->controllers), i);
+    struct Controller* controller = (struct Controller*)array_list_get(&(input_manager->controllers), i);
     controller_delete(controller);
     free(controller);
   }
   array_list_delete(&(input_manager->controllers));
 }
 
-void input_manager_process_input(struct InputManager *input_manager) {
+void input_manager_process_input(struct InputManager* input_manager) {
   for (size_t i = 0; i < input_manager->controllers.size; i++) {
-    struct Controller *controller = array_list_get(&(input_manager->controllers), i);
+    struct Controller* controller = (struct Controller*)array_list_get(&(input_manager->controllers), i);
     controller_process_input(controller);
   }
 }
 
 #ifdef KEYBOARD_MOUSE_CONTROLLER_SUPPORTED
-void input_manager_show_cursor(struct InputManager *input_manager, bool show_cursor) {
-  struct KeyboardMouseController *input_manager_keyboard_mouse = input_manager_find_keyboard_mouse(input_manager);
+void input_manager_show_cursor(struct InputManager* input_manager, bool show_cursor) {
+  struct KeyboardMouseController* input_manager_keyboard_mouse = input_manager_find_keyboard_mouse(input_manager);
   input_manager_keyboard_mouse->show_cursor = show_cursor;
 #ifdef _WIN64
   // if (show_cursor == false)
@@ -53,8 +53,8 @@ void input_manager_show_cursor(struct InputManager *input_manager, bool show_cur
 #endif
 }
 
-void input_manager_lock_cursor(struct InputManager *input_manager, struct Surface *surface, bool lock_cursor) {
-  struct KeyboardMouseController *input_manager_keyboard_mouse = input_manager_find_keyboard_mouse(input_manager);
+void input_manager_lock_cursor(struct InputManager* input_manager, struct Surface* surface, bool lock_cursor) {
+  struct KeyboardMouseController* input_manager_keyboard_mouse = input_manager_find_keyboard_mouse(input_manager);
 #ifdef _WIN64
   // Only lock the cursor if the window is in focus
   if (GetForegroundWindow() == surface->hwnd) {
@@ -88,7 +88,7 @@ void input_manager_lock_cursor(struct InputManager *input_manager, struct Surfac
 #endif
 }
 
-bool input_manager_in_window(struct InputManager *input_manager, struct Surface *surface) {
+bool input_manager_in_window(struct InputManager* input_manager, struct Surface* surface) {
 #ifdef _WIN64
   if (GetForegroundWindow() == surface->hwnd) {
     POINT pt;
@@ -107,7 +107,7 @@ bool input_manager_in_window(struct InputManager *input_manager, struct Surface 
 #endif
 }
 
-vec2 input_manager_move_cursor_to_center(struct InputManager *input_manager, struct Surface *surface) {
+vec2 input_manager_move_cursor_to_center(struct InputManager* input_manager, struct Surface* surface) {
 #ifdef _WIN64
   RECT client_rect;
   GetClientRect(surface->hwnd, &client_rect);
@@ -124,38 +124,39 @@ vec2 input_manager_move_cursor_to_center(struct InputManager *input_manager, str
 #endif
 }
 
-bool input_manager_is_window_in_focus(struct Surface *surface) {
+bool input_manager_is_window_in_focus(struct Surface* surface) {
 #ifdef _WIN64
   return (GetForegroundWindow() == surface->hwnd);
 #elif defined(__linux__)
+  return false;
   // Linux-specific implementation
 #elif defined(__APPLE__)
+  return false;
   // macOS-specific implementation
 #endif
-  return false;
 }
 
 // Temp because I need to go to bed
-struct ControllerAction *input_manager_get_controller_actions(struct InputManager *input_manager) {
+struct ControllerAction* input_manager_get_controller_actions(struct InputManager* input_manager) {
   for (size_t i = 0; i < input_manager->controllers.size; i++) {
-    struct Controller *controller = array_list_get(&(input_manager->controllers), i);
+    struct Controller* controller = (struct Controller*)array_list_get(&(input_manager->controllers), i);
     if (controller->controller_common.controller_type == CONTROLLER_GAMECUBE)
       return controller->controller_common.controller_action_list;
   }
   return NULL;
 }
-uint_fast8_t input_manager_get_controller_action_list_length(struct InputManager *input_manager) {
+uint_fast8_t input_manager_get_controller_action_list_length(struct InputManager* input_manager) {
   for (size_t i = 0; i < input_manager->controllers.size; i++) {
-    struct Controller *controller = array_list_get(&(input_manager->controllers), i);
+    struct Controller* controller = (struct Controller*)array_list_get(&(input_manager->controllers), i);
     if (controller->controller_common.controller_type == CONTROLLER_GAMECUBE)
       return controller->controller_common.controller_action_list_size;
   }
   return 0;
 }
 
-struct KeyboardMouseController *input_manager_find_keyboard_mouse(struct InputManager *input_manager) {
+struct KeyboardMouseController* input_manager_find_keyboard_mouse(struct InputManager* input_manager) {
   for (size_t i = 0; i < input_manager->controllers.size; i++) {
-    struct Controller *controller = array_list_get(&(input_manager->controllers), i);
+    struct Controller* controller = (struct Controller*)array_list_get(&(input_manager->controllers), i);
     if (controller->controller_common.controller_type == CONTROLLER_KEYBOARD_MOUSE)
       return &(controller->controller_common.keyboard_mouse_controller);
   }

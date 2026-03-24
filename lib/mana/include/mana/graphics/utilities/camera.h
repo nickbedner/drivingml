@@ -11,38 +11,38 @@ enum CAMERA_STATE {
   CAMERA_LOOK_AT
 };
 
-// Switch to double precision
 struct Camera {
-  enum CAMERA_STATE camera_state;
-  // Render
   vec3d eye;
   vec3d target;
   vec3d up;
-  double zoom;
 
-  int is_interpoliating;
   vec3d lerp_eye;
   vec3d lerp_target;
   vec3d lerp_up;
-  double lerp_zoom;
 
-  double field_of_view_y;
-  double aspect_ratio;
-
-  // Fly
   vec3d fly_pos;
   vec3d fly_eye;
   vec3d fly_target;
   vec3d fly_up;
   vec3d fly_look;
   vec3d fly_right;
-  double fly_zoom;
-  double fly_movement_rate;
 
-  // Look at
   vec3d look_at_eye;
   vec3d look_at_target;
   vec3d look_at_up;
+
+  vec3d look_at_center_point;
+
+  mat3d look_at_fixed_to_local_rotation;
+
+  double zoom;
+  double lerp_zoom;
+
+  double field_of_view_y;
+  double aspect_ratio;
+
+  double fly_zoom;
+  double fly_movement_rate;
 
   double look_at_zoom_factor;
   double look_at_zoom_rate_range_adjustment;
@@ -58,8 +58,8 @@ struct Camera {
   double look_at_elevation;
   double look_at_range;
 
-  vec3d look_at_center_point;
-  mat3d look_at_fixed_to_local_rotation;
+  enum CAMERA_STATE camera_state;
+  int is_interpoliating;
 };
 
 static inline void camera_init(struct Camera* camera, double max_radius) {

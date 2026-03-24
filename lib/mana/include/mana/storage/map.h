@@ -4,9 +4,9 @@
 #include <string.h>
 
 struct MapNode {
-  unsigned int hash;
-  void* value;
   struct MapNode* next;
+  void* value;
+  unsigned int hash;
 };
 
 struct Map {
@@ -17,8 +17,8 @@ struct Map {
 };
 
 struct MapIter {
-  unsigned int bucket_idx;
   struct MapNode* node;
+  unsigned int bucket_idx;
 };
 
 static inline void map_init(struct Map* map, size_t memory_size) {
@@ -52,7 +52,7 @@ static inline struct MapNode* map_new_node(const char* key, void* value, size_t 
   size_t ksize = strlen(key) + 1;
   size_t voffset = ksize + ((sizeof(void*) - ksize) % sizeof(void*));
 
-  node = malloc(sizeof(*node) + voffset + vsize);
+  node = (struct MapNode*)malloc(sizeof(*node) + voffset + vsize);
   if (!node)
     return NULL;
 
@@ -91,7 +91,7 @@ static int map_resize(struct Map* map, unsigned int num_buckets) {
     }
   }
 
-  buckets = realloc(map->buckets, sizeof(*map->buckets) * num_buckets);
+  buckets = (struct MapNode**)realloc(map->buckets, sizeof(*map->buckets) * num_buckets);
   if (buckets != NULL) {
     map->buckets = buckets;
     map->num_buckets = num_buckets;

@@ -46,6 +46,12 @@ void log_message(enum log_severity_t severity, const char* format, ...) {
       color_code = "\033[36m";
       break;
     }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcovered-switch-default"
+    default: {
+      __builtin_unreachable();
+    }
+#pragma clang diagnostic pop
   }
 
   fprintf(stdout, "[%s] [%s%s\033[0m] ", timestamp, color_code, severity_str);
@@ -105,10 +111,10 @@ static bool directory_exists(const char* path) {
 
 void mana_search_for_assets_directory(char* asset_directory, size_t max_len) {
   const char* folder_name = "assets";
-  char current_path[MAX_PATH] = {0};
-  char parent_path[MAX_PATH] = {0};
+  char current_path[MAX_LENGTH_OF_PATH] = {0};
+  char parent_path[MAX_LENGTH_OF_PATH] = {0};
 
-  char cwd[MAX_PATH] = {0};
+  char cwd[MAX_LENGTH_OF_PATH] = {0};
 #ifdef _WIN32
   _getcwd(cwd, sizeof(cwd));
 #else

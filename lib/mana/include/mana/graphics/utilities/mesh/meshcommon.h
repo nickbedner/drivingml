@@ -197,6 +197,12 @@ static inline void mesh_get_attribute_descriptions(enum MESH_TYPE mesh_type, VkV
       attribute_descriptions[0].offset = offsetof(struct VertexGrass, position_color);
       break;
     }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcovered-switch-default"
+    default: {
+      __builtin_unreachable();
+    }
+#pragma clang diagnostic pop
   }
 }
 #endif
@@ -260,6 +266,12 @@ static inline uint32_t mesh_get_input_layout(enum MESH_TYPE mesh_type, D3D12_INP
       inputElementDescs[num_attributes++] = (D3D12_INPUT_ELEMENT_DESC){"POSITION_COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(struct VertexGrass, position_color), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0};
       break;
     }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcovered-switch-default"
+    default: {
+      __builtin_unreachable();
+    }
+#pragma clang diagnostic pop
   }
 
   return num_attributes;  // Return the number of attributes added, so the caller knows how many were set up.

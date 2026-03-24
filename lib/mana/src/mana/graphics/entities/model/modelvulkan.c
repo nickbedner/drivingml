@@ -1,6 +1,6 @@
 #include "mana/graphics/entities/model/modelvulkan.h"
 
-void model_vulkan_clone_init(struct ModelCommon *model_common, struct APICommon *api_common) {
+void model_vulkan_clone_init(struct ModelCommon* model_common, struct APICommon* api_common) {
   vulkan_graphics_utils_setup_vertex_buffer(&(api_common->vulkan_api), model_common->model_mesh->mesh_common.vertices, &(model_common->model_vulkan.vertex_buffer), &(model_common->model_vulkan.vertex_buffer_memory));
   vulkan_graphics_utils_setup_index_buffer(&(api_common->vulkan_api), model_common->model_mesh->mesh_common.indices, &(model_common->model_vulkan.index_buffer), &(model_common->model_vulkan.index_buffer_memory));
   vulkan_graphics_utils_setup_uniform_buffer(&(api_common->vulkan_api), sizeof(struct ModelUniformBufferObject), &(model_common->model_vulkan.uniform_buffer), &(model_common->model_vulkan.uniform_buffers_memory));
@@ -8,7 +8,8 @@ void model_vulkan_clone_init(struct ModelCommon *model_common, struct APICommon 
   if (model_common->animated)
     vulkan_graphics_utils_setup_uniform_buffer(&(api_common->vulkan_api), sizeof(struct ModelAnimationUniformBufferObject), &(model_common->model_vulkan.uniform_animation_buffer), &(model_common->model_vulkan.uniform_animation_buffers_memory));
 
-  VkWriteDescriptorSet dcs[8] = {0};
+  VkWriteDescriptorSet dcs[8];
+  memset(dcs, 0, sizeof dcs);
   vulkan_graphics_utils_setup_descriptor_buffer(dcs, 0, model_common->model_vulkan.descriptor_set, (VkDescriptorBufferInfo[]){vulkan_graphics_utils_setup_descriptor_buffer_info(sizeof(struct ModelUniformBufferObject), &(model_common->model_vulkan.uniform_buffer))});
   vulkan_graphics_utils_setup_descriptor_buffer(dcs, 1, model_common->model_vulkan.descriptor_set, (VkDescriptorBufferInfo[]){vulkan_graphics_utils_setup_descriptor_buffer_info(sizeof(struct LightingUniformBufferObject), &(model_common->model_vulkan.lighting_uniform_buffer))});
   vulkan_graphics_utils_setup_descriptor_image(dcs, 2, model_common->model_vulkan.descriptor_set, (VkDescriptorImageInfo[]){vulkan_graphics_utils_setup_descriptor_image_info(&(model_common->model_diffuse_texture->texture_common.texture_vulkan.texture_image_view), &(model_common->model_diffuse_texture->texture_common.texture_vulkan.texture_sampler))});
@@ -23,7 +24,7 @@ void model_vulkan_clone_init(struct ModelCommon *model_common, struct APICommon 
     vkUpdateDescriptorSets(api_common->vulkan_api.device, 7, dcs, 0, NULL);
 }
 
-void model_vulkan_clone_delete(struct ModelCommon *model_common, struct APICommon *api_common) {
+void model_vulkan_clone_delete(struct ModelCommon* model_common, struct APICommon* api_common) {
   vkDestroyBuffer(api_common->vulkan_api.device, model_common->model_vulkan.index_buffer, NULL);
   vkFreeMemory(api_common->vulkan_api.device, model_common->model_vulkan.index_buffer_memory, NULL);
 
@@ -42,7 +43,7 @@ void model_vulkan_clone_delete(struct ModelCommon *model_common, struct APICommo
   }
 }
 
-void model_vulkan_render(struct ModelCommon *model_common, struct GBuffer *gbuffer, double delta_time) {
+void model_vulkan_render(struct ModelCommon* model_common, struct GBuffer* gbuffer, double delta_time) {
   // TODO: Should animation updating be seperated from rendering?
   if (model_common->animated)
     animator_update(model_common->animator, delta_time);
@@ -56,7 +57,7 @@ void model_vulkan_render(struct ModelCommon *model_common, struct GBuffer *gbuff
   vkCmdDrawIndexed(gbuffer->gbuffer_common.gbuffer_vulkan.command_buffer, (uint32_t)model_common->model_mesh->mesh_common.indices->size, 1, 0, 0, 0);
 }
 
-void model_vulkan_update_uniforms(struct ModelCommon *model_common, struct APICommon *api_common, struct GBuffer *gbuffer, vec3d position, vec3 light_pos) {
+void model_vulkan_update_uniforms(struct ModelCommon* model_common, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec3 light_pos) {
   struct LightingUniformBufferObject light_ubo = {0};
   // light_ubo.direction = light_pos;
   light_ubo.direction = vec3d_to_vec3(position);
@@ -79,7 +80,7 @@ void model_vulkan_update_uniforms(struct ModelCommon *model_common, struct APICo
 
   ubom.camera_pos = vec3d_to_vec3(position);
 
-  void *data;
+  void* data;
 
   vkMapMemory(api_common->vulkan_api.device, model_common->model_vulkan.uniform_buffers_memory, 0, sizeof(struct ModelUniformBufferObject), 0, &data);
   memcpy(data, &ubom, sizeof(struct ModelUniformBufferObject));
@@ -89,13 +90,13 @@ void model_vulkan_update_uniforms(struct ModelCommon *model_common, struct APICo
     struct ModelAnimationUniformBufferObject uboa = {{{0}}};
     model_get_joint_transforms(model_common->root_joint, uboa.joint_transforms);
 
-    void *animation_data;
+    void* animation_data;
     vkMapMemory(api_common->vulkan_api.device, model_common->model_vulkan.uniform_animation_buffers_memory, 0, sizeof(struct ModelAnimationUniformBufferObject), 0, &animation_data);
     memcpy(animation_data, &uboa, sizeof(struct ModelAnimationUniformBufferObject));
     vkUnmapMemory(api_common->vulkan_api.device, model_common->model_vulkan.uniform_animation_buffers_memory);
   }
 
-  void *lighting_data;
+  void* lighting_data;
   vkMapMemory(api_common->vulkan_api.device, model_common->model_vulkan.lighting_uniform_buffers_memory, 0, sizeof(struct LightingUniformBufferObject), 0, &lighting_data);
   memcpy(lighting_data, &light_ubo, sizeof(struct LightingUniformBufferObject));
   vkUnmapMemory(api_common->vulkan_api.device, model_common->model_vulkan.lighting_uniform_buffers_memory);

@@ -6,14 +6,16 @@ uint_fast8_t water_vulkan_init(struct WaterCommon* water_common, struct APICommo
   vulkan_graphics_utils_setup_uniform_buffer(&api_common->vulkan_api, sizeof(struct WaterVertexUniformBufferObject), &water_common->water_vulkan.vertex_uniform_buffer, &water_common->water_vulkan.vertex_uniform_memory);
   vulkan_graphics_utils_setup_uniform_buffer(&api_common->vulkan_api, sizeof(struct WaterFragmentUniformBufferObject), &water_common->water_vulkan.fragment_uniform_buffer, &water_common->water_vulkan.fragment_uniform_memory);
 
-  VkDescriptorSetAllocateInfo alloc = {0};
+  VkDescriptorSetAllocateInfo alloc;
+  memset(&alloc, 0, sizeof(alloc));
   alloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   alloc.descriptorPool = water_common->shader->shader_common.shader_vulkan.descriptor_pool;
   alloc.descriptorSetCount = 1;
   alloc.pSetLayouts = &water_common->shader->shader_common.shader_vulkan.descriptor_set_layout;
   if (vkAllocateDescriptorSets(api_common->vulkan_api.device, &alloc, &water_common->water_vulkan.descriptor_set) != VK_SUCCESS) return 0;
 
-  VkWriteDescriptorSet writes[3] = {0};
+  VkWriteDescriptorSet writes[3];
+  memset(writes, 0, sizeof(writes));
 
   vulkan_graphics_utils_setup_descriptor_buffer(writes, 0, &water_common->water_vulkan.descriptor_set, (VkDescriptorBufferInfo[]){vulkan_graphics_utils_setup_descriptor_buffer_info(sizeof(struct WaterVertexUniformBufferObject), &water_common->water_vulkan.vertex_uniform_buffer)});
   vulkan_graphics_utils_setup_descriptor_buffer(writes, 1, &water_common->water_vulkan.descriptor_set, (VkDescriptorBufferInfo[]){vulkan_graphics_utils_setup_descriptor_buffer_info(sizeof(struct WaterFragmentUniformBufferObject), &water_common->water_vulkan.fragment_uniform_buffer)});

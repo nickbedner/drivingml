@@ -103,7 +103,8 @@ static inline uint_fast8_t gbuffer_vulkan_init_common(struct GBufferCommon* gbuf
     dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
     dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-    VkRenderPassCreateInfo render_pass_info = {0};
+    VkRenderPassCreateInfo render_pass_info;
+    memset(&render_pass_info, 0, sizeof(render_pass_info));
     VkAttachmentDescription attachments_render_pass[MULTISAMPLE_GBUFFER_TOTAL_ATTACHMENTS] = {multisample_color_attachment, multisample_normal_attachment, depth_attachment, color_attachment, normal_attachment};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     render_pass_info.pAttachments = attachments_render_pass;
@@ -116,7 +117,8 @@ static inline uint_fast8_t gbuffer_vulkan_init_common(struct GBufferCommon* gbuf
     if (vkCreateRenderPass(api_common->vulkan_api.device, &render_pass_info, NULL, &(gbuffer_common->gbuffer_vulkan.render_pass)) != VK_SUCCESS)
       return 0;
 
-    VkFramebufferCreateInfo framebuffer_info = {0};
+    VkFramebufferCreateInfo framebuffer_info;
+    memset(&framebuffer_info, 0, sizeof(framebuffer_info));
     VkImageView attachments_framebuffer[] = {gbuffer_common->gbuffer_vulkan.multisample_color_image_view, gbuffer_common->gbuffer_vulkan.multisample_normal_image_view, gbuffer_common->gbuffer_vulkan.depth_image_view, gbuffer_common->gbuffer_vulkan.color_image_view, gbuffer_common->gbuffer_vulkan.normal_image_view};
     framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebuffer_info.renderPass = gbuffer_common->gbuffer_vulkan.render_pass;
@@ -160,7 +162,8 @@ static inline uint_fast8_t gbuffer_vulkan_init_common(struct GBufferCommon* gbuf
     dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
     VkAttachmentDescription attachments_render_pass[GBUFFER_TOTAL_ATTACHMENTS] = {color_attachment, normal_attachment, depth_attachment};
-    VkRenderPassCreateInfo render_pass_info = {0};
+    VkRenderPassCreateInfo render_pass_info;
+    memset(&render_pass_info, 0, sizeof(render_pass_info));
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     render_pass_info.pAttachments = attachments_render_pass;
     render_pass_info.attachmentCount = GBUFFER_TOTAL_ATTACHMENTS;
@@ -172,7 +175,8 @@ static inline uint_fast8_t gbuffer_vulkan_init_common(struct GBufferCommon* gbuf
     if (vkCreateRenderPass(api_common->vulkan_api.device, &render_pass_info, NULL, &(gbuffer_common->gbuffer_vulkan.render_pass)) != VK_SUCCESS)
       return 0;
 
-    VkFramebufferCreateInfo framebuffer_info = {0};
+    VkFramebufferCreateInfo framebuffer_info;
+    memset(&framebuffer_info, 0, sizeof(framebuffer_info));
     VkImageView attachments_framebuffer[] = {gbuffer_common->gbuffer_vulkan.color_image_view, gbuffer_common->gbuffer_vulkan.normal_image_view, gbuffer_common->gbuffer_vulkan.depth_image_view};
     framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebuffer_info.renderPass = gbuffer_common->gbuffer_vulkan.render_pass;
@@ -196,7 +200,8 @@ uint_fast8_t gbuffer_vulkan_init(struct GBufferCommon* gbuffer_common, struct AP
     return 1;
 
   if (msaa_samples != 1) {
-    VkSemaphoreCreateInfo semaphore_info = {0};
+    VkSemaphoreCreateInfo semaphore_info;
+    memset(&semaphore_info, 0, sizeof(semaphore_info));
     semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     vkCreateSemaphore(api_common->vulkan_api.device, &semaphore_info, NULL, &(gbuffer_common->gbuffer_vulkan.semaphore));
@@ -205,7 +210,8 @@ uint_fast8_t gbuffer_vulkan_init(struct GBufferCommon* gbuffer_common, struct AP
     gbuffer_common->view_matrix = MAT4_ZERO;
 
     // Gbuffer command buffer
-    VkCommandBufferAllocateInfo alloc_info_offscreen = {0};
+    VkCommandBufferAllocateInfo alloc_info_offscreen;
+    memset(&alloc_info_offscreen, 0, sizeof(alloc_info_offscreen));
     alloc_info_offscreen.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     alloc_info_offscreen.commandPool = api_common->vulkan_api.command_pool;
     alloc_info_offscreen.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -216,7 +222,8 @@ uint_fast8_t gbuffer_vulkan_init(struct GBufferCommon* gbuffer_common, struct AP
       return VULKAN_RENDERER_CREATE_COMMAND_BUFFER_ERROR;
     }
   } else {
-    VkSemaphoreCreateInfo semaphore_info = {0};
+    VkSemaphoreCreateInfo semaphore_info;
+    memset(&semaphore_info, 0, sizeof(semaphore_info));
     semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     vkCreateSemaphore(api_common->vulkan_api.device, &semaphore_info, NULL, &(gbuffer_common->gbuffer_vulkan.semaphore));
@@ -225,7 +232,8 @@ uint_fast8_t gbuffer_vulkan_init(struct GBufferCommon* gbuffer_common, struct AP
     gbuffer_common->view_matrix = MAT4_ZERO;
 
     // Gbuffer command buffer
-    VkCommandBufferAllocateInfo alloc_info_offscreen = {0};
+    VkCommandBufferAllocateInfo alloc_info_offscreen;
+    memset(&alloc_info_offscreen, 0, sizeof(alloc_info_offscreen));
     alloc_info_offscreen.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     alloc_info_offscreen.commandPool = api_common->vulkan_api.command_pool;
     alloc_info_offscreen.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -285,7 +293,8 @@ uint_fast8_t gbuffer_vulkan_resize(struct GBufferCommon* gbuffer_common, struct 
 }
 
 uint_fast8_t gbuffer_vulkan_start(struct GBufferCommon* gbuffer_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
-  VkCommandBufferBeginInfo begin_info = {0};
+  VkCommandBufferBeginInfo begin_info;
+  memset(&begin_info, 0, sizeof(begin_info));
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
@@ -294,7 +303,8 @@ uint_fast8_t gbuffer_vulkan_start(struct GBufferCommon* gbuffer_common, struct S
     return VULKAN_RENDERER_CREATE_COMMAND_BUFFER_ERROR;
   }
 
-  VkRenderPassBeginInfo render_pass_info = {0};
+  VkRenderPassBeginInfo render_pass_info;
+  memset(&render_pass_info, 0, sizeof(render_pass_info));
   render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   render_pass_info.renderPass = gbuffer_common->gbuffer_vulkan.render_pass;
   render_pass_info.framebuffer = gbuffer_common->gbuffer_vulkan.framebuffer;
@@ -361,7 +371,8 @@ uint_fast8_t gbuffer_vulkan_stop(struct GBufferCommon* gbuffer_common, struct AP
   }
 
   // Send to GPU for offscreen rendering then wait until finished
-  VkSubmitInfo gbuffer_submit_info = {0};
+  VkSubmitInfo gbuffer_submit_info;
+  memset(&gbuffer_submit_info, 0, sizeof(gbuffer_submit_info));
   gbuffer_submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   gbuffer_submit_info.commandBufferCount = 1;
   gbuffer_submit_info.pCommandBuffers = &(gbuffer_common->gbuffer_vulkan.command_buffer);

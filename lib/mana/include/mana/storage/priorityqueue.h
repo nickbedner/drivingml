@@ -37,7 +37,7 @@ static inline int priority_queue_empty(struct PriorityQueue* priority_queue) {
 }
 
 static inline void priority_queue_push(struct PriorityQueue* priority_queue, void* item, size_t priority) {
-  struct PriorityQueueNode* new_node = malloc(sizeof(struct PriorityQueueNode));
+  struct PriorityQueueNode* new_node = (struct PriorityQueueNode*)malloc(sizeof(struct PriorityQueueNode));
   new_node->data = item;
   new_node->priority = priority;
 

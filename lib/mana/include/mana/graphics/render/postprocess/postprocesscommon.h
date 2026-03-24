@@ -35,37 +35,35 @@ struct PostProcessVulkan {
 
 #ifdef DIRECTX_12_API_SUPPORTED
 struct PostProcessDirectX12 {
-  ID3D12Resource *color_textures[POST_PROCESS_PING_PONG];
+  ID3D12Resource* color_textures[POST_PROCESS_PING_PONG];
 
-  ID3D12DescriptorHeap *rtv_descriptor_heap[POST_PROCESS_PING_PONG];
+  ID3D12DescriptorHeap* rtv_descriptor_heap[POST_PROCESS_PING_PONG];
   UINT rtv_descriptor_size[POST_PROCESS_PING_PONG];
   D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle[POST_PROCESS_PING_PONG];
-  ID3D12CommandAllocator *command_allocator[POST_PROCESS_PING_PONG];
-  ID3D12GraphicsCommandList *command_list[POST_PROCESS_PING_PONG];
+  ID3D12CommandAllocator* command_allocator[POST_PROCESS_PING_PONG];
+  ID3D12GraphicsCommandList* command_list[POST_PROCESS_PING_PONG];
 
-  ID3D12Resource *constant_buffer;  // Constant Buffer Resource
+  ID3D12Resource* constant_buffer;  // Constant Buffer Resource
 
-  ID3D12Fence *fence[POST_PROCESS_PING_PONG];
+  ID3D12Fence* fence[POST_PROCESS_PING_PONG];
   HANDLE fence_event[POST_PROCESS_PING_PONG];
   UINT64 fence_value[POST_PROCESS_PING_PONG];
   UINT frame_index[POST_PROCESS_PING_PONG];
 
-  ID3D12Resource *vertex_buffer;
+  ID3D12Resource* vertex_buffer;
   D3D12_VERTEX_BUFFER_VIEW vertex_buffer_view;
-  ID3D12Resource *index_buffer;
+  ID3D12Resource* index_buffer;
   D3D12_INDEX_BUFFER_VIEW index_buffer_view;
 
-  ID3D12DescriptorHeap *srv_heap[POST_PROCESS_PING_PONG];
+  ID3D12DescriptorHeap* srv_heap[POST_PROCESS_PING_PONG];
   D3D12_CPU_DESCRIPTOR_HANDLE srv_cpu_handle[POST_PROCESS_PING_PONG];
   D3D12_GPU_DESCRIPTOR_HANDLE srv_gpu_handle[POST_PROCESS_PING_PONG];
 };
 #endif
 
 struct PostProcessCommon {
-  uint_fast8_t descriptors;
-  struct ResolveShader *resolve_shader;
+  struct ResolveShader* resolve_shader;
   struct Mesh blit_fullscreen_triangle;
-  bool ping_pong;
 
   union {
 #ifdef VULKAN_API_SUPPORTED
@@ -75,4 +73,7 @@ struct PostProcessCommon {
     struct PostProcessDirectX12 post_process_directx12;
 #endif
   };
+
+  uint_fast8_t descriptors;
+  bool ping_pong;
 };

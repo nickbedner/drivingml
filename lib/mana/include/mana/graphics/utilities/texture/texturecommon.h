@@ -38,14 +38,12 @@ struct TextureSettings {
   enum FilterType filter_type;
   enum ModeType mode_type;
   enum FormatType format_type;
-
   enum MipType mip_type;
-  uint32_t mip_count;
-
-  // Does the image already have premultiplied alphas, 0: No 1: Yes
-  bool premultiplied_alpha;
 
   float max_anisotropy;
+
+  uint8_t mip_count;
+  uint8_t premultiplied_alpha;
 };
 
 #ifdef VULKAN_API_SUPPORTED
@@ -75,23 +73,7 @@ enum TextureDimension {
 };
 
 struct TextureCommon {
-  size_t id;
-  uint32_t width;
-  uint32_t height;
-  uint32_t channels;
-  uint32_t layer_count;
-  uint32_t mip_levels;
-  uint8_t bit_depth;
-  char* name;
-  char* type;
-  char* path;
-  enum TextureDimension dimension;
-
-  struct TextureSettings texture_settings;
-
-  struct TextureManagerCommon* texture_manager_common;
-
-  union {
+  _Alignas(16) union {
 #ifdef VULKAN_API_SUPPORTED
     struct TextureVulkan texture_vulkan;
 #endif
@@ -99,12 +81,29 @@ struct TextureCommon {
     struct TextureDirectX12 texture_directx12;
 #endif
   };
+
+  size_t id;
+  char* name;
+  char* type;
+  char* path;
+
+  struct TextureManagerCommon* texture_manager_common;
+  struct TextureSettings texture_settings;
+
+  uint32_t width;
+  uint32_t height;
+  uint32_t channels;
+  uint32_t layer_count;
+  uint32_t mip_levels;
+  enum TextureDimension dimension;
+
+  uint8_t bit_depth;
 };
 
-static inline char* texture_common_build_mip_path(const char* base_path, uint32_t level) {
+static inline char* texture_common_build_mip_path(const char* base_path, uint8_t level) {
   // base_path is something like: "/textures/waterm1.png"
 
-  char* out = strdup(base_path);
+  char* out = _strdup(base_path);
   if (!out) return NULL;
 
   // Find the extension

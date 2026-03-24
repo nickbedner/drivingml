@@ -39,14 +39,16 @@ static uint64_t texture_directx_12_upload_texture_data(struct APICommon* api_com
     src += (size_t)(w * h * bytes_per_pixel);
   }
 
-  D3D12_HEAP_PROPERTIES heap_props = {0};
+  D3D12_HEAP_PROPERTIES heap_props;
+  memset(&heap_props, 0, sizeof heap_props);
   heap_props.Type = D3D12_HEAP_TYPE_UPLOAD;
   heap_props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
   heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
   heap_props.CreationNodeMask = 1;
   heap_props.VisibleNodeMask = 1;
 
-  D3D12_RESOURCE_DESC upload_desc = {0};
+  D3D12_RESOURCE_DESC upload_desc;
+  memset(&upload_desc, 0, sizeof upload_desc);
   upload_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
   upload_desc.Alignment = 0;
   upload_desc.Width = upload_size;
@@ -128,7 +130,8 @@ static uint64_t texture_directx_12_upload_texture_data(struct APICommon* api_com
     command_list->lpVtbl->CopyTextureRegion(command_list, &dst, 0, 0, 0, &src_loc, NULL);
   }
 
-  D3D12_RESOURCE_BARRIER barrier = {0};
+  D3D12_RESOURCE_BARRIER barrier;
+  memset(&barrier, 0, sizeof barrier);
   barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
   barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
   barrier.Transition.pResource = texture_resource;
@@ -173,20 +176,21 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
 
   if (texture_settings.mip_type == MIP_CUSTOM) {
     uint32_t mip_count = texture_settings.mip_count;
-    if (mip_count < 1) mip_count = 1;
+    if (mip_count < 1)
+      mip_count = 1;
 
     uint32_t bytes_per_channel_local = (texture_common->bit_depth == 16) ? 2 : 1;
 
     size_t total = 0;
-    for (uint32_t level = 0; level < mip_count; ++level) {
+    for (uint8_t level = 0; level < mip_count; ++level) {
       uint32_t w = texture_common->width >> level;
       uint32_t h = texture_common->height >> level;
-      if (w == 0) w = 1;
-      if (h == 0) h = 1;
+      if (w == 0)
+        w = 1;
+      if (h == 0)
+        h = 1;
 
-      total += (size_t)w * (size_t)h *
-               (size_t)texture_common->channels *
-               (size_t)bytes_per_channel_local;
+      total += (size_t)w * (size_t)h * (size_t)texture_common->channels * (size_t)bytes_per_channel_local;
     }
 
     uint8_t* combined = (uint8_t*)malloc(total);
@@ -194,15 +198,12 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
       return 1;
 
     size_t off = 0;
-    size_t sz0 = (size_t)texture_common->width *
-                 (size_t)texture_common->height *
-                 (size_t)texture_common->channels *
-                 (size_t)bytes_per_channel_local;
+    size_t sz0 = (size_t)texture_common->width * (size_t)texture_common->height * (size_t)texture_common->channels * (size_t)bytes_per_channel_local;
 
     memcpy(combined + off, pixels, sz0);
     off += sz0;
 
-    for (uint32_t level = 1; level < mip_count; ++level) {
+    for (uint8_t level = 1; level < mip_count; ++level) {
       char* mip_path = texture_common_build_mip_path(texture_common->path, level);
       if (!mip_path) {
         free(combined);
@@ -252,62 +253,76 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
 
   D3D12_TEXTURE_ADDRESS_MODE mode = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
   switch (texture_settings.mode_type) {
-    case MODE_REPEAT:
+    case MODE_REPEAT: {
       mode = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
       break;
-    case MODE_MIRRORED_REPEAT:
+    }
+    case MODE_MIRRORED_REPEAT: {
       mode = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
       break;
-    case MODE_CLAMP_TO_EDGE:
+    }
+    case MODE_CLAMP_TO_EDGE: {
       mode = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
       break;
-    case MODE_CLAMP_TO_BORDER:
+    }
+    case MODE_CLAMP_TO_BORDER: {
       mode = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
       break;
-    default:
-      mode = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-      break;
+    }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcovered-switch-default"
+    default: {
+      __builtin_unreachable();
+    }
+#pragma clang diagnostic pop
   }
 
   uint8_t bytes_per_channel = 1;
   uint8_t channels = 4;
   DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM;
   switch (texture_settings.format_type) {
-    case FORMAT_R8_UNORM:
+    case FORMAT_R8_UNORM: {
       format = DXGI_FORMAT_R8_UNORM;
       bytes_per_channel = 1;
       channels = 1;
       break;
-    case FORMAT_R8G8B8A8_UNORM:
+    }
+    case FORMAT_R8G8B8A8_UNORM: {
       format = DXGI_FORMAT_R8G8B8A8_UNORM;
       bytes_per_channel = 1;
       channels = 4;
       break;
-    case FORMAT_R16_UNORM:
+    }
+    case FORMAT_R16_UNORM: {
       format = DXGI_FORMAT_R16_UNORM;
       bytes_per_channel = 2;
       channels = 1;
       break;
-    case FORMAT_R16G16B16A16_UNORM:
+    }
+    case FORMAT_R16G16B16A16_UNORM: {
       format = DXGI_FORMAT_R16G16B16A16_UNORM;
       bytes_per_channel = 2;
       channels = 4;
       break;
-    case FORMAT_R32_SFLOAT:
+    }
+    case FORMAT_R32_SFLOAT: {
       format = DXGI_FORMAT_R32_FLOAT;
       bytes_per_channel = 4;
       channels = 1;
       break;
-    case FORMAT_R32G32B32A32_SFLOAT:
+    }
+    case FORMAT_R32G32B32A32_SFLOAT: {
       format = DXGI_FORMAT_R32G32B32A32_FLOAT;
       bytes_per_channel = 4;
       channels = 4;
       break;
-    default:
-      format = DXGI_FORMAT_R8G8B8A8_UNORM;
-      bytes_per_channel = 1;
-      channels = 4;
-      break;
+    }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcovered-switch-default"
+    default: {
+      __builtin_unreachable();
+    }
+#pragma clang diagnostic pop
   }
 
   uint32_t mip_levels = 1;
@@ -324,21 +339,28 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
 
   D3D12_FILTER filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
   switch (texture_settings.filter_type) {
-    case FILTER_NEAREST:
+    case FILTER_NEAREST: {
       filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
       break;
-    case FILTER_BILINEAR:
+    }
+    case FILTER_BILINEAR: {
       filter = D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
       break;
-    case FILTER_TRILINEAR:
+    }
+    case FILTER_TRILINEAR: {
       filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
       break;
-    case FILTER_ANISOTROPIC:
+    }
+    case FILTER_ANISOTROPIC: {
       filter = D3D12_FILTER_ANISOTROPIC;
       break;
-    default:
-      filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-      break;
+    }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcovered-switch-default"
+    default: {
+      __builtin_unreachable();
+    }
+#pragma clang diagnostic pop
   }
 
   texture_common->texture_directx12.sampler_cpu_handle.ptr = texture_common->texture_manager_common->texture_manager_directx12.sampler_cpu_heap_handle.ptr + (texture_common->id * texture_common->texture_manager_common->texture_manager_directx12.sampler_descriptor_size);
@@ -352,7 +374,8 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
     max_aniso = (UINT)req;
   }
 
-  D3D12_SAMPLER_DESC sampler_desc = {0};
+  D3D12_SAMPLER_DESC sampler_desc;
+  memset(&sampler_desc, 0, sizeof(sampler_desc));
   sampler_desc.Filter = filter;
   sampler_desc.AddressU = mode;
   sampler_desc.AddressV = mode;
@@ -369,7 +392,8 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
 
   api_common->directx_12_api.device->lpVtbl->CreateSampler(api_common->directx_12_api.device, &sampler_desc, texture_common->texture_directx12.sampler_cpu_handle);
 
-  D3D12_RESOURCE_DESC texture_desc = {0};
+  D3D12_RESOURCE_DESC texture_desc;
+  memset(&texture_desc, 0, sizeof(texture_desc));
   texture_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
   texture_desc.Alignment = 0;
   texture_desc.Width = texture_common->width;
@@ -382,7 +406,8 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
   texture_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
   texture_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
-  D3D12_HEAP_PROPERTIES heap_properties = {0};
+  D3D12_HEAP_PROPERTIES heap_properties;
+  memset(&heap_properties, 0, sizeof heap_properties);
   heap_properties.Type = D3D12_HEAP_TYPE_DEFAULT;
   heap_properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
   heap_properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
@@ -395,7 +420,9 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
   if (texture_directx_12_upload_texture_data(api_common, api_common->directx_12_api.command_list, texture_common->texture_directx12.texture_resource, format, upload_pixels, texture_common->width, texture_common->height, mip_levels, bytes_per_channel, channels) != 0)
     return 1;
 
-  D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {0};
+  D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc;
+  memset(&srv_desc, 0, sizeof(srv_desc));
+
   srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
   srv_desc.Format = format;
   srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;

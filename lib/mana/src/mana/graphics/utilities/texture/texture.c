@@ -6,16 +6,16 @@ uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* textu
   texture_common->texture_settings = texture_settings;
   texture_common->layer_count = 1;
 
-  texture_common->path = strdup(path);
+  texture_common->path = _strdup(path);
 
   char* name_location = strrchr(texture_common->path, '/');
 #ifdef _WIN32
   if (!name_location) name_location = strrchr(texture_common->path, '\\');
 #endif
-  texture_common->name = name_location ? strdup(name_location + 1) : strdup(texture_common->path);
+  texture_common->name = name_location ? _strdup(name_location + 1) : _strdup(texture_common->path);
 
   char* type_location = strrchr(texture_common->path, '.');
-  texture_common->type = type_location ? strdup(type_location + 1) : strdup("");
+  texture_common->type = type_location ? _strdup(type_location + 1) : _strdup("");
 
   texture_common->texture_manager_common = texture_manager_common;
   texture_common->id = texture_index;
@@ -56,7 +56,7 @@ uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* textu
   if (api_common->api_type == API_VULKAN) texture->texture_func = VULKAN_TEXTURE;
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-  if (api_common->api_type == API_DIRECTX12) texture->texture_func = directx_12_TEXTURE;
+  if (api_common->api_type == API_DIRECTX_12) texture->texture_func = directx_12_TEXTURE;
 #endif
 
   uint8_t result = texture->texture_func.texture_init(&(texture->texture_common), texture_common->texture_manager_common, api_common, pixels0);
@@ -80,7 +80,7 @@ uint8_t texture_array_init(struct Texture* texture, struct TextureManagerCommon*
   texture_common->id = texture_index;
 
   // For now store the first path as the texture path/name/type source.
-  texture_common->path = strdup(paths[0]);
+  texture_common->path = _strdup(paths[0]);
   if (!texture_common->path) {
     log_message(LOG_SEVERITY_ERROR, "Failed to alloc texture path\n");
     return 1;
@@ -90,10 +90,10 @@ uint8_t texture_array_init(struct Texture* texture, struct TextureManagerCommon*
 #ifdef _WIN32
   if (!name_location) name_location = strrchr(texture_common->path, '\\');
 #endif
-  texture_common->name = name_location ? strdup(name_location + 1) : strdup(texture_common->path);
+  texture_common->name = name_location ? _strdup(name_location + 1) : _strdup(texture_common->path);
 
   char* type_location = strrchr(texture_common->path, '.');
-  texture_common->type = type_location ? strdup(type_location + 1) : strdup("");
+  texture_common->type = type_location ? _strdup(type_location + 1) : _strdup("");
 
   if (!texture_common->name || !texture_common->type) {
     free(texture_common->path);
@@ -205,7 +205,7 @@ uint8_t texture_array_init(struct Texture* texture, struct TextureManagerCommon*
   if (api_common->api_type == API_VULKAN) texture->texture_func = VULKAN_TEXTURE;
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-  if (api_common->api_type == API_DIRECTX12) texture->texture_func = directx_12_TEXTURE;
+  if (api_common->api_type == API_DIRECTX_12) texture->texture_func = directx_12_TEXTURE;
 #endif
 
   uint8_t result = texture->texture_func.texture_init(

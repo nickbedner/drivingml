@@ -6,7 +6,7 @@ uint8_t renderer_init(struct Renderer* renderer, struct APICommon* api_common, s
     renderer->renderer_func = VULKAN_RENDERER;
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-  if (api_common->api_type == API_DIRECTX12)
+  if (api_common->api_type == API_DIRECTX_12)
     renderer->renderer_func = DIRECTX_12_RENDERER;
 #endif
 

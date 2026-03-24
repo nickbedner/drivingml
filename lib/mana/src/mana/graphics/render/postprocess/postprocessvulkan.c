@@ -38,7 +38,8 @@ static inline uint_fast8_t post_process_vulkan_init_common(struct PostProcessCom
   dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
   VkAttachmentDescription attachments_render_pass = color_attachment;
-  VkRenderPassCreateInfo render_pass_info = {0};
+  VkRenderPassCreateInfo render_pass_info;
+  memset(&render_pass_info, 0, sizeof(render_pass_info));
   render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
   render_pass_info.pAttachments = &attachments_render_pass;
   render_pass_info.attachmentCount = 1;
@@ -57,7 +58,8 @@ static inline uint_fast8_t post_process_vulkan_init_common(struct PostProcessCom
     vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, post_process_common->post_process_vulkan.color_images[ping_pong_target], VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, &(post_process_common->post_process_vulkan.color_image_views[ping_pong_target]));
 
     VkImageView attachments_framebuffer = post_process_common->post_process_vulkan.color_image_views[ping_pong_target];
-    VkFramebufferCreateInfo framebuffer_info = {0};
+    VkFramebufferCreateInfo framebuffer_info;
+    memset(&framebuffer_info, 0, sizeof(framebuffer_info));
     framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebuffer_info.renderPass = post_process_common->post_process_vulkan.render_pass;
     framebuffer_info.attachmentCount = 1;
@@ -89,7 +91,8 @@ uint_fast8_t post_process_vulkan_init(struct PostProcessCommon* post_process_com
     return 1;
 
   for (uint_fast8_t ping_pong_target = 0; ping_pong_target < POST_PROCESS_PING_PONG; ping_pong_target++) {
-    VkSemaphoreCreateInfo semaphore_info = {0};
+    VkSemaphoreCreateInfo semaphore_info;
+    memset(&semaphore_info, 0, sizeof(semaphore_info));
     semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     vkCreateSemaphore(api_common->vulkan_api.device, &semaphore_info, NULL, &(post_process_common->post_process_vulkan.semaphore[ping_pong_target]));
@@ -97,7 +100,8 @@ uint_fast8_t post_process_vulkan_init(struct PostProcessCommon* post_process_com
 
   vulkan_graphics_utils_create_sampler(api_common->vulkan_api.device, &(post_process_common->post_process_vulkan.texture_sampler), (struct SamplerSettings){.mip_levels = 1, .min_filter = VK_FILTER_LINEAR, .mag_filter = VK_FILTER_LINEAR, .mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST, .address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, .anisotropy_enable = VK_FALSE, .max_anisotropy = 1.0f});
   // Post process command buffer
-  VkCommandBufferAllocateInfo alloc_info_post_process = {0};
+  VkCommandBufferAllocateInfo alloc_info_post_process;
+  memset(&alloc_info_post_process, 0, sizeof(alloc_info_post_process));
   alloc_info_post_process.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   alloc_info_post_process.commandPool = api_common->vulkan_api.command_pool;
   alloc_info_post_process.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -157,7 +161,8 @@ uint_fast8_t post_process_vulkan_resolve_init(struct PostProcessCommon* post_pro
   for (uint_fast8_t shader_num = 0; shader_num < 4; shader_num++) {
     vulkan_graphics_utils_create_descriptors(&(api_common->vulkan_api), &(post_process_common->post_process_vulkan.descriptor_set[shader_num]), &(post_process_common->resolve_shader->shader[shader_num].shader_common.shader_vulkan.descriptor_set_layout), &(post_process_common->resolve_shader->shader[shader_num].shader_common.shader_vulkan.descriptor_pool), post_process_common->resolve_shader->shader[shader_num].shader_common.shader_settings.descriptors);
 
-    VkWriteDescriptorSet dcs[2] = {0};
+    VkWriteDescriptorSet dcs[2];
+    memset(dcs, 0, sizeof(dcs));
     vulkan_graphics_utils_setup_descriptor_buffer(dcs, 0, &(post_process_common->post_process_vulkan.descriptor_set[shader_num]), (VkDescriptorBufferInfo[]){vulkan_graphics_utils_setup_descriptor_buffer_info(sizeof(struct ResolveUniformBufferObject), &(post_process_common->post_process_vulkan.uniform_buffer))});
     vulkan_graphics_utils_setup_descriptor_image(dcs, 1, &(post_process_common->post_process_vulkan.descriptor_set[shader_num]), (VkDescriptorImageInfo[]){vulkan_graphics_utils_setup_descriptor_image_info(&(gbuffer->gbuffer_common.gbuffer_vulkan.color_image_view), &(gbuffer->gbuffer_common.gbuffer_vulkan.texture_sampler))});
     vkUpdateDescriptorSets(api_common->vulkan_api.device, 2, dcs, 0, NULL);
@@ -171,7 +176,8 @@ uint_fast8_t post_process_vulkan_resolve_init(struct PostProcessCommon* post_pro
 
 uint_fast8_t post_process_vulkan_resolve_update(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct GBuffer* gbuffer, struct SwapChainCommon* swap_chain_common) {
   for (uint_fast8_t shader_num = 0; shader_num < 4; shader_num++) {
-    VkWriteDescriptorSet dcs[2] = {0};
+    VkWriteDescriptorSet dcs[2];
+    memset(dcs, 0, sizeof(dcs));
     vulkan_graphics_utils_setup_descriptor_buffer(dcs, 0, &(post_process_common->post_process_vulkan.descriptor_set[shader_num]), (VkDescriptorBufferInfo[]){vulkan_graphics_utils_setup_descriptor_buffer_info(sizeof(struct ResolveUniformBufferObject), &(post_process_common->post_process_vulkan.uniform_buffer))});
     vulkan_graphics_utils_setup_descriptor_image(dcs, 1, &(post_process_common->post_process_vulkan.descriptor_set[shader_num]), (VkDescriptorImageInfo[]){vulkan_graphics_utils_setup_descriptor_image_info(&(gbuffer->gbuffer_common.gbuffer_vulkan.color_image_view), &(gbuffer->gbuffer_common.gbuffer_vulkan.texture_sampler))});
     vkUpdateDescriptorSets(api_common->vulkan_api.device, 2, dcs, 0, NULL);
@@ -181,7 +187,8 @@ uint_fast8_t post_process_vulkan_resolve_update(struct PostProcessCommon* post_p
 
 uint_fast8_t post_process_vulkan_resolve_render(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct GBuffer* gbuffer, struct SwapChainCommon* swap_chain_common) {
   // Custom for intial blitting to post process image
-  VkCommandBufferBeginInfo begin_info = {0};
+  VkCommandBufferBeginInfo begin_info;
+  memset(&begin_info, 0, sizeof(begin_info));
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
@@ -191,7 +198,8 @@ uint_fast8_t post_process_vulkan_resolve_render(struct PostProcessCommon* post_p
   }
 
   // VkClearValue clear_color = {.color = {0.0f, 1.0f, 0.0f, 1.0f}}; // RGBA: Red
-  VkRenderPassBeginInfo render_pass_info = {0};
+  VkRenderPassBeginInfo render_pass_info;
+  memset(&render_pass_info, 0, sizeof(render_pass_info));
   render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   render_pass_info.renderPass = post_process_common->post_process_vulkan.render_pass;
   render_pass_info.framebuffer = post_process_common->post_process_vulkan.framebuffer[post_process_common->ping_pong];
@@ -221,7 +229,8 @@ uint_fast8_t post_process_vulkan_resolve_render(struct PostProcessCommon* post_p
   }
 
   // Send to GPU for offscreen rendering then wait until finished
-  VkSubmitInfo post_process_submit_info = {0};
+  VkSubmitInfo post_process_submit_info;
+  memset(&post_process_submit_info, 0, sizeof(post_process_submit_info));
   post_process_submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   VkSemaphore wait_semaphore = gbuffer->gbuffer_common.gbuffer_vulkan.semaphore;
   VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;

@@ -1,7 +1,9 @@
 #include "mana/graphics/utilities/spritemanager/spritemanagerdirectx12.h"
 
 uint_fast8_t sprite_manager_directx_12_init_sprite_pool(struct SpriteManagerCommon* sprite_manager_common, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, struct GBufferCommon* gbuffer_common, uint_fast8_t msaa_samples, uint_fast32_t descriptors) {
-  D3D12_DESCRIPTOR_HEAP_DESC heap_desc = {0};
+  D3D12_DESCRIPTOR_HEAP_DESC heap_desc;
+  memset(&heap_desc, 0, sizeof(D3D12_DESCRIPTOR_HEAP_DESC));
+
   heap_desc.NumDescriptors = descriptors;
   heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
   heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;

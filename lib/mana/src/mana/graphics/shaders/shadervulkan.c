@@ -1,7 +1,8 @@
 #include "mana/graphics/shaders/shadervulkan.h"
 
 static VkShaderModule shader_create_shader_module(struct APICommon* api_common, const uint32_t* code, uint_fast64_t length) {
-  VkShaderModuleCreateInfo create_info = {0};
+  VkShaderModuleCreateInfo create_info;
+  memset(&create_info, 0, sizeof(VkShaderModuleCreateInfo));
   create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
   create_info.codeSize = length;
   create_info.pCode = code;
@@ -56,7 +57,8 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
       pool_sizes[shader_common->shader_settings.texture_sample_state[sampler_num].shader_position].descriptorCount = shader_common->shader_settings.descriptors;
     }
 
-    VkDescriptorSetLayoutCreateInfo layout_info = {0};
+    VkDescriptorSetLayoutCreateInfo layout_info;
+    memset(&layout_info, 0, sizeof(VkDescriptorSetLayoutCreateInfo));
     layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layout_info.bindingCount = shader_common->shader_settings.uniforms_constants + shader_common->shader_settings.texture_samples;
     layout_info.pBindings = bindings;
@@ -64,7 +66,8 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
     if (vkCreateDescriptorSetLayout(api_common->vulkan_api.device, &layout_info, NULL, &(shader_common->shader_vulkan.descriptor_set_layout)) != VK_SUCCESS)
       return 0;
 
-    VkDescriptorPoolCreateInfo pool_info = {0};
+    VkDescriptorPoolCreateInfo pool_info;
+    memset(&pool_info, 0, sizeof(VkDescriptorPoolCreateInfo));
     pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     pool_info.poolSizeCount = shader_common->shader_settings.uniforms_constants + shader_common->shader_settings.texture_samples;
     pool_info.pPoolSizes = pool_sizes;
@@ -76,7 +79,8 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
     }
   }
 
-  VkPipelineVertexInputStateCreateInfo vertex_input_info = {0};
+  VkPipelineVertexInputStateCreateInfo vertex_input_info;
+  memset(&vertex_input_info, 0, sizeof(VkPipelineVertexInputStateCreateInfo));
   vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
   VkVertexInputBindingDescription binding_description = vulkan_graphics_utils_get_binding_description(shader_common->shader_settings.mesh_memory_size);
@@ -130,7 +134,8 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
     color_blend_attachment[pipeline_attachment_num].alphaBlendOp = VK_BLEND_OP_ADD;
   }
 
-  VkPipelineColorBlendStateCreateInfo color_blending = {0};
+  VkPipelineColorBlendStateCreateInfo color_blending;
+  memset(&color_blending, 0, sizeof(VkPipelineColorBlendStateCreateInfo));
   color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
   color_blending.logicOpEnable = VK_FALSE;
   color_blending.logicOp = VK_LOGIC_OP_COPY;
@@ -159,13 +164,15 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
   close_shader_file(vertex_shader_code);
   close_shader_file(fragment_shader_code);
   /////////////////////////////////////////////////////////////////////////////
-  VkPipelineShaderStageCreateInfo vert_shader_stage_info = {0};
+  VkPipelineShaderStageCreateInfo vert_shader_stage_info;
+  memset(&vert_shader_stage_info, 0, sizeof(VkPipelineShaderStageCreateInfo));
   vert_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
   vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
   vert_shader_stage_info.module = vert_shader_module;
   vert_shader_stage_info.pName = "main";
 
-  VkPipelineShaderStageCreateInfo frag_shader_stage_info = {0};
+  VkPipelineShaderStageCreateInfo frag_shader_stage_info;
+  memset(&frag_shader_stage_info, 0, sizeof(VkPipelineShaderStageCreateInfo));
   frag_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
   frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
   frag_shader_stage_info.module = frag_shader_module;
@@ -173,14 +180,16 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
 
   VkPipelineShaderStageCreateInfo shader_stages[] = {vert_shader_stage_info, frag_shader_stage_info};
 
-  VkPipelineInputAssemblyStateCreateInfo input_assembly = {0};
+  VkPipelineInputAssemblyStateCreateInfo input_assembly;
+  memset(&input_assembly, 0, sizeof(VkPipelineInputAssemblyStateCreateInfo));
   input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
   input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
   input_assembly.primitiveRestartEnable = VK_FALSE;
 
   shader_vulkan_resize(shader_common, api_common, width, height, supersample_scale);
 
-  VkPipelineViewportStateCreateInfo viewport_state = {0};
+  VkPipelineViewportStateCreateInfo viewport_state;
+  memset(&viewport_state, 0, sizeof(VkPipelineViewportStateCreateInfo));
   viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
   viewport_state.viewportCount = 1;
   viewport_state.pViewports = &(shader_common->shader_vulkan.viewport);
@@ -205,13 +214,20 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
       cull_mode = VK_CULL_MODE_FRONT_AND_BACK;
       break;
     }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcovered-switch-default"
+    default: {
+      __builtin_unreachable();
+    }
+#pragma clang diagnostic pop
   }
 
   VkFrontFace direction = VK_FRONT_FACE_COUNTER_CLOCKWISE;
   if (shader_common->shader_settings.front_face == SHADER_FRONT_FACE_CLOCKWISE)
     direction = VK_FRONT_FACE_CLOCKWISE;
 
-  VkPipelineRasterizationStateCreateInfo rasterizer = {0};
+  VkPipelineRasterizationStateCreateInfo rasterizer;
+  memset(&rasterizer, 0, sizeof(VkPipelineRasterizationStateCreateInfo));
   rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
   rasterizer.depthClampEnable = VK_FALSE;
   rasterizer.rasterizerDiscardEnable = VK_FALSE;
@@ -221,7 +237,8 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
   rasterizer.frontFace = direction;
   rasterizer.depthBiasEnable = VK_FALSE;
 
-  VkPipelineMultisampleStateCreateInfo multisampling = {0};
+  VkPipelineMultisampleStateCreateInfo multisampling;
+  memset(&multisampling, 0, sizeof(VkPipelineMultisampleStateCreateInfo));
   multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
   multisampling.sampleShadingEnable = VK_FALSE;
   multisampling.rasterizationSamples = (VkSampleCountFlagBits)shader_common->shader_settings.num_msaa_samples;
@@ -234,7 +251,8 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
   if (shader_common->shader_settings.depth_write)
     depth_write = VK_TRUE;
 
-  VkPipelineDepthStencilStateCreateInfo depth_stencil = {0};
+  VkPipelineDepthStencilStateCreateInfo depth_stencil;
+  memset(&depth_stencil, 0, sizeof(VkPipelineDepthStencilStateCreateInfo));
   depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
   depth_stencil.depthTestEnable = depth_test;
   depth_stencil.depthWriteEnable = depth_write;
@@ -242,7 +260,8 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
   depth_stencil.depthBoundsTestEnable = VK_FALSE;
   depth_stencil.stencilTestEnable = VK_FALSE;
 
-  VkPipelineLayoutCreateInfo pipeline_layout_info = {0};
+  VkPipelineLayoutCreateInfo pipeline_layout_info;
+  memset(&pipeline_layout_info, 0, sizeof(VkPipelineLayoutCreateInfo));
   pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipeline_layout_info.setLayoutCount = 1;
   pipeline_layout_info.pSetLayouts = &(shader_common->shader_vulkan.descriptor_set_layout);
@@ -267,13 +286,15 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
   if (vkCreatePipelineLayout(api_common->vulkan_api.device, &pipeline_layout_info, NULL, &(shader_common->shader_vulkan.pipeline_layout)) != VK_SUCCESS)
     return 0;
 
-  VkPipelineDynamicStateCreateInfo dynamic_state_info = {0};
+  VkPipelineDynamicStateCreateInfo dynamic_state_info;
+  memset(&dynamic_state_info, 0, sizeof(VkPipelineDynamicStateCreateInfo));
   dynamic_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
   VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
   dynamic_state_info.dynamicStateCount = 2;
   dynamic_state_info.pDynamicStates = dynamicStates;
 
-  VkGraphicsPipelineCreateInfo pipeline_info = {0};
+  VkGraphicsPipelineCreateInfo pipeline_info;
+  memset(&pipeline_info, 0, sizeof(VkGraphicsPipelineCreateInfo));
   pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
   pipeline_info.stageCount = 2;
   pipeline_info.pStages = shader_stages;
@@ -310,7 +331,8 @@ uint_fast8_t shader_compute_vulkan_init(struct ShaderCommon* shader, struct APIC
 
   close_shader_file(compute_shader_code);
 
-  VkPipelineLayoutCreateInfo pipeline_layout_create_info = {0};
+  VkPipelineLayoutCreateInfo pipeline_layout_create_info;
+  memset(&pipeline_layout_create_info, 0, sizeof(VkPipelineLayoutCreateInfo));
   pipeline_layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipeline_layout_create_info.setLayoutCount = 1;
   pipeline_layout_create_info.pSetLayouts = &(shader->shader_vulkan.descriptor_set_layout);
@@ -318,7 +340,8 @@ uint_fast8_t shader_compute_vulkan_init(struct ShaderCommon* shader, struct APIC
   if (vkCreatePipelineLayout(api_common->vulkan_api.device, &pipeline_layout_create_info, NULL, &(shader->shader_vulkan.pipeline_layout)))
     return 1;
 
-  VkComputePipelineCreateInfo pipeline_info = {0};
+  VkComputePipelineCreateInfo pipeline_info;
+  memset(&pipeline_info, 0, sizeof(VkComputePipelineCreateInfo));
   pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
   pipeline_info.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
   pipeline_info.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;

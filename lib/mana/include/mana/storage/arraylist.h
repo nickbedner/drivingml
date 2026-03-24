@@ -15,7 +15,7 @@ struct ArrayList {
 static inline void array_list_init(struct ArrayList* array_list) {
   array_list->size = 0;
   array_list->capacity = ARRAY_LIST_INIT_CAPACITY;
-  array_list->items = malloc(sizeof(void*) * ARRAY_LIST_INIT_CAPACITY);
+  array_list->items = (void**)malloc(sizeof(void*) * ARRAY_LIST_INIT_CAPACITY);
 }
 
 static inline void array_list_delete(struct ArrayList* array_list) {
@@ -35,7 +35,7 @@ static inline int array_list_empty(struct ArrayList* array_list) {
 }
 
 static inline void array_list_resize(struct ArrayList* array_list, size_t capacity) {
-  void** new_items = realloc(array_list->items, sizeof(void*) * capacity);
+  void** new_items = (void**)realloc(array_list->items, sizeof(void*) * capacity);
 
   // If realloc fails array list will not be resized
   if (new_items) {

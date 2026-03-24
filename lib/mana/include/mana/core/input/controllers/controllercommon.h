@@ -109,8 +109,6 @@ enum KEYBOARD_MOUSE_CONTROLLER_ACTIONS {
 #include <cfgmgr32.h>
 #include <winusb.h>
 
-DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE, 0xA5DCBF10, 0x6530, 0x11D2, 0x90, 0x1F, 0x00, 0xC0, 0x4F, 0xB9, 0x51, 0xED);
-
 enum GC_CONTROLLER_ACTIONS {
   GC_CONTROLLER_ACTION_A = 0,
   GC_CONTROLLER_ACTION_B,
@@ -235,18 +233,17 @@ struct PlaystationController {
 
 #ifdef GAMECUBE_CONTROLLER_SUPPORTED
 struct GamecubeController {
-  // bool first_read;
-  // uint8_t joystick_x_start;
-  // uint8_t joystick_y_start;
-  // uint8_t cstick_x_start;
-  // uint8_t cstick_y_start;
 #ifdef _WIN64
+  // --- 8-byte aligned first ---
   WINUSB_INTERFACE_HANDLE winusb_handle;
-  UCHAR read_pipe_id;
-  UCHAR write_pipe_id;
   OVERLAPPED overlapped;
   BYTE buffer[GC_ADAPTER_TOTAL_BUFFER_SIZE];
+  UCHAR read_pipe_id;
+  UCHAR write_pipe_id;
   bool reading_pending;
+  // Note: Padding for 4 byte grouping
+  uint8_t _pad0;
+
 #else
   float placeholder;
 #endif

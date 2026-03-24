@@ -1,9 +1,11 @@
 #include "drivingml/core/ac_model.h"
 
-void relu_asm(float* x, int n);
-
 int load_ac_model(const char* path, struct ACModel* model) {
-  FILE* f = fopen(path, "rb");
+  FILE* f = NULL;
+  if (fopen_s(&f, path, "rb") != 0 || !f) {
+    printf("Failed to open %s\n", path);
+    return 0;
+  }
   if (!f) {
     printf("Failed to open %s\n", path);
     return 0;
@@ -48,20 +50,18 @@ void linear_layer(const float* weights, const float* bias, int input_size, int o
 
     const float* weight_row = weights + out_neuron * input_size;
 
-    for (int in_feature = 0; in_feature < input_size; in_feature++) {
+    for (int in_feature = 0; in_feature < input_size; in_feature++)
       neuron_sum += weight_row[in_feature] * input[in_feature];
-    }
 
     output[out_neuron] = neuron_sum;
   }
 }
 
-// Remeber relu = Rectified Linear Unit, which introduces nonlinearity into the model
+// Note: Remember relu = Rectified Linear Unit, which introduces nonlinearity into the model
 void relu_activation(float* values, int count) {
   for (int neuron = 0; neuron < count; neuron++) {
-    if (values[neuron] < 0.0f) {
+    if (values[neuron] < 0.0f)
       values[neuron] = 0.0f;
-    }
   }
 }
 

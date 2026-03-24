@@ -10,7 +10,7 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common,
 
   // build packed pixel buffer if custom mip chain
   void* upload_pixels = pixels;
-  uint32_t mip_count = 1;
+  uint8_t mip_count = 1;
 
   // Keep custom mip loading only for normal 2D textures for now.
   if (layer_count == 1 && texture_common->texture_settings.mip_type == MIP_CUSTOM) {
@@ -25,9 +25,7 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common,
       if (!w) w = 1;
       uint32_t h = texture_common->height >> level;
       if (!h) h = 1;
-      total += (VkDeviceSize)w * (VkDeviceSize)h *
-               (VkDeviceSize)texture_common->channels *
-               (VkDeviceSize)bytes_per_channel_local;
+      total += (VkDeviceSize)w * (VkDeviceSize)h * (VkDeviceSize)texture_common->channels * (VkDeviceSize)bytes_per_channel_local;
     }
 
     uint8_t* combined = (uint8_t*)malloc((size_t)total);
@@ -37,14 +35,11 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common,
     }
 
     VkDeviceSize off = 0;
-    VkDeviceSize sz0 = (VkDeviceSize)texture_common->width *
-                       (VkDeviceSize)texture_common->height *
-                       (VkDeviceSize)texture_common->channels *
-                       (VkDeviceSize)bytes_per_channel_local;
+    VkDeviceSize sz0 = (VkDeviceSize)texture_common->width * (VkDeviceSize)texture_common->height * (VkDeviceSize)texture_common->channels * (VkDeviceSize)bytes_per_channel_local;
     memcpy(combined + off, pixels, (size_t)sz0);
     off += sz0;
 
-    for (uint32_t level = 1; level < mip_count; level++) {
+    for (uint8_t level = 1; level < mip_count; level++) {
       char* mip_path = texture_common_build_mip_path(texture_common->path, level);
       if (!mip_path) {
         free(combined);
@@ -97,59 +92,76 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common,
 
   VkSamplerAddressMode mode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
   switch (texture_settings.mode_type) {
-    case MODE_REPEAT:
+    case MODE_REPEAT: {
       mode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
       break;
-    case MODE_MIRRORED_REPEAT:
+    }
+    case MODE_MIRRORED_REPEAT: {
       mode = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
       break;
-    case MODE_CLAMP_TO_EDGE:
+    }
+    case MODE_CLAMP_TO_EDGE: {
       mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
       break;
-    case MODE_CLAMP_TO_BORDER:
+    }
+    case MODE_CLAMP_TO_BORDER: {
       mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
       break;
+    }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcovered-switch-default"
+    default: {
+      __builtin_unreachable();
+    }
+#pragma clang diagnostic pop
   }
 
   uint8_t bytes_per_channel = 1;
   uint8_t channels = 4;
   VkFormat format = VK_FORMAT_UNDEFINED;
   switch (texture_settings.format_type) {
-    case FORMAT_R8_UNORM:
+    case FORMAT_R8_UNORM: {
       format = VK_FORMAT_R8_UNORM;
       bytes_per_channel = 1;
       channels = 1;
       break;
-    case FORMAT_R8G8B8A8_UNORM:
+    }
+    case FORMAT_R8G8B8A8_UNORM: {
       format = VK_FORMAT_R8G8B8A8_UNORM;
       bytes_per_channel = 1;
       channels = 4;
       break;
-    case FORMAT_R16_UNORM:
+    }
+    case FORMAT_R16_UNORM: {
       format = VK_FORMAT_R16_UNORM;
       bytes_per_channel = 2;
       channels = 1;
       break;
-    case FORMAT_R16G16B16A16_UNORM:
+    }
+    case FORMAT_R16G16B16A16_UNORM: {
       format = VK_FORMAT_R16G16B16A16_UNORM;
       bytes_per_channel = 2;
       channels = 4;
       break;
-    case FORMAT_R32_SFLOAT:
+    }
+    case FORMAT_R32_SFLOAT: {
       format = VK_FORMAT_R32_SFLOAT;
       bytes_per_channel = 4;
       channels = 1;
       break;
-    case FORMAT_R32G32B32A32_SFLOAT:
+    }
+    case FORMAT_R32G32B32A32_SFLOAT: {
       format = VK_FORMAT_R32G32B32A32_SFLOAT;
       bytes_per_channel = 4;
       channels = 4;
       break;
-    default:
-      format = VK_FORMAT_R8G8B8A8_UNORM;
-      bytes_per_channel = 1;
-      channels = 4;
-      break;
+    }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcovered-switch-default"
+    default: {
+      __builtin_unreachable();
+    }
+#pragma clang diagnostic pop
   }
 
   uint32_t mip_levels = 1;
@@ -420,41 +432,44 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common,
   float max_anisotropy = 1.0f;
 
   switch (texture_settings.filter_type) {
-    case FILTER_NEAREST:
+    case FILTER_NEAREST: {
       min_filter = VK_FILTER_NEAREST;
       mag_filter = VK_FILTER_NEAREST;
       mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
       anisotropy_enable_vulkan = VK_FALSE;
       max_anisotropy = 1.0f;
       break;
-    case FILTER_BILINEAR:
+    }
+    case FILTER_BILINEAR: {
       min_filter = VK_FILTER_LINEAR;
       mag_filter = VK_FILTER_LINEAR;
       mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
       anisotropy_enable_vulkan = VK_FALSE;
       max_anisotropy = 1.0f;
       break;
-    case FILTER_TRILINEAR:
+    }
+    case FILTER_TRILINEAR: {
       min_filter = VK_FILTER_LINEAR;
       mag_filter = VK_FILTER_LINEAR;
       mipmap_mode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
       anisotropy_enable_vulkan = VK_FALSE;
       max_anisotropy = 1.0f;
       break;
-    case FILTER_ANISOTROPIC:
+    }
+    case FILTER_ANISOTROPIC: {
       min_filter = VK_FILTER_LINEAR;
       mag_filter = VK_FILTER_LINEAR;
       mipmap_mode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
       anisotropy_enable_vulkan = VK_TRUE;
       max_anisotropy = texture_settings.max_anisotropy;
       break;
-    default:
-      min_filter = VK_FILTER_NEAREST;
-      mag_filter = VK_FILTER_NEAREST;
-      mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-      anisotropy_enable_vulkan = VK_FALSE;
-      max_anisotropy = 1.0f;
-      break;
+    }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcovered-switch-default"
+    default: {
+      __builtin_unreachable();
+    }
+#pragma clang diagnostic pop
   }
 
   vulkan_graphics_utils_create_sampler(

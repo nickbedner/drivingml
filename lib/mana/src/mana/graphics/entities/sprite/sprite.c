@@ -1,18 +1,18 @@
 #include "mana/graphics/entities/sprite/sprite.h"
 
-uint_fast8_t sprite_init(struct Sprite *sprite, struct APICommon *api_common, struct Shader *shader, struct Texture *texture, size_t num) {
+uint_fast8_t sprite_init(struct Sprite* sprite, struct APICommon* api_common, struct Shader* shader, struct Texture* texture, size_t num) {
 #ifdef VULKAN_API_SUPPORTED
   if (api_common->api_type == API_VULKAN)
     sprite->sprite_func = VULKAN_SPRITE;
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-  if (api_common->api_type == API_DIRECTX12)
+  if (api_common->api_type == API_DIRECTX_12)
     sprite->sprite_func = DIRECTX_12_SPRITE;
 #endif
 
   sprite->sprite_common.sprite_num = num;
 
-  sprite->sprite_common.image_mesh = calloc(1, sizeof(struct Mesh));
+  sprite->sprite_common.image_mesh = (struct Mesh*)calloc(1, sizeof(struct Mesh));
   mesh_init(sprite->sprite_common.image_mesh, MESH_TYPE_SPRITE, api_common);
 
   sprite->sprite_common.image_texture = texture;
@@ -84,22 +84,22 @@ uint_fast8_t sprite_init(struct Sprite *sprite, struct APICommon *api_common, st
   return SPRITE_SUCCESS;
 }
 
-void sprite_delete(struct Sprite *sprite, struct APICommon *api_common) {
+void sprite_delete(struct Sprite* sprite, struct APICommon* api_common) {
   sprite->sprite_func.sprite_delete(&sprite->sprite_common, api_common);
 
   mesh_delete(sprite->sprite_common.image_mesh, api_common);
   free(sprite->sprite_common.image_mesh);
 }
 
-void sprite_render(struct Sprite *sprite, struct GBufferCommon *gbuffer_common) {
+void sprite_render(struct Sprite* sprite, struct GBufferCommon* gbuffer_common) {
   sprite->sprite_func.sprite_render(&sprite->sprite_common, gbuffer_common);
 }
 
-void sprite_update_uniforms(struct Sprite *sprite, struct APICommon *api_common, struct GBufferCommon *gbuffer_common) {
+void sprite_update_uniforms(struct Sprite* sprite, struct APICommon* api_common, struct GBufferCommon* gbuffer_common) {
   sprite->sprite_func.sprite_update_uniforms(&sprite->sprite_common, api_common, gbuffer_common);
 }
 
-void sprite_recreate(struct Sprite *sprite, struct APICommon *api_common, size_t num) {
+void sprite_recreate(struct Sprite* sprite, struct APICommon* api_common, size_t num) {
   sprite->sprite_func.sprite_delete(&sprite->sprite_common, api_common);
   sprite->sprite_func.sprite_init(&sprite->sprite_common, api_common, sprite->sprite_common.shader, sprite->sprite_common.image_texture, num);
 }

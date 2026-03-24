@@ -29,8 +29,8 @@ static uint32_t car_frame_from_camera(float heading, float steer, vec3 car_pos, 
   const float TURN_DEADZONE = 0.25f;
 
   // Direction from car -> camera in world xy
-  float to_cam_x = (float)(camera_pos.x - car_pos.x);
-  float to_cam_y = (float)(camera_pos.y - car_pos.y);
+  float to_cam_x = (float)(camera_pos.x - (double)car_pos.x);
+  float to_cam_y = (float)(camera_pos.y - (double)car_pos.y);
   float camera_yaw = yaw_from_xy(to_cam_x, to_cam_y);
 
   // Car forward direction in world XY
@@ -41,7 +41,8 @@ static uint32_t car_frame_from_camera(float heading, float steer, vec3 car_pos, 
 
   float step = (2.0f * (float)M_PI) / (float)BASE_FRAME_COUNT;
 
-  uint32_t frame = (uint32_t)floorf((relative_yaw + 0.5f * step) / step) % BASE_FRAME_COUNT;
+  uint32_t frame = (uint32_t)((relative_yaw + 0.5f * step) / step);
+  frame %= BASE_FRAME_COUNT;
 
   // Only use the extra steering frames when we're looking at the front
   if (frame == FRONT_FRAME) {
@@ -54,14 +55,14 @@ static uint32_t car_frame_from_camera(float heading, float steer, vec3 car_pos, 
   return frame;
 }
 static quat sprite_billboard_rotation(vec3 car_pos, vec3d camera_pos) {
-  float to_cam_x = (float)(camera_pos.x - car_pos.x);
-  float to_cam_y = (float)(camera_pos.y - car_pos.y);
+  float to_cam_x = (float)(camera_pos.x - (double)car_pos.x);
+  float to_cam_y = (float)(camera_pos.y - (double)car_pos.y);
   float camera_yaw = yaw_from_xy(to_cam_x, to_cam_y);
 
-  mat4 rot = mat4_rotate(MAT4_IDENTITY, -M_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
+  mat4 rot = mat4_rotate(MAT4_IDENTITY, (float)-M_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
 
   // Use camera yaw instead of heading
-  rot = mat4_rotate(rot, -camera_yaw - M_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
+  rot = mat4_rotate(rot, -camera_yaw - (float)M_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
 
   return mat4_to_quaternion(rot);
 }
@@ -81,8 +82,8 @@ static int recv_all(SOCKET sock, char* buffer, int size) {
 static inline void place_marker(struct Sprite* marker, float x, float y) {
   marker->sprite_common.position = (vec3){.x = x, .y = y, .z = 2.35f * 2.5f};
   marker->sprite_common.scale = (vec3){.x = 2.5f, .y = 2.5f, .z = 0.0f};
-  mat4 marker_rotation_0 = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  marker_rotation_0 = mat4_rotate(marker_rotation_0, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+  mat4 marker_rotation_0 = mat4_rotate(MAT4_IDENTITY, (float)-M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
+  marker_rotation_0 = mat4_rotate(marker_rotation_0, (float)M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
   marker->sprite_common.rotation = mat4_to_quaternion(marker_rotation_0);
 }
 
@@ -116,10 +117,10 @@ static void load_map_from_xml(struct Game* game, struct Mana* mana, const char* 
     float x = px ? (float)atof(px) : 0.0f;
     float y = py ? (float)atof(py) : 0.0f;
 
-    game->track->sprite_common.position = (vec3){x, y, 0};
-    game->track->sprite_common.scale = (vec3){scale, scale, 0};
+    game->track->sprite_common.position = (vec3){.x = x, .y = y, .z = 0};
+    game->track->sprite_common.scale = (vec3){.x = scale, .y = scale, .z = 0};
 
-    mat4 rot = mat4_rotate(MAT4_IDENTITY, M_PI, (vec3){0.0, 0.5, 0.0});
+    mat4 rot = mat4_rotate(MAT4_IDENTITY, (float)M_PI, (vec3){.x = 0.0, .y = 0.5, .z = 0.0});
     game->track->sprite_common.rotation = mat4_to_quaternion(rot);
   }
 
@@ -177,10 +178,10 @@ static void load_map_from_xml(struct Game* game, struct Mana* mana, const char* 
             &(mana->api.api_common),
             "/textures/tree.png");
 
-        game->trees[i]->sprite_common.position = (vec3){x, y, 4.5f};
-        game->trees[i]->sprite_common.scale = (vec3){5.0f, 5.0f, 0.0f};
+        game->trees[i]->sprite_common.position = (vec3){.x = x, .y = y, .z = 4.5f};
+        game->trees[i]->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
 
-        mat4 rot = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){0.5, 0, 0});
+        mat4 rot = mat4_rotate(MAT4_IDENTITY, -(float)M_PI / 2, (vec3){.x = 0.5, .y = 0, .z = 0});
         game->trees[i]->sprite_common.rotation = mat4_to_quaternion(rot);
       }
     }
@@ -351,7 +352,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   else
     game->current_npcs += 1;
 
-  for (int npc_num = 0; npc_num < game->current_npcs; npc_num++) {
+  for (int32_t npc_num = 0; npc_num < game->current_npcs; npc_num++) {
     if (npc_num == 0) {
       if (EVAL_MODE == false)
         load_ac_model("checkpoints/ac_weights.bin", &(game->npcs[npc_num].model));
@@ -367,7 +368,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
       load_ac_model("checkpoints/ac_weights500.bin", &(game->npcs[npc_num].model));
     }
     game->npcs[npc_num].speed = 0.0f;
-    game->npcs[npc_num].position = (vec3){.x = game->starting_pos.x - (npc_num * 8), .y = game->starting_pos.y + ((npc_num % 4) * 5.0f), .z = game->starting_pos.z};
+    game->npcs[npc_num].position = (vec3){.x = game->starting_pos.x - ((float)npc_num * 8), .y = game->starting_pos.y + ((float)(npc_num % 4) * 5.0f), .z = game->starting_pos.z};
     game->npcs[npc_num].sprite->sprite_common.position = game->npcs[npc_num].position;
     game->npcs[npc_num].sprite->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
     game->npcs[npc_num].heading = game->starting_heading;  // M_PI / 2.0f;  // facing down -Y
@@ -386,8 +387,8 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 
   water_shader_init(&(game->water_shader), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 3);
   water_init(&(game->water), &(mana->api.api_common), &(game->water_shader.shader), texture_manager_get(game->sprite_manager.sprite_manager_common.texture_manager, "/textures/waterm1.png"));
-  game->water.water_common.position = (vec3){0.0f, 0.0f, -5.0f};
-  game->water.water_common.scale = (vec3){1024.0f, 1024.0f, 1.0f};
+  game->water.water_common.position = (vec3){.x = 0.0f, .y = 0.0f, .z = -5.0f};
+  game->water.water_common.scale = (vec3){.x = 1024.0f, .y = 1024.0f, .z = 1.0f};
 }
 
 void game_delete(struct Game* game, struct Mana* mana) {
@@ -451,8 +452,8 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
   bool s_pressed = false;
   bool d_pressed = false;
 
-  for (size_t i = 0; i < input_manager->controllers.size; i++) {
-    struct Controller* controller = array_list_get(&(input_manager->controllers), i);
+  for (size_t controller_num = 0; controller_num < input_manager->controllers.size; controller_num++) {
+    struct Controller* controller = (struct Controller*)array_list_get(&(input_manager->controllers), controller_num);
     if (controller->controller_common.controller_type == CONTROLLER_KEYBOARD_MOUSE) {
       struct KeyboardMouseController* keyboard_mouse_controller =
           &(controller->controller_common.keyboard_mouse_controller);

@@ -1,12 +1,12 @@
 #include "mana/graphics/utilities/mesh/mesh.h"
 
-uint_fast8_t mesh_init(struct Mesh *mesh, enum MESH_TYPE mesh_type, struct APICommon *api_common) {
+uint_fast8_t mesh_init(struct Mesh* mesh, enum MESH_TYPE mesh_type, struct APICommon* api_common) {
 #ifdef VULKAN_API_SUPPORTED
   if (api_common->api_type == API_VULKAN)
     mesh->mesh_func = MESH_VULKAN;
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-  if (api_common->api_type == API_DIRECTX12)
+  if (api_common->api_type == API_DIRECTX_12)
     mesh->mesh_func = MESH_DIRECTX12;
 #endif
 
@@ -44,15 +44,21 @@ uint_fast8_t mesh_init(struct Mesh *mesh, enum MESH_TYPE mesh_type, struct APICo
       mesh_memory_size = sizeof(struct VertexGrass);
       break;
     }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcovered-switch-default"
+    default: {
+      __builtin_unreachable();
+    }
+#pragma clang diagnostic pop
   }
 
   mesh->mesh_common.mesh_type = mesh_type;
   mesh->mesh_common.mesh_memory_size = mesh_memory_size;
 
-  mesh->mesh_common.vertices = calloc(1, sizeof(struct Vector));
+  mesh->mesh_common.vertices = (struct Vector*)calloc(1, sizeof(struct Vector));
   vector_init(mesh->mesh_common.vertices, mesh_memory_size);
 
-  mesh->mesh_common.indices = calloc(1, sizeof(struct Vector));
+  mesh->mesh_common.indices = (struct Vector*)calloc(1, sizeof(struct Vector));
   vector_init(mesh->mesh_common.indices, sizeof(uint32_t));
 
   mesh->mesh_func.mesh_init(&(mesh->mesh_common), mesh_type, api_common);
@@ -60,7 +66,7 @@ uint_fast8_t mesh_init(struct Mesh *mesh, enum MESH_TYPE mesh_type, struct APICo
   return 0;
 }
 
-void mesh_delete(struct Mesh *mesh, struct APICommon *api_common) {
+void mesh_delete(struct Mesh* mesh, struct APICommon* api_common) {
   mesh->mesh_func.mesh_delete(&(mesh->mesh_common), api_common);
 
   vector_delete(mesh->mesh_common.vertices);
@@ -97,40 +103,44 @@ uint32_t mesh_get_memory_size(enum MESH_TYPE mesh_type) {
     case MESH_TYPE_GRASS: {
       return mesh_memory_size = sizeof(struct VertexGrass);
     }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcovered-switch-default"
+    default: {
+      __builtin_unreachable();
+    }
+#pragma clang diagnostic pop
   }
-
-  return mesh_memory_size;
 }
 
-void mesh_generate_buffers(struct Mesh *mesh, struct APICommon *api_common) {
+void mesh_generate_buffers(struct Mesh* mesh, struct APICommon* api_common) {
   mesh->mesh_func.mesh_generate_buffers(&(mesh->mesh_common), api_common);
 }
 
-void mesh_clear(struct Mesh *mesh) {
+void mesh_clear(struct Mesh* mesh) {
   mesh_clear_vertices(mesh);
   mesh_clear_indices(mesh);
 }
 
-void mesh_clear_vertices(struct Mesh *mesh) {
+void mesh_clear_vertices(struct Mesh* mesh) {
   vector_clear(mesh->mesh_common.vertices);
 }
 
-void mesh_clear_indices(struct Mesh *mesh) {
+void mesh_clear_indices(struct Mesh* mesh) {
   vector_clear(mesh->mesh_common.indices);
 }
 
-void mesh_assign_vertex(struct Mesh *mesh, void *vertex) {
+void mesh_assign_vertex(struct Mesh* mesh, void* vertex) {
   vector_push_back(mesh->mesh_common.vertices, vertex);
 }
 
-void mesh_assign_indice(struct Mesh *mesh, uint32_t indice) {
+void mesh_assign_indice(struct Mesh* mesh, uint32_t indice) {
   vector_push_back(mesh->mesh_common.indices, &indice);
 }
 
-void mesh_fullscreen_triangle(struct Mesh *mesh) {
-  mesh_assign_vertex(mesh, (void *)&(struct VertexTriangle){.position = {.x = -1.0f, .y = 1.0f, .z = 0.0f}});
-  mesh_assign_vertex(mesh, (void *)&(struct VertexTriangle){.position = {.x = -1.0f, .y = -2.0f, .z = 0.0f}});
-  mesh_assign_vertex(mesh, (void *)&(struct VertexTriangle){.position = {.x = 2.0f, .y = 1.0f, .z = 0.0f}});
+void mesh_fullscreen_triangle(struct Mesh* mesh) {
+  mesh_assign_vertex(mesh, (void*)&(struct VertexTriangle){.position = {.x = -1.0f, .y = 1.0f, .z = 0.0f}});
+  mesh_assign_vertex(mesh, (void*)&(struct VertexTriangle){.position = {.x = -1.0f, .y = -2.0f, .z = 0.0f}});
+  mesh_assign_vertex(mesh, (void*)&(struct VertexTriangle){.position = {.x = 2.0f, .y = 1.0f, .z = 0.0f}});
 
   mesh_assign_indice(mesh, 0);
   mesh_assign_indice(mesh, 1);

@@ -14,7 +14,7 @@ struct Stack {
 static inline void stack_init(struct Stack* stack) {
   stack->top = 0;
   stack->capacity = STACK_INIT_CAPACITY;
-  stack->items = malloc(sizeof(void*) * STACK_INIT_CAPACITY);
+  stack->items = (void**)malloc(sizeof(void*) * STACK_INIT_CAPACITY);
 }
 
 static inline void stack_delete(struct Stack* stack) {
@@ -34,7 +34,7 @@ static inline size_t stack_capacity(struct Stack* stack) {
 }
 
 static inline void stack_resize(struct Stack* stack, size_t capacity) {
-  void** newItems = realloc((char*)stack->items, sizeof(void*) * capacity);
+  void** newItems = (void**)realloc((char*)stack->items, sizeof(void*) * capacity);
 
   if (newItems) {
     stack->items = newItems;

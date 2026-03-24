@@ -36,6 +36,16 @@ struct NPC {
 struct Game {
   struct Window* window;
 
+  struct Sprite* track;
+  struct Sprite* floor_plane;
+  struct Sprite* flag1;
+  struct Sprite* flag2;
+
+  struct Sprite* marker[MAX_MARKERS];
+  struct Sprite* trees[MAX_TREES];
+
+  SOCKET sock;
+
   struct ArrayList models;
 
   struct ModelShader model_shader;
@@ -50,38 +60,20 @@ struct Game {
 
   struct Player player;
 
-  SOCKET sock;
+  struct NPC npcs[MAX_NPCS];
+
+  vec3 starting_pos;
+
   float previous_reward;
+  float starting_heading;
 
   int start_timer;
   int timer;
 
-  // ACModel model;
-  // float mario_speed;
-  // float car_heading;
-  // vec3 mario_position;
-  // struct Sprite* mario;
-  struct Sprite* track;
-  // struct Sprite* start;
-  // struct Sprite* finish;
-  // struct Sprite* fence;
-  struct Sprite* floor_plane;
-  // struct Sprite* cloud;
-  struct Sprite* flag1;
-  struct Sprite* flag2;
-
   int camera_current_follow_kart;
 
   int total_markers;
-  struct Sprite* marker[MAX_MARKERS];
-
   int current_npcs;
-  struct NPC npcs[MAX_NPCS];
-
-  vec3 starting_pos;
-  float starting_heading;
-
-  struct Sprite* trees[MAX_TREES];
   int total_trees;
 };
 

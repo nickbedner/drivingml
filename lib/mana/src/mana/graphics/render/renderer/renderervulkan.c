@@ -1,11 +1,11 @@
 #include "mana/graphics/render/renderer/renderervulkan.h"
 
-static bool window_device_can_present(struct APICommon *api_common, struct SwapChain *swap_chain) {
-  struct VulkanAPI *vulkan_api = &api_common->vulkan_api;
+static bool window_device_can_present(struct APICommon* api_common, struct SwapChain* swap_chain) {
+  struct VulkanAPI* vulkan_api = &api_common->vulkan_api;
 
   uint32_t queue_family_count = 0;
   vkGetPhysicalDeviceQueueFamilyProperties(vulkan_api->physical_device, &queue_family_count, NULL);
-  VkQueueFamilyProperties *queue_families = alloca(queue_family_count * sizeof(VkQueueFamilyProperties));
+  VkQueueFamilyProperties* queue_families = (VkQueueFamilyProperties*)alloca(queue_family_count * sizeof(VkQueueFamilyProperties));
   vkGetPhysicalDeviceQueueFamilyProperties(vulkan_api->physical_device, &queue_family_count, queue_families);
 
   for (uint32_t queue_family_num = 0; queue_family_num < queue_family_count; queue_family_num++) {
@@ -21,9 +21,10 @@ static bool window_device_can_present(struct APICommon *api_common, struct SwapC
   return false;
 }
 
-uint8_t vulkan_renderer_init(struct APICommon *api_common, struct Surface *surface, struct SwapChain *swap_chain, struct GBuffer *gbuffer, struct PostProcess *post_process, struct RendererSettings *renderer_settings) {
+uint8_t vulkan_renderer_init(struct APICommon* api_common, struct Surface* surface, struct SwapChain* swap_chain, struct GBuffer* gbuffer, struct PostProcess* post_process, struct RendererSettings* renderer_settings) {
   /* create the window surface */
-  VkWin32SurfaceCreateInfoKHR surface_create_info = {0};
+  VkWin32SurfaceCreateInfoKHR surface_create_info;
+  memset(&surface_create_info, 0, sizeof(surface_create_info));
   surface_create_info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
   surface_create_info.pNext = NULL;
   surface_create_info.flags = 0;
@@ -44,10 +45,10 @@ uint8_t vulkan_renderer_init(struct APICommon *api_common, struct Surface *surfa
   return 0;
 }
 
-void vulkan_renderer_delete(struct APICommon *api_common, struct Surface *surface, struct SwapChain *swap_chain, struct GBuffer *gbuffer, struct PostProcess *post_process, struct RendererSettings *renderer_settings) {
+void vulkan_renderer_delete(struct APICommon* api_common, struct Surface* surface, struct SwapChain* swap_chain, struct GBuffer* gbuffer, struct PostProcess* post_process, struct RendererSettings* renderer_settings) {
   vkDestroySurfaceKHR(api_common->vulkan_api.instance, swap_chain->swap_chain_common.swap_chain_vulkan.surface, NULL);
 }
 
-void vulkan_renderer_wait_for_device(struct APICommon *api_common) {
+void vulkan_renderer_wait_for_device(struct APICommon* api_common) {
   vkDeviceWaitIdle(api_common->vulkan_api.device);
 }

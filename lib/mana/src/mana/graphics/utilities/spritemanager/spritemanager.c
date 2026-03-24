@@ -6,7 +6,7 @@ void sprite_manager_init(struct SpriteManager* sprite_manager, struct TextureMan
     sprite_manager->sprite_manager_func = VULKAN_SPRITE_MANAGER;
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-  if (api_common->api_type == API_DIRECTX12)
+  if (api_common->api_type == API_DIRECTX_12)
     sprite_manager->sprite_manager_func = DIRECTX_12_SPRITE_MANAGER;
 #endif
 
@@ -21,7 +21,7 @@ void sprite_manager_init(struct SpriteManager* sprite_manager, struct TextureMan
 
 void sprite_manager_delete(struct SpriteManager* sprite_manager, struct APICommon* api_common) {
   for (size_t sprite_num = 0; sprite_num < array_list_size(&(sprite_manager->sprite_manager_common.sprites)); sprite_num++) {
-    struct Sprite* sprite = array_list_get(&(sprite_manager->sprite_manager_common.sprites), sprite_num);
+    struct Sprite* sprite = (struct Sprite*)array_list_get(&(sprite_manager->sprite_manager_common.sprites), sprite_num);
     sprite_delete(sprite, api_common);
     free(sprite);
   }
@@ -40,7 +40,7 @@ void sprite_manager_resize(struct SpriteManager* sprite_manager, struct APICommo
 
 struct Sprite* sprite_manager_add_sprite(struct SpriteManager* sprite_manager, struct APICommon* api_common, const char* texture_name) {
   // Note: These would be pooled and preallocated I'm guessing
-  struct Sprite* sprite = calloc(1, sizeof(struct Sprite));
+  struct Sprite* sprite = (struct Sprite*)calloc(1, sizeof(struct Sprite));
   size_t sprite_num = array_list_size(&(sprite_manager->sprite_manager_common.sprites));
   sprite_manager->sprite_manager_func.sprite_manager_add_sprite(&(sprite_manager->sprite_manager_common), api_common, sprite, sprite_num);
   sprite_init(sprite, api_common, &(sprite_manager->sprite_manager_common.sprite_shader.shader), texture_manager_get(sprite_manager->sprite_manager_common.texture_manager, texture_name), sprite_num);
@@ -51,16 +51,16 @@ struct Sprite* sprite_manager_add_sprite(struct SpriteManager* sprite_manager, s
 }
 
 void sprite_manager_remove(struct SpriteManager* sprite_manager, struct APICommon* api_common, size_t sprite_num) {
-  struct Sprite* moved_sprite = array_list_get(&(sprite_manager->sprite_manager_common.sprites), array_list_size(&(sprite_manager->sprite_manager_common.sprites)) - 1);
+  struct Sprite* moved_sprite = (struct Sprite*)array_list_get(&(sprite_manager->sprite_manager_common.sprites), array_list_size(&(sprite_manager->sprite_manager_common.sprites)) - 1);
   moved_sprite->sprite_common.sprite_num = sprite_num;
   array_list_swap(&(sprite_manager->sprite_manager_common.sprites), sprite_num, array_list_size(&(sprite_manager->sprite_manager_common.sprites)) - 1);
-  struct Sprite* old_sprite = array_list_pop_back(&(sprite_manager->sprite_manager_common.sprites));
+  struct Sprite* old_sprite = (struct Sprite*)array_list_pop_back(&(sprite_manager->sprite_manager_common.sprites));
   sprite_delete(old_sprite, api_common);
 }
 
 void sprite_manager_update_uniforms(struct SpriteManager* sprite_manager, struct APICommon* api_common, struct GBufferCommon* gbuffer_common) {
   for (size_t entity_num = 0; entity_num < array_list_size(&(sprite_manager->sprite_manager_common.sprites)); entity_num++)
-    sprite_update_uniforms(array_list_get(&(sprite_manager->sprite_manager_common.sprites), entity_num), api_common, gbuffer_common);
+    sprite_update_uniforms((struct Sprite*)array_list_get(&(sprite_manager->sprite_manager_common.sprites), entity_num), api_common, gbuffer_common);
 }
 
 static inline double sprite_depth(const struct Sprite* sprite, vec4d sort_key) {
@@ -93,7 +93,7 @@ static void sprite_insertion_sort(struct Sprite** sprites, size_t count, vec4d s
 void sprite_manager_render(struct SpriteManager* sprite_manager, struct GBufferCommon* gbuffer_common, vec4d sort_key) {
   struct Sprite* ordered_sprites[128] = {0};
   for (size_t i = 0; i < array_list_size(&(sprite_manager->sprite_manager_common.sprites)); i++)
-    ordered_sprites[i] = array_list_get(&sprite_manager->sprite_manager_common.sprites, i);
+    ordered_sprites[i] = (struct Sprite*)array_list_get(&sprite_manager->sprite_manager_common.sprites, i);
 
   sprite_insertion_sort(ordered_sprites + 2, array_list_size(&(sprite_manager->sprite_manager_common.sprites)) - 2, sort_key);
   for (size_t i = 0; i < array_list_size(&(sprite_manager->sprite_manager_common.sprites)); i++)

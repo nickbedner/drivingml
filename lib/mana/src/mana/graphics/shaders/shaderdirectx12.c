@@ -1,7 +1,7 @@
 #include "mana/graphics/shaders/shaderdirectx12.h"
 
-static HRESULT __stdcall shader_directx_12_open(ID3DInclude* this, D3D_INCLUDE_TYPE include_type, LPCSTR p_file_name, LPCVOID p_parent_data, LPCVOID* pp_data, UINT* p_bytes) {
-  char full_path[MAX_PATH_LENGTH];
+static HRESULT __stdcall shader_directx_12_open(ID3DInclude* this_cpp, D3D_INCLUDE_TYPE include_type, LPCSTR p_file_name, LPCVOID p_parent_data, LPCVOID* pp_data, UINT* p_bytes) {
+  char full_path[MAX_LENGTH_OF_PATH];
   FILE* file;
   errno_t err;
 
@@ -10,7 +10,7 @@ static HRESULT __stdcall shader_directx_12_open(ID3DInclude* this, D3D_INCLUDE_T
 
   if (err != 0 || !file) {
     // If that fails, try the common directory
-    snprintf(full_path, MAX_PATH_LENGTH, "./assets/shaders/hlsl/%s", p_file_name);
+    snprintf(full_path, MAX_LENGTH_OF_PATH, "./assets/shaders/hlsl/%s", p_file_name);
     err = fopen_s(&file, full_path, "rb");
 
     if (err != 0 || !file) {
@@ -33,7 +33,7 @@ static HRESULT __stdcall shader_directx_12_open(ID3DInclude* this, D3D_INCLUDE_T
   return S_OK;
 }
 
-static HRESULT __stdcall shader_directx_12_close(ID3DInclude* this, LPCVOID p_data) {
+static HRESULT __stdcall shader_directx_12_close(ID3DInclude* this_cpp, LPCVOID p_data) {
   // Note: This silences a warning about casting away const
   free((void*)(uintptr_t)p_data);
   return S_OK;
@@ -49,8 +49,8 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
 
   struct D3DIncludeC include_handler = {&v_table_c};
 
-  wchar_t vertex_path[MAX_LENGTH_OF_PATH];
-  wchar_t fragment_path[MAX_LENGTH_OF_PATH];
+  uint16_t vertex_path[MAX_LENGTH_OF_PATH];
+  uint16_t fragment_path[MAX_LENGTH_OF_PATH];
 
   // Build full shader paths directly
   swprintf_s(vertex_path, MAX_LENGTH_OF_PATH, L"%hs/shaders/hlsl/%hs.hlsl", api_common->asset_directory, shader_common->shader_settings.vertex_shader);
@@ -214,7 +214,8 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
     if (shader_common->shader_settings.render_target_format[i] != SHADER_RENDER_TARGET_FORMAT_D32_FLOAT)
       color_targets++;
 
-  D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {0};
+  D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc;
+  memset(&pso_desc, 0, sizeof(pso_desc));
   pso_desc.NumRenderTargets = color_targets;
 
   if (shader_common->shader_settings.vertex_attributes > 0) {
@@ -231,7 +232,8 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
   blend_desc.AlphaToCoverageEnable = FALSE;
   blend_desc.IndependentBlendEnable = FALSE;
 
-  D3D12_RENDER_TARGET_BLEND_DESC rt_blend = {0};
+  D3D12_RENDER_TARGET_BLEND_DESC rt_blend;
+  memset(&rt_blend, 0, sizeof(rt_blend));
   rt_blend.BlendEnable = shader_common->shader_settings.blend ? TRUE : FALSE;
   rt_blend.LogicOpEnable = FALSE;
 
@@ -255,7 +257,8 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
   pso_desc.PS.BytecodeLength = shader_common->shader_directx12.fragment_shader_blob->lpVtbl->GetBufferSize(shader_common->shader_directx12.fragment_shader_blob);
   pso_desc.RasterizerState = rasterizer_desc;
   pso_desc.BlendState = blend_desc;
-  D3D12_DEPTH_STENCIL_DESC depth_stencil_desc = {0};
+  D3D12_DEPTH_STENCIL_DESC depth_stencil_desc;
+  memset(&depth_stencil_desc, 0, sizeof(depth_stencil_desc));
   depth_stencil_desc.DepthEnable = depth_test;
   depth_stencil_desc.DepthWriteMask = shader_common->shader_settings.depth_write ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
   depth_stencil_desc.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
@@ -302,7 +305,8 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
     return 1;
   }
 
-  D3D12_DESCRIPTOR_HEAP_DESC sampler_heap_desc = {0};
+  D3D12_DESCRIPTOR_HEAP_DESC sampler_heap_desc;
+  memset(&sampler_heap_desc, 0, sizeof(sampler_heap_desc));
   sampler_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
   sampler_heap_desc.NumDescriptors = 1;  // Adjust this number as per your requirement.
   sampler_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
@@ -314,7 +318,8 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
   shader_common->shader_directx12.sampler_heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(shader_common->shader_directx12.sampler_heap, &(shader_common->shader_directx12.sampler_handle_cpu));
   shader_common->shader_directx12.sampler_heap->lpVtbl->GetGPUDescriptorHandleForHeapStart(shader_common->shader_directx12.sampler_heap, &(shader_common->shader_directx12.sampler_handle_gpu));
 
-  D3D12_SAMPLER_DESC sampler_desc = {0};
+  D3D12_SAMPLER_DESC sampler_desc;
+  memset(&sampler_desc, 0, sizeof(sampler_desc));
   sampler_desc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;     // or other filtering modes.
   sampler_desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;  // or other address modes.
   sampler_desc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;  // or other address modes.

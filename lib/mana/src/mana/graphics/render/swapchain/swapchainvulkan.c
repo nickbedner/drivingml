@@ -13,7 +13,7 @@ static inline uint_fast8_t swap_chain_vulkan_init_common(struct SwapChainCommon*
 
   if (format_count != 0) {
     vector_resize(&swap_chain_support.formats, format_count);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(api_common->vulkan_api.physical_device, swap_chain_common->swap_chain_vulkan.surface, &format_count, swap_chain_support.formats.items);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(api_common->vulkan_api.physical_device, swap_chain_common->swap_chain_vulkan.surface, &format_count, (VkSurfaceFormatKHR*)swap_chain_support.formats.items);
     swap_chain_support.formats.size = format_count;
   }
 
@@ -22,11 +22,12 @@ static inline uint_fast8_t swap_chain_vulkan_init_common(struct SwapChainCommon*
 
   if (present_mode_count != 0) {
     vector_resize(&swap_chain_support.present_modes, present_mode_count);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(api_common->vulkan_api.physical_device, swap_chain_common->swap_chain_vulkan.surface, &present_mode_count, swap_chain_support.present_modes.items);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(api_common->vulkan_api.physical_device, swap_chain_common->swap_chain_vulkan.surface, &present_mode_count, (VkPresentModeKHR*)swap_chain_support.present_modes.items);
     swap_chain_support.present_modes.size = present_mode_count;
   }
 
-  VkSurfaceFormatKHR surface_format = {0};
+  VkSurfaceFormatKHR surface_format;
+  memset(&surface_format, 0, sizeof(surface_format));
 
   if (format_count == 1 && ((struct VkSurfaceFormatKHR*)vector_get(&swap_chain_support.formats, 0))->format == VK_FORMAT_UNDEFINED) {
     surface_format.format = VK_FORMAT_B8G8R8A8_UNORM;
@@ -52,7 +53,8 @@ static inline uint_fast8_t swap_chain_vulkan_init_common(struct SwapChainCommon*
   // Hmm looks like I should loop through, rank them, and generally pick the first one
   // If I need more color depth experiment with 16 or 10 bit, should support up to 12 bit monitors at least
 
-  VkPresentModeKHR present_mode = {0};
+  VkPresentModeKHR present_mode;
+  memset(&present_mode, 0, sizeof(present_mode));
 
   for (size_t swap_chain_present_num = 0; swap_chain_present_num < vector_size(&swap_chain_support.present_modes); swap_chain_present_num++) {
     if (*(enum VkPresentModeKHR*)vector_get(&swap_chain_support.present_modes, swap_chain_present_num) == VK_PRESENT_MODE_MAILBOX_KHR) {
@@ -83,7 +85,8 @@ static inline uint_fast8_t swap_chain_vulkan_init_common(struct SwapChainCommon*
   if (swap_chain_support.capabilities.maxImageCount > 0 && image_count > swap_chain_support.capabilities.maxImageCount)
     image_count = swap_chain_support.capabilities.maxImageCount;
 
-  VkSwapchainCreateInfoKHR swapchain_info = {0};
+  VkSwapchainCreateInfoKHR swapchain_info;
+  memset(&swapchain_info, 0, sizeof(swapchain_info));
   swapchain_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
   swapchain_info.surface = swap_chain_common->swap_chain_vulkan.surface;
   swapchain_info.minImageCount = image_count;
@@ -146,7 +149,8 @@ static inline uint_fast8_t swap_chain_vulkan_init_common(struct SwapChainCommon*
 
   // TODO: Clean this up like GBuffer
   for (size_t i = 0; i < MAX_SWAP_CHAIN_FRAMES; i++) {
-    VkImageViewCreateInfo view_info = {0};
+    VkImageViewCreateInfo view_info;
+    memset(&view_info, 0, sizeof(view_info));
     view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     view_info.image = swap_chain_common->swap_chain_vulkan.swap_chain_images[i];
     view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -163,12 +167,14 @@ static inline uint_fast8_t swap_chain_vulkan_init_common(struct SwapChainCommon*
     }
   }
 
-  struct VkAttachmentDescription color_attachment = {0};
+  struct VkAttachmentDescription color_attachment;
+  memset(&color_attachment, 0, sizeof(color_attachment));
   vulkan_graphics_utils_create_color_attachment(swap_chain_common->swap_chain_vulkan.swap_chain_image_format, &color_attachment);
   // color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 
-  VkAttachmentReference color_attachment_ref = {0};
+  VkAttachmentReference color_attachment_ref;
+  memset(&color_attachment_ref, 0, sizeof(color_attachment_ref));
   color_attachment_ref.attachment = 0;
   color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
@@ -178,7 +184,8 @@ static inline uint_fast8_t swap_chain_vulkan_init_common(struct SwapChainCommon*
   subpass.colorAttachmentCount = 1;
   subpass.pColorAttachments = &color_attachment_references;
 
-  VkSubpassDependency dependency = {0};
+  VkSubpassDependency dependency;
+  memset(&dependency, 0, sizeof(dependency));
   dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
   dependency.dstSubpass = 0;
   dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -186,7 +193,8 @@ static inline uint_fast8_t swap_chain_vulkan_init_common(struct SwapChainCommon*
   dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
   dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-  VkRenderPassCreateInfo render_pass_info = {0};
+  VkRenderPassCreateInfo render_pass_info;
+  memset(&render_pass_info, 0, sizeof(render_pass_info));
   render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
   render_pass_info.attachmentCount = 1;
   render_pass_info.pAttachments = &color_attachment;
@@ -199,7 +207,8 @@ static inline uint_fast8_t swap_chain_vulkan_init_common(struct SwapChainCommon*
     return 0;
 
   for (int loop_num = 0; loop_num < MAX_SWAP_CHAIN_FRAMES; loop_num++) {
-    VkFramebufferCreateInfo framebuffer_info = {0};
+    VkFramebufferCreateInfo framebuffer_info;
+    memset(&framebuffer_info, 0, sizeof(framebuffer_info));
     framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebuffer_info.renderPass = swap_chain_common->swap_chain_vulkan.render_pass;
     framebuffer_info.attachmentCount = 1;
@@ -230,7 +239,8 @@ uint_fast8_t swap_chain_vulkan_init(struct SwapChainCommon* swap_chain_common, s
     return VULKAN_RENDERER_CREATE_SWAP_CHAIN_ERROR;
 
   // Swapchain command buffer
-  VkCommandBufferAllocateInfo alloc_info_swapchain = {0};
+  VkCommandBufferAllocateInfo alloc_info_swapchain;
+  memset(&alloc_info_swapchain, 0, sizeof(alloc_info_swapchain));
   alloc_info_swapchain.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   alloc_info_swapchain.commandPool = api_common->vulkan_api.command_pool;
   alloc_info_swapchain.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -243,10 +253,12 @@ uint_fast8_t swap_chain_vulkan_init(struct SwapChainCommon* swap_chain_common, s
 
   memset(swap_chain_common->swap_chain_vulkan.in_flight_fences, 0, sizeof(swap_chain_common->swap_chain_vulkan.in_flight_fences));
 
-  VkSemaphoreCreateInfo semaphore_info = {0};
+  VkSemaphoreCreateInfo semaphore_info;
+  memset(&semaphore_info, 0, sizeof(semaphore_info));
   semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-  VkFenceCreateInfo fence_info = {0};
+  VkFenceCreateInfo fence_info;
+  memset(&fence_info, 0, sizeof(fence_info));
   fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
   fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
@@ -327,7 +339,8 @@ uint_fast8_t swap_chain_vulkan_blit_init(struct SwapChainCommon* swap_chain_comm
   vulkan_graphics_utils_create_descriptors(&(api_common->vulkan_api), swap_chain_common->swap_chain_vulkan.descriptor_set, &(swap_chain_common->blit_shader->shader.shader_common.shader_vulkan.descriptor_set_layout), &(swap_chain_common->blit_shader->shader.shader_common.shader_vulkan.descriptor_pool), swap_chain_common->blit_shader->shader.shader_common.shader_settings.descriptors);
 
   for (uint_fast64_t target = 0; target < swap_chain_common->descriptors; target++) {
-    VkWriteDescriptorSet dcs[2] = {0};
+    VkWriteDescriptorSet dcs[2];
+    memset(dcs, 0, sizeof(dcs));
     vulkan_graphics_utils_setup_descriptor_buffer(dcs, 0, &(swap_chain_common->swap_chain_vulkan.descriptor_set[target]), (VkDescriptorBufferInfo[]){vulkan_graphics_utils_setup_descriptor_buffer_info(sizeof(struct BlitUniformBufferObject), &(swap_chain_common->swap_chain_vulkan.uniform_buffer))});
     vulkan_graphics_utils_setup_descriptor_image(dcs, 1, &(swap_chain_common->swap_chain_vulkan.descriptor_set[target]), (VkDescriptorImageInfo[]){vulkan_graphics_utils_setup_descriptor_image_info(&(post_process_common->post_process_vulkan.color_image_views[target]), &(post_process_common->post_process_vulkan.texture_sampler))});
     vkUpdateDescriptorSets(api_common->vulkan_api.device, 2, dcs, 0, NULL);
@@ -341,7 +354,8 @@ uint_fast8_t swap_chain_vulkan_blit_init(struct SwapChainCommon* swap_chain_comm
 
 uint_fast8_t swap_chain_vulkan_blit_update(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, struct PostProcessCommon* post_process_common) {
   for (uint_fast64_t target = 0; target < swap_chain_common->descriptors; target++) {
-    VkWriteDescriptorSet dcs[2] = {0};
+    VkWriteDescriptorSet dcs[2];
+    memset(dcs, 0, sizeof(dcs));
     vulkan_graphics_utils_setup_descriptor_buffer(dcs, 0, &(swap_chain_common->swap_chain_vulkan.descriptor_set[target]), (VkDescriptorBufferInfo[]){vulkan_graphics_utils_setup_descriptor_buffer_info(sizeof(struct BlitUniformBufferObject), &(swap_chain_common->swap_chain_vulkan.uniform_buffer))});
     vulkan_graphics_utils_setup_descriptor_image(dcs, 1, &(swap_chain_common->swap_chain_vulkan.descriptor_set[target]), (VkDescriptorImageInfo[]){vulkan_graphics_utils_setup_descriptor_image_info(&(post_process_common->post_process_vulkan.color_image_views[target]), &(post_process_common->post_process_vulkan.texture_sampler))});
     vkUpdateDescriptorSets(api_common->vulkan_api.device, 2, dcs, 0, NULL);
@@ -353,7 +367,8 @@ uint_fast8_t swap_chain_vulkan_blit_update(struct SwapChainCommon* swap_chain_co
 uint_fast8_t swap_chain_vulkan_blit_render(struct SwapChainCommon* swap_chain_common, struct PostProcessCommon* post_process_common, uint_fast8_t swap_chain_num) {
   struct SwapChainVulkan* swap_chain_vulkan = &(swap_chain_common->swap_chain_vulkan);
 
-  VkCommandBufferBeginInfo begin_info = {0};
+  VkCommandBufferBeginInfo begin_info;
+  memset(&begin_info, 0, sizeof(begin_info));
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
@@ -363,7 +378,8 @@ uint_fast8_t swap_chain_vulkan_blit_render(struct SwapChainCommon* swap_chain_co
   }
 
   // VkClearValue clear_color = {.color = {1.0f, 0.0f, 0.0f, 1.0f}}; // RGBA: Red
-  VkRenderPassBeginInfo render_pass_info = {0};
+  VkRenderPassBeginInfo render_pass_info;
+  memset(&render_pass_info, 0, sizeof(render_pass_info));
   render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   render_pass_info.renderPass = swap_chain_common->swap_chain_vulkan.render_pass;
   render_pass_info.framebuffer = swap_chain_common->swap_chain_vulkan.swap_chain_framebuffers[swap_chain_num];
@@ -414,7 +430,8 @@ bool swap_chain_vulkan_wait_for_fences(struct SwapChainCommon* swap_chain_common
 
 uint_fast8_t swap_chain_vulkan_end_frame(struct SwapChainCommon* swap_chain_common, struct PostProcessCommon* post_process_common, struct APICommon* api_common) {
   struct VulkanAPI* vulkan_api = &api_common->vulkan_api;
-  VkSubmitInfo swap_chain_submit_info = {0};
+  VkSubmitInfo swap_chain_submit_info;
+  memset(&swap_chain_submit_info, 0, sizeof(swap_chain_submit_info));
   swap_chain_submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
   VkSemaphore wait_semaphores[VULKAN_WAIT_SEMAPHORES] = {swap_chain_common->swap_chain_vulkan.image_available_semaphores[swap_chain_common->current_frame], post_process_common->post_process_vulkan.semaphore[post_process_common->ping_pong ^ true]};
@@ -437,7 +454,8 @@ uint_fast8_t swap_chain_vulkan_end_frame(struct SwapChainCommon* swap_chain_comm
   // if (result != VK_SUCCESS)
   //   fprintf(stderr, "Error to submit draw command buffer!\n");
 
-  VkPresentInfoKHR present_info = {0};
+  VkPresentInfoKHR present_info;
+  memset(&present_info, 0, sizeof(present_info));
   present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
   present_info.waitSemaphoreCount = 1;

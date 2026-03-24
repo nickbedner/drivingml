@@ -1,46 +1,46 @@
 #include "mana/graphics/utilities/collada/modelanimator.h"
 
-void animator_init(struct Animator *animator, struct ModelCommon *entity) {
+void animator_init(struct Animator* animator, struct ModelCommon* entity) {
   animator->entity = entity;
   animator->current_animation = NULL;
   animator->animation_time = 0.0f;
 }
 
-void animator_do_animation(struct Animator *animator, struct Animation *animation) {
+void animator_do_animation(struct Animator* animator, struct Animation* animation) {
   animator->animation_time = 0.0f;
   animator->current_animation = animation;
 }
 
-void animator_update(struct Animator *animator, double delta_time) {
+void animator_update(struct Animator* animator, double delta_time) {
   if (animator->current_animation == NULL)
     return;
   animator_increase_animation_time(animator, delta_time);
-  struct Map *current_pose = animator_calculate_current_animation_pose(animator);
+  struct Map* current_pose = animator_calculate_current_animation_pose(animator);
   mat4 parent_transform = MAT4_IDENTITY;
   animator_apply_pose_to_joints(current_pose, animator->entity->root_joint, parent_transform);
   map_delete(current_pose);
   free(current_pose);
 }
 
-void animator_increase_animation_time(struct Animator *animator, double delta_time) {
+void animator_increase_animation_time(struct Animator* animator, double delta_time) {
   animator->animation_time += (float)delta_time / 2.0f;
   if (animator->animation_time > animator->current_animation->length)
     animator->animation_time = fmodf(animator->animation_time, animator->current_animation->length);
 }
 
-struct Map *animator_calculate_current_animation_pose(struct Animator *animator) {
+struct Map* animator_calculate_current_animation_pose(struct Animator* animator) {
   struct KeyFrame *previous_frame = NULL, *next_frame = NULL;
   animator_get_previous_and_next_frames(animator, &previous_frame, &next_frame);
   float progression = animator_calculate_progression(animator, previous_frame, next_frame);
   return animator_interpolate_poses(previous_frame, next_frame, progression);
 }
 
-void animator_apply_pose_to_joints(struct Map *current_pose, struct ModelJoint *joint, mat4 parent_transform) {
-  mat4 current_local_transform = *(mat4 *)map_get(current_pose, joint->name);
+void animator_apply_pose_to_joints(struct Map* current_pose, struct ModelJoint* joint, mat4 parent_transform) {
+  mat4 current_local_transform = *(mat4*)map_get(current_pose, joint->name);
   mat4 current_transform = mat4_mul(parent_transform, current_local_transform);
 
   for (size_t child_joint_num = 0; child_joint_num < array_list_size(joint->children); child_joint_num++) {
-    struct ModelJoint *child_joint = (struct ModelJoint *)array_list_get(joint->children, (size_t)child_joint_num);
+    struct ModelJoint* child_joint = (struct ModelJoint*)array_list_get(joint->children, (size_t)child_joint_num);
     animator_apply_pose_to_joints(current_pose, child_joint, current_transform);
   }
 
@@ -48,33 +48,33 @@ void animator_apply_pose_to_joints(struct Map *current_pose, struct ModelJoint *
   joint->animation_transform = current_transform;
 }
 
-void animator_get_previous_and_next_frames(struct Animator *animator, struct KeyFrame **previous_frame, struct KeyFrame **next_frame) {
-  struct ArrayList *all_frames = animator->current_animation->key_frames;
-  *previous_frame = (struct KeyFrame *)array_list_get(all_frames, 0);
-  *next_frame = (struct KeyFrame *)array_list_get(all_frames, 0);
+void animator_get_previous_and_next_frames(struct Animator* animator, struct KeyFrame** previous_frame, struct KeyFrame** next_frame) {
+  struct ArrayList* all_frames = animator->current_animation->key_frames;
+  *previous_frame = (struct KeyFrame*)array_list_get(all_frames, 0);
+  *next_frame = (struct KeyFrame*)array_list_get(all_frames, 0);
   for (size_t frame_num = 1; frame_num < array_list_size(all_frames); frame_num++) {
-    *next_frame = (struct KeyFrame *)array_list_get(all_frames, frame_num);
+    *next_frame = (struct KeyFrame*)array_list_get(all_frames, frame_num);
     if ((*next_frame)->time_step > animator->animation_time)
       break;
-    *previous_frame = (struct KeyFrame *)array_list_get(all_frames, frame_num);
+    *previous_frame = (struct KeyFrame*)array_list_get(all_frames, frame_num);
   }
 }
 
-float animator_calculate_progression(struct Animator *animator, struct KeyFrame *previous_frame, struct KeyFrame *next_frame) {
+float animator_calculate_progression(struct Animator* animator, struct KeyFrame* previous_frame, struct KeyFrame* next_frame) {
   float total_time = next_frame->time_step - previous_frame->time_step;
   float current_time = animator->animation_time - previous_frame->time_step;
   return current_time / total_time;
 }
 
-struct Map *animator_interpolate_poses(struct KeyFrame *previous_frame, struct KeyFrame *next_frame, float progression) {
-  struct Map *current_pose = malloc(sizeof(struct Map));
+struct Map* animator_interpolate_poses(struct KeyFrame* previous_frame, struct KeyFrame* next_frame, float progression) {
+  struct Map* current_pose = (struct Map*)malloc(sizeof(struct Map));
   map_init(current_pose, sizeof(mat4));
 
-  const char *joint_name = NULL;
+  const char* joint_name = NULL;
   struct MapIter iter = map_iter();
   while ((joint_name = map_next(previous_frame->pose, &iter))) {
-    struct JointTransform *previous_transform = (struct JointTransform *)map_get(previous_frame->pose, joint_name);
-    struct JointTransform *next_transform = (struct JointTransform *)map_get(next_frame->pose, joint_name);
+    struct JointTransform* previous_transform = (struct JointTransform*)map_get(previous_frame->pose, joint_name);
+    struct JointTransform* next_transform = (struct JointTransform*)map_get(next_frame->pose, joint_name);
     struct JointTransform current_transform = (struct JointTransform){.position = vec3_interpolate_linear(previous_transform->position, next_transform->position, progression), .rotation = quat_interpolate_linear(previous_transform->rotation, next_transform->rotation, progression)};
     // joint_transform_interpolate(previous_transform, next_transform, progression);
 

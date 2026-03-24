@@ -8,10 +8,11 @@
 #include "mana/graphics/render/swapchain/swapchain.h"
 
 struct RendererSettings {
-  uint_fast32_t width;
-  uint_fast32_t height;
-  uint_fast8_t msaa_samples;
-  uint_fast8_t supersample_scale;
-  bool vsync;
+  uint32_t width;
+  uint32_t height;
   enum API_TYPE preferred_api_type;
+
+  uint8_t msaa_samples;
+  uint8_t supersample_scale;
+  bool vsync;
 };

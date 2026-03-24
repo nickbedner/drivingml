@@ -69,8 +69,8 @@ void drivingml_start(struct DrivingML* drivingml) {
     // window->minimized
     window_prepare_frame(&(drivingml->window));
 
-    int max_steps = 5;
-    int steps = 0;
+    int32_t max_steps = 5;
+    int32_t steps = 0;
 
     if (EVAL_MODE) {
       // In training mode we want to run as many sim steps as possible to speed up training, but still render every frame so we can see what's going on
@@ -84,7 +84,7 @@ void drivingml_start(struct DrivingML* drivingml) {
         double sleep_s = sim_dt - accumulator;
         // More than 1 ms left
         if (sleep_s > 0.001) {
-          Sleep((int)((sleep_s - 0.001) * 1000.0));
+          Sleep((DWORD)((sleep_s - 0.001) * 1000.0));
         }
       }
     } else

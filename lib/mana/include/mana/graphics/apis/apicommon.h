@@ -15,17 +15,15 @@
 #ifdef VULKAN_API_SUPPORTED
 #ifdef _WIN64
 #define VK_USE_PLATFORM_WIN32_KHR
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpadded"
+#pragma clang diagnostic ignored "-Wnonportable-system-include-path"
 #include <vulkan/vulkan.h>
+#pragma clang diagnostic pop
 #elif defined(__ANDROID__)
 #define VK_USE_PLATFORM_ANDROID_KHR
 #include <vulkan/vulkan.h>
 #endif
-#endif
-
-#ifdef _WIN64
-#define MAX_LENGTH_OF_PATH MAX_PATH
-#else
-#define MAX_LENGTH_OF_PATH 4096
 #endif
 
 #ifndef NDEBUG
@@ -51,7 +49,7 @@ enum API_TYPE {
   API_VULKAN,
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-  API_DIRECTX12,
+  API_DIRECTX_12,
 #endif
 #ifdef METAL_API_SUPPORTED
   API_APPLE_METAL,
@@ -94,15 +92,20 @@ struct VulkanAPI {
 #endif
 
 struct APICommon {
-  enum API_TYPE api_type;
-  bool inverted_y;
-  const char asset_directory[MAX_LENGTH_OF_PATH];
   union {
 #ifdef DIRECTX_12_API_SUPPORTED
     struct DirectX12API directx_12_api;
-  };
 #endif
 #ifdef VULKAN_API_SUPPORTED
-  struct VulkanAPI vulkan_api;
+    struct VulkanAPI vulkan_api;
 #endif
+  };
+
+  enum API_TYPE api_type;
+
+  bool inverted_y;
+  // Note: Padding for array alignment
+  uint8_t _pad0[3];
+
+  char asset_directory[MAX_LENGTH_OF_PATH];
 };

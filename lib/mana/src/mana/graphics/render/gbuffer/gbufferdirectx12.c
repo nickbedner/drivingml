@@ -37,7 +37,8 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon* gbuffe
   gbuffer_common->gbuffer_directx12.scissor_rect.bottom = (LONG)gbuffer_height;
 
   // Resource description for color and normal textures
-  D3D12_RESOURCE_DESC texture_desc = {0};
+  D3D12_RESOURCE_DESC texture_desc;
+  memset(&texture_desc, 0, sizeof(texture_desc));
   texture_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
   texture_desc.Width = gbuffer_width;
   texture_desc.Height = gbuffer_height;
@@ -96,7 +97,8 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon* gbuffe
   }
 
   // Create descriptor heaps
-  D3D12_DESCRIPTOR_HEAP_DESC rtv_heap_desc = {0};
+  D3D12_DESCRIPTOR_HEAP_DESC rtv_heap_desc;
+  memset(&rtv_heap_desc, 0, sizeof(rtv_heap_desc));
   rtv_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
   rtv_heap_desc.NumDescriptors = 2;  // Color and normal
   if (msaa_samples != 1)
@@ -106,7 +108,8 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon* gbuffe
   if (FAILED(hr))
     return 1;
 
-  D3D12_DESCRIPTOR_HEAP_DESC dsv_heap_desc = {0};
+  D3D12_DESCRIPTOR_HEAP_DESC dsv_heap_desc;
+  memset(&dsv_heap_desc, 0, sizeof(dsv_heap_desc));
   dsv_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
   dsv_heap_desc.NumDescriptors = 1;  // Depth
   dsv_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
@@ -180,7 +183,8 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon* gbuffe
   if (FAILED(hr))
     return 1;
 
-  D3D12_RESOURCE_BARRIER barriers[5] = {0};
+  D3D12_RESOURCE_BARRIER barriers[5];
+  memset(barriers, 0, sizeof(barriers));
   barriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
   barriers[0].Transition.pResource = gbuffer_common->gbuffer_directx12.color_texture;
   barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -237,7 +241,8 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon* gbuffe
       return 1;
   }
 
-  D3D12_DESCRIPTOR_HEAP_DESC srv_heap_desc = {0};
+  D3D12_DESCRIPTOR_HEAP_DESC srv_heap_desc;
+  memset(&srv_heap_desc, 0, sizeof(srv_heap_desc));
   srv_heap_desc.NumDescriptors = GBUFFER_TOTAL_ATTACHMENTS;  // Or however many you need
   srv_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
   srv_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
@@ -252,7 +257,8 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon* gbuffe
 
   SIZE_T ptr_handle = gbuffer_common->gbuffer_directx12.srv_cpu_handle.ptr;
   // Create SRVs for each of your resources
-  D3D12_SHADER_RESOURCE_VIEW_DESC color_srv_desc = {0};
+  D3D12_SHADER_RESOURCE_VIEW_DESC color_srv_desc;
+  memset(&color_srv_desc, 0, sizeof(color_srv_desc));
   color_srv_desc.Format = format;
   color_srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
   color_srv_desc.Texture2D.MipLevels = 1;
@@ -262,7 +268,8 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon* gbuffe
   api_common->directx_12_api.device->lpVtbl->CreateShaderResourceView(api_common->directx_12_api.device, gbuffer_common->gbuffer_directx12.color_texture, &color_srv_desc, gbuffer_common->gbuffer_directx12.srv_cpu_handle);
   gbuffer_common->gbuffer_directx12.srv_cpu_handle.ptr += descriptor_size;
 
-  D3D12_SHADER_RESOURCE_VIEW_DESC normal_srv_desc = {0};
+  D3D12_SHADER_RESOURCE_VIEW_DESC normal_srv_desc;
+  memset(&normal_srv_desc, 0, sizeof(normal_srv_desc));
   normal_srv_desc.Format = format;
   normal_srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
   normal_srv_desc.Texture2D.MipLevels = 1;
@@ -272,7 +279,8 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon* gbuffe
   api_common->directx_12_api.device->lpVtbl->CreateShaderResourceView(api_common->directx_12_api.device, gbuffer_common->gbuffer_directx12.normal_texture, &normal_srv_desc, gbuffer_common->gbuffer_directx12.srv_cpu_handle);
   gbuffer_common->gbuffer_directx12.srv_cpu_handle.ptr += descriptor_size;
 
-  D3D12_SHADER_RESOURCE_VIEW_DESC depth_srv_desc = {0};
+  D3D12_SHADER_RESOURCE_VIEW_DESC depth_srv_desc;
+  memset(&depth_srv_desc, 0, sizeof(depth_srv_desc));
   depth_srv_desc.Format = DXGI_FORMAT_R32_FLOAT;  // Adjust this based on your resource's format
   if (msaa_samples != 1)
     depth_srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMS;
@@ -371,7 +379,8 @@ uint_fast8_t gbuffer_directx_12_start(struct GBufferCommon* gbuffer_common, stru
   gbuffer_common->gbuffer_directx12.command_allocator->lpVtbl->Reset(gbuffer_common->gbuffer_directx12.command_allocator);
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->Reset(gbuffer_common->gbuffer_directx12.command_list, gbuffer_common->gbuffer_directx12.command_allocator, NULL);
 
-  D3D12_RESOURCE_BARRIER barriers[5] = {0};
+  D3D12_RESOURCE_BARRIER barriers[5];
+  memset(barriers, 0, sizeof(barriers));
   barriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
   barriers[0].Transition.pResource = gbuffer_common->gbuffer_directx12.color_texture;
   barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
@@ -435,7 +444,8 @@ uint_fast8_t gbuffer_directx_12_start(struct GBufferCommon* gbuffer_common, stru
 
 uint_fast8_t gbuffer_directx_12_stop(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, const uint_fast32_t msaa_samples) {
   // Possibly set barriers or any other synchronization primitives required for DirectX12. This is a common step but specifics can vary based on the exact workflow.
-  D3D12_RESOURCE_BARRIER barriers[5] = {0};
+  D3D12_RESOURCE_BARRIER barriers[5];
+  memset(barriers, 0, sizeof(barriers));
   barriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
   barriers[0].Transition.pResource = gbuffer_common->gbuffer_directx12.color_texture;
   barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -470,7 +480,8 @@ uint_fast8_t gbuffer_directx_12_stop(struct GBufferCommon* gbuffer_common, struc
     gbuffer_common->gbuffer_directx12.command_list->lpVtbl->ResourceBarrier(gbuffer_common->gbuffer_directx12.command_list, 5, barriers);
 
     // Add additional barriers before ResolveSubresource operations
-    D3D12_RESOURCE_BARRIER additionalBarriers[2] = {0};
+    D3D12_RESOURCE_BARRIER additionalBarriers[2];
+    memset(additionalBarriers, 0, sizeof(additionalBarriers));
 
     // Transition multisample color texture to RESOLVE_SOURCE
     additionalBarriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -493,7 +504,8 @@ uint_fast8_t gbuffer_directx_12_stop(struct GBufferCommon* gbuffer_common, struc
     gbuffer_common->gbuffer_directx12.command_list->lpVtbl->ResolveSubresource(gbuffer_common->gbuffer_directx12.command_list, gbuffer_common->gbuffer_directx12.color_texture, 0, gbuffer_common->gbuffer_directx12.multisample_color_texture, 0, DXGI_FORMAT_R8G8B8A8_UNORM);
 
     // Add additional barriers for the normal texture
-    D3D12_RESOURCE_BARRIER normalBarriers[2] = {0};
+    D3D12_RESOURCE_BARRIER normalBarriers[2];
+    memset(normalBarriers, 0, sizeof(normalBarriers));
 
     // Transition multisample normal texture to RESOLVE_SOURCE
     normalBarriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -515,7 +527,8 @@ uint_fast8_t gbuffer_directx_12_stop(struct GBufferCommon* gbuffer_common, struc
     gbuffer_common->gbuffer_directx12.command_list->lpVtbl->ResolveSubresource(gbuffer_common->gbuffer_directx12.command_list, gbuffer_common->gbuffer_directx12.normal_texture, 0, gbuffer_common->gbuffer_directx12.multisample_normal_texture, 0, DXGI_FORMAT_R8G8B8A8_UNORM);
 
     // Add post-resolve barriers to transition resources back
-    D3D12_RESOURCE_BARRIER postResolveBarriers[4] = {0};
+    D3D12_RESOURCE_BARRIER postResolveBarriers[4];
+    memset(postResolveBarriers, 0, sizeof(postResolveBarriers));
 
     // Transition multisample color texture back to PIXEL_SHADER_RESOURCE
     postResolveBarriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;

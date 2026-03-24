@@ -5,7 +5,8 @@ uint_fast8_t sprite_vulkan_init(struct SpriteCommon* sprite_common, struct APICo
   vulkan_graphics_utils_setup_index_buffer(&api_common->vulkan_api, sprite_common->image_mesh->mesh_common.indices, &sprite_common->sprite_vulkan.index_buffer, &sprite_common->sprite_vulkan.index_buffer_memory);
   vulkan_graphics_utils_setup_uniform_buffer(&api_common->vulkan_api, sizeof(struct SpriteUniformBufferObject), &(sprite_common->sprite_vulkan.uniform_buffer), &(sprite_common->sprite_vulkan.uniform_buffers_memory));
 
-  VkWriteDescriptorSet dcs[2] = {0};
+  VkWriteDescriptorSet dcs[2];
+  memset(dcs, 0, sizeof(dcs));
   vulkan_graphics_utils_setup_descriptor_buffer(dcs, 0, sprite_common->sprite_vulkan.descriptor_set, (VkDescriptorBufferInfo[]){vulkan_graphics_utils_setup_descriptor_buffer_info(sizeof(struct SpriteUniformBufferObject), &sprite_common->sprite_vulkan.uniform_buffer)});
   vulkan_graphics_utils_setup_descriptor_image(dcs, 1, sprite_common->sprite_vulkan.descriptor_set, (VkDescriptorImageInfo[]){vulkan_graphics_utils_setup_descriptor_image_info(&sprite_common->image_texture->texture_common.texture_vulkan.texture_image_view, &(sprite_common->image_texture->texture_common.texture_vulkan.texture_sampler))});
   vkUpdateDescriptorSets(api_common->vulkan_api.device, 2, dcs, 0, NULL);

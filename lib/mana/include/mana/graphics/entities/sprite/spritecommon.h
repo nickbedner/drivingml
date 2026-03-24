@@ -43,23 +43,19 @@ struct SpriteDirectX12 {
   D3D12_INDEX_BUFFER_VIEW index_buffer_view;    // View into the Index Buffer
   ID3D12Resource* constant_buffer;              // Constant Buffer Resource
 };
-#endif
 
+#endif
 struct SpriteCommon {
   struct Shader* shader;
   struct Mesh* image_mesh;
   struct Texture* image_texture;
 
+  // Transform (likely 16-byte aligned)
+  quat rotation;
   vec3 position;
   vec3 scale;
-  quat rotation;
-  float width;
-  float height;
 
   size_t sprite_num;
-
-  // 0 for normal sprites, 0..N-1 for array textures
-  uint32_t frame_layer;
 
   union {
 #ifdef VULKAN_API_SUPPORTED
@@ -69,4 +65,9 @@ struct SpriteCommon {
     struct SpriteDirectX12 sprite_directx12;
 #endif
   };
+
+  // Small stuff last
+  float width;
+  float height;
+  uint32_t frame_layer;
 };
