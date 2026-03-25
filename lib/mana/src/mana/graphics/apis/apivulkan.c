@@ -301,58 +301,62 @@ static bool api_vulkan_check_swap_chain_support(VkPhysicalDevice device) {
   log_message(LOG_SEVERITY_ERROR, "Swap chain extension not found!\n");
   return false;
 }
-
 static uint_fast8_t api_vulkan_pick_physical_device(struct VulkanAPI* vulkan_api) {
   uint32_t device_count = 0;
-  vkEnumeratePhysicalDevices(vulkan_api->instance, &device_count, NULL);
+  VkResult result = vkEnumeratePhysicalDevices(vulkan_api->instance, &device_count, NULL);
 
-  if (device_count == 0)
+  if (result != VK_SUCCESS || device_count == 0)
     return VULKAN_API_PICK_PHYSICAL_DEVICE_ERROR;
 
   VkPhysicalDevice* devices = (VkPhysicalDevice*)alloca(device_count * sizeof(VkPhysicalDevice));
-  vkEnumeratePhysicalDevices(vulkan_api->instance, &device_count, devices);
 
-  VkPhysicalDeviceProperties current_device_properties = {0};
+  result = vkEnumeratePhysicalDevices(vulkan_api->instance, &device_count, devices);
+  if (result != VK_SUCCESS)
+    return VULKAN_API_PICK_PHYSICAL_DEVICE_ERROR;
+
+  vulkan_api->physical_device = VK_NULL_HANDLE;
+
+  VkPhysicalDeviceProperties current_device_properties;
+  memset(&current_device_properties, 0, sizeof(current_device_properties));
   uint64_t current_largest_heap = 0;
   bool discrete_selected = false;
-
   for (uint32_t device_num = 0; device_num < device_count; device_num++) {
     VkPhysicalDevice device = devices[device_num];
-    VkPhysicalDeviceProperties device_properties = {0};
+    VkPhysicalDeviceProperties device_properties;
+    memset(&device_properties, 0, sizeof(device_properties));
     vkGetPhysicalDeviceProperties(device, &device_properties);
 
-    if (api_vulkan_device_can_render(vulkan_api, device)) {
-      if (!api_vulkan_check_swap_chain_support(device))
-        return VULKAN_API_PICK_PHYSICAL_DEVICE_ERROR;
+    if (!api_vulkan_device_can_render(vulkan_api, device) || !api_vulkan_check_swap_chain_support(device))
+      continue;
 
-      if (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-        VkPhysicalDeviceMemoryProperties device_memory_properties = {0};
-        vkGetPhysicalDeviceMemoryProperties(device, &device_memory_properties);
+    if (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+      VkPhysicalDeviceMemoryProperties device_memory_properties;
+      memset(&device_memory_properties, 0, sizeof(device_memory_properties));
+      vkGetPhysicalDeviceMemoryProperties(device, &device_memory_properties);
 
-        for (uint32_t heap_num = 0; heap_num < device_memory_properties.memoryHeapCount; heap_num++) {
-          VkMemoryHeap device_heap = device_memory_properties.memoryHeaps[heap_num];
+      for (uint32_t heap_num = 0; heap_num < device_memory_properties.memoryHeapCount; heap_num++) {
+        VkMemoryHeap device_heap = device_memory_properties.memoryHeaps[heap_num];
 
-          if (device_heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT && device_heap.size > current_largest_heap) {
-            discrete_selected = true;
-            current_largest_heap = device_heap.size;
-            current_device_properties = device_properties;
-            vulkan_api->physical_device = device;
-          }
-        }
-      } else if (current_device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
-        if (discrete_selected == false) {
+        if ((device_heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) && device_heap.size > current_largest_heap) {
+          discrete_selected = true;
+          current_largest_heap = device_heap.size;
           current_device_properties = device_properties;
           vulkan_api->physical_device = device;
         }
-      } else
-        log_message(LOG_SEVERITY_INFO, "Unknown device: %s\n", device_properties.deviceName);
-    }
+      }
+    } else if (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
+      if (discrete_selected == false) {
+        current_device_properties = device_properties;
+        vulkan_api->physical_device = device;
+      }
+    } else
+      log_message(LOG_SEVERITY_DEBUG, "Skipping device: %s\n", device_properties.deviceName);
   }
-
-  log_message(LOG_SEVERITY_DEBUG, "Selected device: %s\n", current_device_properties.deviceName);
 
   if (vulkan_api->physical_device == VK_NULL_HANDLE)
     return VULKAN_API_PICK_PHYSICAL_DEVICE_ERROR;
+
+  log_message(LOG_SEVERITY_DEBUG, "Selected device: %s\n", current_device_properties.deviceName);
 
   return VULKAN_API_SUCCESS;
 }
