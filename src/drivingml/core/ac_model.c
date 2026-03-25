@@ -40,7 +40,6 @@ int load_ac_model(const char* path, struct ACModel* model) {
   READ(model->action_log_std);
 
   fclose(f);
-  printf("Model loaded successfully\n");
   return 1;
 }
 

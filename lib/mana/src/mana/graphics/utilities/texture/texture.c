@@ -1,10 +1,11 @@
 #include "mana/graphics/utilities/texture/texture.h"
 
 // TODO: This needs to have missing file error check
-uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, struct TextureSettings texture_settings, const char* path, size_t texture_index) {
+uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, struct TextureSettings texture_settings, const char* path, size_t texture_index, bool is_sprite) {
   struct TextureCommon* texture_common = &(texture->texture_common);
   texture_common->texture_settings = texture_settings;
   texture_common->layer_count = 1;
+  texture_common->is_array = is_sprite;
 
   texture_common->path = _strdup(path);
 
@@ -19,6 +20,7 @@ uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* textu
 
   texture_common->texture_manager_common = texture_manager_common;
   texture_common->id = texture_index;
+  texture_common->dimension = TEXTURE_DIMENSION_2D;
 
   uint32_t w0 = 0, h0 = 0, ch0 = 0;
   uint8_t bit0 = 0, ct0 = 0;
@@ -78,6 +80,7 @@ uint8_t texture_array_init(struct Texture* texture, struct TextureManagerCommon*
   texture_common->texture_settings = texture_settings;
   texture_common->texture_manager_common = texture_manager_common;
   texture_common->id = texture_index;
+  texture_common->is_array = true;
 
   // For now store the first path as the texture path/name/type source.
   texture_common->path = _strdup(paths[0]);
@@ -208,11 +211,7 @@ uint8_t texture_array_init(struct Texture* texture, struct TextureManagerCommon*
   if (api_common->api_type == API_DIRECTX_12) texture->texture_func = directx_12_TEXTURE;
 #endif
 
-  uint8_t result = texture->texture_func.texture_init(
-      &(texture->texture_common),
-      texture_common->texture_manager_common,
-      api_common,
-      combined_pixels);
+  uint8_t result = texture->texture_func.texture_init(&(texture->texture_common), texture_common->texture_manager_common, api_common, combined_pixels);
 
   free(combined_pixels);
 

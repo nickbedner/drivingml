@@ -8,7 +8,6 @@
 #include "mana/graphics/utilities/texture/pngloader.h"
 #include "mana/utilities/zlib.h"
 
-
 #ifdef VULKAN_API_SUPPORTED
 #include "mana/graphics/utilities/texture/texturevulkan.h"
 #endif
@@ -33,6 +32,6 @@ struct Texture {
   struct TextureCommon texture_common;
 };
 
-uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, struct TextureSettings texture_settings, const char* path, size_t texture_index);
+uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, struct TextureSettings texture_settings, const char* path, size_t texture_index, bool is_sprite);
 uint8_t texture_array_init(struct Texture* texture, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, struct TextureSettings texture_settings, const char* const* paths, uint32_t layer_count, size_t texture_index);
 void texture_delete(struct Texture* texture, struct APICommon* api_common);

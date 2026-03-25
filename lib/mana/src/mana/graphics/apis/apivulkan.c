@@ -467,15 +467,12 @@ static bool api_vulkan_check_validation_layer_support(void) {
   return true;
 }
 
-uint_fast8_t vulkan_graphics_utils_create_image_view(struct VkDevice_T* device, VkImage image, VkFormat format, VkImageAspectFlags aspect_flags, uint32_t mip_levels, uint32_t layer_count, VkImageView* image_view) {
-  if (layer_count == 0)
-    layer_count = 1;
-
+uint_fast8_t vulkan_graphics_utils_create_image_view(struct VkDevice_T* device, VkImage image, VkFormat format, VkImageAspectFlags aspect_flags, uint32_t mip_levels, uint32_t layer_count, bool is_array, VkImageView* image_view) {
   VkImageViewCreateInfo view_info;
   memset(&view_info, 0, sizeof(view_info));
   view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   view_info.image = image;
-  view_info.viewType = (layer_count > 1) ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
+  view_info.viewType = is_array ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
   view_info.format = format;
 
   view_info.subresourceRange.aspectMask = aspect_flags;
@@ -691,16 +688,16 @@ uint_fast8_t vulkan_graphics_utils_create_sampler(struct VkDevice_T* device, VkS
   return VULKAN_API_SUCCESS;
 }
 
-void vulkan_graphics_utils_copy_buffer_to_image(struct VkDevice_T* device, struct VkQueue_T* graphics_queue, struct VkCommandPool_T* command_pool, VkBuffer* buffer, VkImage* image, uint32_t width, uint32_t height) {
+void vulkan_graphics_utils_copy_buffer_to_image(VkDevice device, VkQueue graphics_queue, VkCommandPool command_pool, VkBuffer* buffer, VkImage* image, uint32_t width, uint32_t height, uint32_t layer_index, VkDeviceSize buffer_offset) {
   VkCommandBuffer command_buffer = vulkan_graphics_utils_begin_single_time_commands(device, command_pool);
 
   VkBufferImageCopy region = {0};
-  region.bufferOffset = 0;
+  region.bufferOffset = buffer_offset;
   region.bufferRowLength = 0;
   region.bufferImageHeight = 0;
   region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   region.imageSubresource.mipLevel = 0;
-  region.imageSubresource.baseArrayLayer = 0;
+  region.imageSubresource.baseArrayLayer = layer_index;
   region.imageSubresource.layerCount = 1;
   region.imageOffset = (VkOffset3D){0, 0, 0};
   region.imageExtent = (VkExtent3D){width, height, 1};

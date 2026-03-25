@@ -96,6 +96,7 @@ struct TextureCommon {
   uint32_t layer_count;
   uint32_t mip_levels;
   enum TextureDimension dimension;
+  bool is_array;
 
   uint8_t bit_depth;
 };

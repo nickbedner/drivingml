@@ -59,7 +59,7 @@ struct SamplerSettings {
 };
 
 VkSampleCountFlagBits vulkan_graphics_utils_get_max_msaa_samples(struct VulkanAPI* vulkan_api);
-uint_fast8_t vulkan_graphics_utils_create_image_view(struct VkDevice_T* device, VkImage image, VkFormat format, VkImageAspectFlags aspect_flags, uint32_t mip_levels, uint32_t layer_count, VkImageView* image_view);
+uint_fast8_t vulkan_graphics_utils_create_image_view(struct VkDevice_T* device, VkImage image, VkFormat format, VkImageAspectFlags aspect_flags, uint32_t mip_levels, uint32_t layer_count, bool is_array, VkImageView* image_view);
 uint_fast8_t vulkan_graphics_utils_create_image(struct VkDevice_T* device, struct VkPhysicalDevice_T* physical_device, uint32_t width, uint32_t height, uint32_t mip_levels, uint32_t layer_count, VkSampleCountFlagBits num_samples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* image_memory);
 uint_fast8_t vulkan_graphics_utils_create_buffer(struct VkDevice_T* device, struct VkPhysicalDevice_T* physical_device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer* buffer, VkDeviceMemory* buffer_memory);
 uint_fast8_t vulkan_graphics_utils_transition_image_layout(struct VkDevice_T* device, struct VkQueue_T* graphics_queue, struct VkCommandPool_T* command_pool, VkImage image, VkImageLayout old_layout, VkImageLayout new_layout, uint32_t mip_levels, uint32_t layer_count);
@@ -67,7 +67,7 @@ uint32_t vulkan_graphics_utils_find_memory_type(struct VkPhysicalDevice_T* physi
 VkCommandBuffer vulkan_graphics_utils_begin_single_time_commands(struct VkDevice_T* device, struct VkCommandPool_T* command_pool);
 void vulkan_graphics_utils_end_single_time_commands(struct VkDevice_T* device, struct VkQueue_T* graphics_queue, struct VkCommandPool_T* command_pool, VkCommandBuffer command_buffer);
 uint_fast8_t vulkan_graphics_utils_create_sampler(struct VkDevice_T* device, VkSampler* texture_sampler, struct SamplerSettings sampler_settings);
-void vulkan_graphics_utils_copy_buffer_to_image(struct VkDevice_T* device, struct VkQueue_T* graphics_queue, struct VkCommandPool_T* command_pool, VkBuffer* buffer, VkImage* image, uint32_t width, uint32_t height);
+void vulkan_graphics_utils_copy_buffer_to_image(VkDevice device, VkQueue graphics_queue, VkCommandPool command_pool, VkBuffer* buffer, VkImage* image, uint32_t width, uint32_t height, uint32_t layer_index, VkDeviceSize buffer_offset);
 void vulkan_graphics_utils_generate_mipmaps(struct VkDevice_T* device, VkPhysicalDevice physical_device, struct VkQueue_T* graphics_queue, struct VkCommandPool_T* command_pool, VkImage image, VkFormat format, uint32_t tex_width, uint32_t tex_height, uint32_t mip_levels);
 VkFormat vulkan_graphics_utils_find_depth_format(VkPhysicalDevice physical_device);
 void vulkan_graphics_utils_create_color_attachment(VkFormat image_format, struct VkAttachmentDescription* color_attachment);

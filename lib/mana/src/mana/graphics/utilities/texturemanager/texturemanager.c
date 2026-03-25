@@ -32,9 +32,9 @@ void texture_manager_delete(struct TextureManager* texture_manager, struct APICo
   texture_manager->texture_manager_func.texture_manager_delete(&(texture_manager->texture_manager_common), api_common);
 }
 
-void texture_manager_add(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings, const char* path) {
+void texture_manager_add(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings, const char* path, bool is_sprite) {
   struct Texture* texture = (struct Texture*)malloc(sizeof(struct Texture));
-  texture_init(texture, &(texture_manager->texture_manager_common), api_common, texture_settings, path, texture_manager->texture_manager_common.texture_index);
+  texture_init(texture, &(texture_manager->texture_manager_common), api_common, texture_settings, path, texture_manager->texture_manager_common.texture_index, is_sprite);
 
   map_set(&(texture_manager->texture_manager_common.textures), path, &texture);  // Store full path in case of models having same texture name like diffuse
 

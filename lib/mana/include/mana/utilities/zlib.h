@@ -229,7 +229,6 @@ static int32_t parse_huffman_block(zbuf* a) {
 
       if (z == 256) {
         a->zout = zout;
-        log_message(LOG_SEVERITY_ERROR, "End of block: Corrupt PNG");
         return 1;
       }
 
@@ -242,7 +241,7 @@ static int32_t parse_huffman_block(zbuf* a) {
 
       if (z < 0) {
         log_message(LOG_SEVERITY_ERROR, "Bad huffman code: Corrupt PNG");
-        return 1;
+        return 2;
       }
       dist = zdist_base[z];
 
@@ -251,7 +250,7 @@ static int32_t parse_huffman_block(zbuf* a) {
 
       if (zout - a->zout_start < dist) {
         log_message(LOG_SEVERITY_ERROR, "Bad dist: Corrupt PNG");
-        return 1;
+        return 3;
       }
 
       if (zout + len > a->zout_end) {
