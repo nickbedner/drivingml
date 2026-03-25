@@ -361,10 +361,27 @@ uint_fast8_t shader_compute_vulkan_init(struct ShaderCommon* shader, struct APIC
 }
 
 void shader_vulkan_delete(struct ShaderCommon* shader_common, struct APICommon* api_common) {
-  vkDestroyDescriptorPool(api_common->vulkan_api.device, shader_common->shader_vulkan.descriptor_pool, NULL);
-  vkDestroyPipeline(api_common->vulkan_api.device, shader_common->shader_vulkan.graphics_pipeline, NULL);
-  vkDestroyPipelineLayout(api_common->vulkan_api.device, shader_common->shader_vulkan.pipeline_layout, NULL);
-  vkDestroyDescriptorSetLayout(api_common->vulkan_api.device, shader_common->shader_vulkan.descriptor_set_layout, NULL);
+  VkDevice device = api_common->vulkan_api.device;
+
+  if (shader_common->shader_vulkan.graphics_pipeline != VK_NULL_HANDLE) {
+    vkDestroyPipeline(device, shader_common->shader_vulkan.graphics_pipeline, NULL);
+    shader_common->shader_vulkan.graphics_pipeline = VK_NULL_HANDLE;
+  }
+
+  if (shader_common->shader_vulkan.pipeline_layout != VK_NULL_HANDLE) {
+    vkDestroyPipelineLayout(device, shader_common->shader_vulkan.pipeline_layout, NULL);
+    shader_common->shader_vulkan.pipeline_layout = VK_NULL_HANDLE;
+  }
+
+  if (shader_common->shader_vulkan.descriptor_pool != VK_NULL_HANDLE) {
+    vkDestroyDescriptorPool(device, shader_common->shader_vulkan.descriptor_pool, NULL);
+    shader_common->shader_vulkan.descriptor_pool = VK_NULL_HANDLE;
+  }
+
+  if (shader_common->shader_vulkan.descriptor_set_layout != VK_NULL_HANDLE) {
+    vkDestroyDescriptorSetLayout(device, shader_common->shader_vulkan.descriptor_set_layout, NULL);
+    shader_common->shader_vulkan.descriptor_set_layout = VK_NULL_HANDLE;
+  }
 }
 
 void shader_vulkan_resize(struct ShaderCommon* shader_common, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale) {

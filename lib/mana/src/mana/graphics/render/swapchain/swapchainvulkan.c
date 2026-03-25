@@ -138,6 +138,7 @@ static inline uint_fast8_t swap_chain_vulkan_init_common(struct SwapChainCommon*
   }
 
   vkGetSwapchainImagesKHR(api_common->vulkan_api.device, swap_chain_common->swap_chain_vulkan.swap_chain_khr, &image_count, NULL);
+  swap_chain_common->swap_chain_vulkan.swap_chain_image_count = image_count;
   vkGetSwapchainImagesKHR(api_common->vulkan_api.device, swap_chain_common->swap_chain_vulkan.swap_chain_khr, &image_count, swap_chain_common->swap_chain_vulkan.swap_chain_images);
 
   swap_chain_common->swap_chain_vulkan.swap_chain_image_format = surface_format.format;
@@ -263,8 +264,15 @@ uint_fast8_t swap_chain_vulkan_init(struct SwapChainCommon* swap_chain_common, s
   fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    if (vkCreateSemaphore(api_common->vulkan_api.device, &semaphore_info, NULL, &(swap_chain_common->swap_chain_vulkan.image_available_semaphores[i])) != VK_SUCCESS || vkCreateSemaphore(api_common->vulkan_api.device, &semaphore_info, NULL, &(swap_chain_common->swap_chain_vulkan.render_finished_semaphores[i])) != VK_SUCCESS || vkCreateFence(api_common->vulkan_api.device, &fence_info, NULL, &(swap_chain_common->swap_chain_vulkan.in_flight_fences[i])) != VK_SUCCESS) {
-      log_message(LOG_SEVERITY_ERROR, "Failed to create synchronization objects for a frame!\n");
+    if (vkCreateSemaphore(api_common->vulkan_api.device, &semaphore_info, NULL, &swap_chain_common->swap_chain_vulkan.image_available_semaphores[i]) != VK_SUCCESS || vkCreateFence(api_common->vulkan_api.device, &fence_info, NULL, &swap_chain_common->swap_chain_vulkan.in_flight_fences[i]) != VK_SUCCESS) {
+      log_message(LOG_SEVERITY_ERROR, "Failed to create per-frame sync objects!\n");
+      return VULKAN_RENDERER_CREATE_SYNC_OBJECT_ERROR;
+    }
+  }
+
+  for (uint32_t i = 0; i < swap_chain_common->swap_chain_vulkan.swap_chain_image_count; i++) {
+    if (vkCreateSemaphore(api_common->vulkan_api.device, &semaphore_info, NULL, &swap_chain_common->swap_chain_vulkan.render_finished_semaphores[i]) != VK_SUCCESS) {
+      log_message(LOG_SEVERITY_ERROR, "Failed to create per-image render-finished semaphores!\n");
       return VULKAN_RENDERER_CREATE_SYNC_OBJECT_ERROR;
     }
   }
@@ -287,26 +295,33 @@ static inline void swap_chain_vulkan_delete_common(struct SwapChainCommon* swap_
 }
 
 void swap_chain_vulkan_delete(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common) {
-  for (uint_fast8_t loop_num = 0; loop_num < MAX_FRAMES_IN_FLIGHT; loop_num++)
-    vkWaitForFences(api_common->vulkan_api.device, 1, &(swap_chain_common->swap_chain_vulkan.in_flight_fences[loop_num]), VK_TRUE, UINT64_MAX);
+  VkDevice device = api_common->vulkan_api.device;
 
-  vkDestroyBuffer(api_common->vulkan_api.device, swap_chain_common->swap_chain_vulkan.uniform_buffer, NULL);
-  vkFreeMemory(api_common->vulkan_api.device, swap_chain_common->swap_chain_vulkan.uniform_buffers_memory, NULL);
+  vkDeviceWaitIdle(device);
+
+  vkDestroyBuffer(device, swap_chain_common->swap_chain_vulkan.uniform_buffer, NULL);
+  vkFreeMemory(device, swap_chain_common->swap_chain_vulkan.uniform_buffers_memory, NULL);
 
   swap_chain_vulkan_delete_common(swap_chain_common, api_common);
 
-  vkDestroyBuffer(api_common->vulkan_api.device, swap_chain_common->swap_chain_vulkan.vertex_buffer, NULL);
-  vkFreeMemory(api_common->vulkan_api.device, swap_chain_common->swap_chain_vulkan.vertex_buffer_memory, NULL);
-  vkDestroyBuffer(api_common->vulkan_api.device, swap_chain_common->swap_chain_vulkan.index_buffer, NULL);
-  vkFreeMemory(api_common->vulkan_api.device, swap_chain_common->swap_chain_vulkan.index_buffer_memory, NULL);
+  vkDestroyBuffer(device, swap_chain_common->swap_chain_vulkan.vertex_buffer, NULL);
+  vkFreeMemory(device, swap_chain_common->swap_chain_vulkan.vertex_buffer_memory, NULL);
 
-  vkDestroySwapchainKHR(api_common->vulkan_api.device, swap_chain_common->swap_chain_vulkan.swap_chain_khr, NULL);
-  vkFreeCommandBuffers(api_common->vulkan_api.device, api_common->vulkan_api.command_pool, 3, swap_chain_common->swap_chain_vulkan.swap_chain_command_buffers);
+  vkDestroyBuffer(device, swap_chain_common->swap_chain_vulkan.index_buffer, NULL);
+  vkFreeMemory(device, swap_chain_common->swap_chain_vulkan.index_buffer_memory, NULL);
 
-  for (uint_fast8_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    vkDestroySemaphore(api_common->vulkan_api.device, swap_chain_common->swap_chain_vulkan.render_finished_semaphores[i], NULL);
-    vkDestroySemaphore(api_common->vulkan_api.device, swap_chain_common->swap_chain_vulkan.image_available_semaphores[i], NULL);
-    vkDestroyFence(api_common->vulkan_api.device, swap_chain_common->swap_chain_vulkan.in_flight_fences[i], NULL);
+  vkDestroySwapchainKHR(device, swap_chain_common->swap_chain_vulkan.swap_chain_khr, NULL);
+
+  vkFreeCommandBuffers(device, api_common->vulkan_api.command_pool, MAX_SWAP_CHAIN_FRAMES, swap_chain_common->swap_chain_vulkan.swap_chain_command_buffers);
+
+  // Per swap chain image
+  for (uint32_t render_finished_semaphore_index = 0; render_finished_semaphore_index < swap_chain_common->swap_chain_vulkan.swap_chain_image_count; render_finished_semaphore_index++)
+    vkDestroySemaphore(device, swap_chain_common->swap_chain_vulkan.render_finished_semaphores[render_finished_semaphore_index], NULL);
+
+  // Per frame in flight
+  for (uint32_t image_available_semaphore_index = 0; image_available_semaphore_index < MAX_FRAMES_IN_FLIGHT; image_available_semaphore_index++) {
+    vkDestroySemaphore(device, swap_chain_common->swap_chain_vulkan.image_available_semaphores[image_available_semaphore_index], NULL);
+    vkDestroyFence(device, swap_chain_common->swap_chain_vulkan.in_flight_fences[image_available_semaphore_index], NULL);
   }
 }
 
@@ -332,7 +347,8 @@ uint_fast8_t swap_chain_vulkan_resize(struct SwapChainCommon* swap_chain_common,
 }
 
 void swap_chain_vulkan_prepare_delete(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common) {
-  vkWaitForFences(api_common->vulkan_api.device, 2, swap_chain_common->swap_chain_vulkan.in_flight_fences, VK_TRUE, UINT64_MAX);
+  // vkWaitForFences(api_common->vulkan_api.device, 2, swap_chain_common->swap_chain_vulkan.in_flight_fences, VK_TRUE, UINT64_MAX);
+  vkDeviceWaitIdle(api_common->vulkan_api.device);
 }
 
 uint_fast8_t swap_chain_vulkan_blit_init(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, struct PostProcessCommon* post_process_common) {
@@ -443,7 +459,7 @@ uint_fast8_t swap_chain_vulkan_end_frame(struct SwapChainCommon* swap_chain_comm
   swap_chain_submit_info.commandBufferCount = 1;
   swap_chain_submit_info.pCommandBuffers = &swap_chain_common->swap_chain_vulkan.swap_chain_command_buffers[swap_chain_common->image_index];
 
-  VkSemaphore signal_semaphores[] = {swap_chain_common->swap_chain_vulkan.render_finished_semaphores[swap_chain_common->current_frame]};
+  VkSemaphore signal_semaphores[] = {swap_chain_common->swap_chain_vulkan.render_finished_semaphores[swap_chain_common->image_index]};
   swap_chain_submit_info.signalSemaphoreCount = 1;
   swap_chain_submit_info.pSignalSemaphores = signal_semaphores;
 

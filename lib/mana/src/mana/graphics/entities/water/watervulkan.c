@@ -27,14 +27,45 @@ uint_fast8_t water_vulkan_init(struct WaterCommon* water_common, struct APICommo
 
 void water_vulkan_delete(struct WaterCommon* water_common, struct APICommon* api_common) {
   VkDevice device = api_common->vulkan_api.device;
-  vkDestroyBuffer(device, water_common->water_vulkan.index_buffer, NULL);
-  vkFreeMemory(device, water_common->water_vulkan.index_buffer_memory, NULL);
-  vkDestroyBuffer(device, water_common->water_vulkan.vertex_buffer, NULL);
-  vkFreeMemory(device, water_common->water_vulkan.vertex_buffer_memory, NULL);
-  vkDestroyBuffer(device, water_common->water_vulkan.vertex_uniform_buffer, NULL);
-  vkFreeMemory(device, water_common->water_vulkan.vertex_uniform_memory, NULL);
-  vkDestroyBuffer(device, water_common->water_vulkan.fragment_uniform_buffer, NULL);
-  vkFreeMemory(device, water_common->water_vulkan.fragment_uniform_memory, NULL);
+
+  if (water_common->water_vulkan.index_buffer != VK_NULL_HANDLE) {
+    vkDestroyBuffer(device, water_common->water_vulkan.index_buffer, NULL);
+    water_common->water_vulkan.index_buffer = VK_NULL_HANDLE;
+  }
+  if (water_common->water_vulkan.index_buffer_memory != VK_NULL_HANDLE) {
+    vkFreeMemory(device, water_common->water_vulkan.index_buffer_memory, NULL);
+    water_common->water_vulkan.index_buffer_memory = VK_NULL_HANDLE;
+  }
+
+  if (water_common->water_vulkan.vertex_buffer != VK_NULL_HANDLE) {
+    vkDestroyBuffer(device, water_common->water_vulkan.vertex_buffer, NULL);
+    water_common->water_vulkan.vertex_buffer = VK_NULL_HANDLE;
+  }
+  if (water_common->water_vulkan.vertex_buffer_memory != VK_NULL_HANDLE) {
+    vkFreeMemory(device, water_common->water_vulkan.vertex_buffer_memory, NULL);
+    water_common->water_vulkan.vertex_buffer_memory = VK_NULL_HANDLE;
+  }
+
+  if (water_common->water_vulkan.vertex_uniform_buffer != VK_NULL_HANDLE) {
+    vkDestroyBuffer(device, water_common->water_vulkan.vertex_uniform_buffer, NULL);
+    water_common->water_vulkan.vertex_uniform_buffer = VK_NULL_HANDLE;
+  }
+  if (water_common->water_vulkan.vertex_uniform_memory != VK_NULL_HANDLE) {
+    vkFreeMemory(device, water_common->water_vulkan.vertex_uniform_memory, NULL);
+    water_common->water_vulkan.vertex_uniform_memory = VK_NULL_HANDLE;
+  }
+
+  if (water_common->water_vulkan.fragment_uniform_buffer != VK_NULL_HANDLE) {
+    vkDestroyBuffer(device, water_common->water_vulkan.fragment_uniform_buffer, NULL);
+    water_common->water_vulkan.fragment_uniform_buffer = VK_NULL_HANDLE;
+  }
+  if (water_common->water_vulkan.fragment_uniform_memory != VK_NULL_HANDLE) {
+    vkFreeMemory(device, water_common->water_vulkan.fragment_uniform_memory, NULL);
+    water_common->water_vulkan.fragment_uniform_memory = VK_NULL_HANDLE;
+  }
+
+  // Note: clear the handle locally so you do not accidentally reuse it.
+  water_common->water_vulkan.descriptor_set = VK_NULL_HANDLE;
 }
 
 void water_vulkan_render(struct WaterCommon* water_common, struct GBufferCommon* gbuffer_common) {

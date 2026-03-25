@@ -392,18 +392,16 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 }
 
 void game_delete(struct Game* game, struct Mana* mana) {
-  water_delete(&(game->water), &(mana->api.api_common));
-
   closesocket(game->sock);
   WSACleanup();
 
   struct APICommon* api_common = &(mana->api.api_common);
-
   // TODO: Throw this in a prepare delete function or something
+  // Note: We need this before we start to teardown the rest of the game objects since they might be using the swap chain for rendering during their delete functions
   swap_chain_prepare_delete(game->window->swap_chain, api_common);
-
+  water_delete(&(game->water), api_common);
+  water_shader_delete(&(game->water_shader), api_common);
   sprite_manager_delete(&(game->sprite_manager), api_common);
-
   texture_manager_delete(&(game->texture_manager), api_common);
 }
 

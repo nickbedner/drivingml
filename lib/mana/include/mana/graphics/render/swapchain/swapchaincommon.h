@@ -31,7 +31,7 @@ struct SwapChainVulkan {
   VkSemaphore semaphore[MAX_SWAP_CHAIN_FRAMES];
 
   VkSemaphore image_available_semaphores[MAX_FRAMES_IN_FLIGHT];
-  VkSemaphore render_finished_semaphores[MAX_FRAMES_IN_FLIGHT];
+  VkSemaphore render_finished_semaphores[MAX_SWAP_CHAIN_FRAMES];
   VkFence in_flight_fences[MAX_FRAMES_IN_FLIGHT];
 
   VkBuffer vertex_buffer;
@@ -46,8 +46,7 @@ struct SwapChainVulkan {
   VkDescriptorSet descriptor_set[POST_PROCESS_PING_PONG];
 
   VkFormat swap_chain_image_format;
-  // Note: Alignment for struct
-  uint32_t _pad0;
+  uint32_t swap_chain_image_count;
 };
 #endif
 
