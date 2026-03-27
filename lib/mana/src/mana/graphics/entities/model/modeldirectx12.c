@@ -31,14 +31,9 @@ void model_directx_12_render(struct ModelCommon* model_common, struct GBuffer* g
   if (model_common->animated)
     animator_update(model_common->animator, delta_time);
 
-  // Bind the pipeline state object (PSO) - which contains the shader stages, blend state, etc.
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetPipelineState(gbuffer->gbuffer_common.gbuffer_directx12.command_list, model_common->shader_handle->shader_common.shader_directx12.pipeline_state);
-
-  // Bind the root signature
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootSignature(gbuffer->gbuffer_common.gbuffer_directx12.command_list, model_common->shader_handle->shader_common.shader_directx12.root_signature);
 
-  // Set the constant buffer view for the sprite.
-  // You might need to handle this differently depending on how your root signature and shader are set up.
   D3D12_GPU_VIRTUAL_ADDRESS cbv_address = model_common->model_directx12.constant_buffer->lpVtbl->GetGPUVirtualAddress(model_common->model_directx12.constant_buffer);
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootConstantBufferView(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 0, cbv_address);  // Assuming the CBV is bound at the first (0th) root parameter
   D3D12_GPU_VIRTUAL_ADDRESS lighting_cbv_address = model_common->model_directx12.constant_buffer->lpVtbl->GetGPUVirtualAddress(model_common->model_directx12.lighting_constant_buffer);
@@ -53,7 +48,6 @@ void model_directx_12_render(struct ModelCommon* model_common, struct GBuffer* g
   // ID3D12DescriptorHeap* descriptor_heaps[] = {model_common->model_diffuse_texture->texture_common.texture_manager_common->texture_manager_directx12.srv_heap, model_common->shader_handle->shader_common.shader_directx12.sampler_heap};
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetDescriptorHeaps(gbuffer->gbuffer_common.gbuffer_directx12.command_list, _countof(descriptor_heaps), descriptor_heaps);
 
-  // Bind the sampler and SRV for the texture
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 2, model_common->model_diffuse_texture->texture_common.texture_directx12.srv_gpu_handle);
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 3, model_common->model_normal_texture->texture_common.texture_directx12.srv_gpu_handle);
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 4, model_common->model_metallic_texture->texture_common.texture_directx12.srv_gpu_handle);
@@ -68,22 +62,18 @@ void model_directx_12_render(struct ModelCommon* model_common, struct GBuffer* g
     // gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->SetGraphicsRootDescriptorTable(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 7, model_common->shader_handle->shader_common.shader_directx12.sampler_handle_gpu);
   }
 
-  // Bind the vertex buffer.
   D3D12_VERTEX_BUFFER_VIEW vbv = model_common->model_directx12.vertex_buffer_view;
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->IASetVertexBuffers(gbuffer->gbuffer_common.gbuffer_directx12.command_list, 0, 1, &vbv);
 
-  // Bind the index buffer.
   D3D12_INDEX_BUFFER_VIEW ibv = model_common->model_directx12.index_buffer_view;
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->IASetIndexBuffer(gbuffer->gbuffer_common.gbuffer_directx12.command_list, &ibv);
 
-  // Set the primitive topology
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->IASetPrimitiveTopology(gbuffer->gbuffer_common.gbuffer_directx12.command_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);  // Assuming triangles, adjust as necessary
 
-  // Draw indexed
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->DrawIndexedInstanced(gbuffer->gbuffer_common.gbuffer_directx12.command_list, (UINT)model_common->model_mesh->mesh_common.indices->size, 1, 0, 0, 0);
 }
 
-void model_directx_12_update_uniforms(struct ModelCommon* model_common, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec3 light_pos) {
+void model_directx_12_update_uniforms(struct ModelCommon* model_common, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec3 light_pos, vec3 diffuse_color, vec3 ambient_color, vec3 specular_light) {
   struct LightingUniformBufferObject light_ubo = {0};
   // light_ubo.direction = light_pos;
   light_ubo.direction = vec3d_to_vec3(position);

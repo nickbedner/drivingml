@@ -44,12 +44,11 @@ struct Game {
   struct Sprite* marker[MAX_MARKERS];
   struct Sprite* trees[MAX_TREES];
 
+  struct Model* test_model;
+
   SOCKET sock;
 
   struct ArrayList models;
-
-  struct ModelShader model_shader;
-  struct ModelStaticShader model_static_shader;
 
   struct WaterShader water_shader;
   struct Water water;

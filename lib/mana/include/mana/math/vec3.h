@@ -35,7 +35,7 @@ static inline vec3 vec3_add_scaled_vector(vec3 v1, vec3 v2, float scale);
 static inline float vec3_magnitude(vec3 v1);
 static inline float vec3_square_magnitude(vec3 v1);
 static inline vec3 vec3_trim(vec3 v1, float size);
-static inline vec3 vec3_normalise(vec3 v1);
+static inline vec3 vec3_normalize(vec3 v1);
 static inline vec3 vec3_old_skool_normalise(vec3 v1);
 static inline bool vec3_equals(vec3 v1, vec3 v2);
 static inline bool vec3_less_than(vec3 v1, vec3 v2);
@@ -110,14 +110,14 @@ static inline float vec3_square_magnitude(vec3 v1) {
 
 static inline vec3 vec3_trim(vec3 v1, float size) {
   if (vec3_square_magnitude(v1) > size * size) {
-    vec3 temp = vec3_normalise(v1);
+    vec3 temp = vec3_normalize(v1);
     return (vec3){.data[0] = temp.data[0] * size, .data[1] = temp.data[1] * size, .data[2] = temp.data[2] * size};
   }
 
   return (vec3){.data[0] = v1.data[0], .data[1] = v1.data[1], .data[2] = v1.data[2]};
 }
 
-static inline vec3 vec3_normalise(vec3 v1) {
+static inline vec3 vec3_normalize(vec3 v1) {
   float ls = v1.data[0] * v1.data[0] + v1.data[1] * v1.data[1] + v1.data[2] * v1.data[2];
   float length = sqrtf(ls);
   if (length > 0)

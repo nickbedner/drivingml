@@ -1,8 +1,13 @@
 #include "mana/graphics/utilities/modelcache.h"
 
-void model_cache_init(struct ModelCache* model_cache) {
+void model_cache_init(struct ModelCache* model_cache, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, struct GBufferCommon* gbuffer_common, uint_fast8_t msaa_samples, uint_fast32_t descriptors) {
   // Note: Store as references because it would be dangerous to realloc in linear memory
   map_init(&model_cache->models, sizeof(struct Model*));
+
+  model_shader_init(&(model_cache->model_shader), api_common, width, height, supersample_scale, gbuffer_common, true, true, msaa_samples, descriptors);
+
+  model_cache->model_descriptor_set = (VkDescriptorSet*)calloc(descriptors, sizeof(VkDescriptorSet));
+  vulkan_graphics_utils_create_descriptors(&(api_common->vulkan_api), model_cache->model_descriptor_set, &(model_cache->model_shader.shader.shader_common.shader_vulkan.descriptor_set_layout), &(model_cache->model_shader.shader.shader_common.shader_vulkan.descriptor_pool), model_cache->model_shader.shader.shader_common.shader_settings.descriptors);
 }
 
 void model_cache_delete(struct ModelCache* model_cache, struct APICommon* api_common) {
@@ -20,6 +25,7 @@ void model_cache_delete(struct ModelCache* model_cache, struct APICommon* api_co
 // TODO: Maybe allow for init from structs instead out outside
 void model_cache_add(struct ModelCache* model_cache, struct APICommon* api_common, struct ModelSettings* model_settings, size_t num) {
   struct Model* model = (struct Model*)malloc(sizeof(struct Model));
+  model->model_common.model_vulkan.descriptor_set = &(model_cache->model_descriptor_set[num]);
   model_init(model, api_common, model_settings, num);
   map_set(&(model_cache->models), model->model_common.path, &model);  // Store full path in case of models having same texture name like diffuse
 }

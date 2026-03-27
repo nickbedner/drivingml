@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mana/graphics/apis/api.h>
+#include <mana/graphics/shaders/modelshader.h>
 #include <stdarg.h>
 
 #include "mana/graphics/entities/model/model.h"
@@ -19,10 +20,12 @@ struct APICommon;
 
 struct ModelCache {
   struct Map models;
+  struct ModelShader model_shader;
+  VkDescriptorSet* model_descriptor_set;
 };
 
-void model_cache_init(struct ModelCache *model_cache);
-void model_cache_delete(struct ModelCache *model_cache, struct APICommon *api_common);
+void model_cache_init(struct ModelCache* model_cache, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, struct GBufferCommon* gbuffer_common, uint_fast8_t msaa_samples, uint_fast32_t descriptors);
+void model_cache_delete(struct ModelCache* model_cache, struct APICommon* api_common);
 // void model_cache_add(struct ModelCache *model_cache, struct APICommon *api_common, size_t n_models, ...);
-void model_cache_add(struct ModelCache *model_cache, struct APICommon *api_common, struct ModelSettings *model_settings, size_t num);
-struct Model *model_cache_get(struct ModelCache *model_cache, struct APICommon *api_common, char *model_name);
+void model_cache_add(struct ModelCache* model_cache, struct APICommon* api_common, struct ModelSettings* model_settings, size_t num);
+struct Model* model_cache_get(struct ModelCache* model_cache, struct APICommon* api_common, char* model_name);

@@ -73,7 +73,6 @@ uint_fast8_t model_init(struct Model* model, struct APICommon* api_common, struc
     free(skinning_data->vertices_skin_data);
 
     free(skinning_data);
-
   } else
     model->model_common.model_mesh = geometry_loader_extract_model_data(api_common, xml_node_get_child(collada_node, "library_geometries"), NULL, model->model_common.animated, api_common->inverted_y);
 
@@ -106,29 +105,29 @@ void model_delete(struct Model* model, struct APICommon* api_common) {
   free(model->model_common.model_mesh);
 }
 
-void model_update_uniforms(struct Model* model, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec3 light_pos) {
-  model->model_func.model_update_uniforms(&model->model_common, api_common, gbuffer, position, light_pos);
+void model_update_uniforms(struct Model* model, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec3 light_pos, vec3 diffuse_color, vec3 ambient_color, vec3 specular_light) {
+  model->model_func.model_update_uniforms(&model->model_common, api_common, gbuffer, position, light_pos, diffuse_color, ambient_color, specular_light);
 }
 
 struct Model* model_get_clone(struct Model* model, struct APICommon* api_common) {
-  struct Model* new_model = (struct Model*)malloc(sizeof(struct Model));
+  struct Model* new_model = (struct Model*)calloc(1, sizeof(struct Model));
   *new_model = *model;
 
   new_model->model_common.position = VEC3_ZERO;
   new_model->model_common.rotation = QUAT_DEFAULT;
   new_model->model_common.scale = VEC3_ONE;
 
-  new_model->model_common.model_mesh = (struct Mesh*)malloc(sizeof(struct Mesh));
-  new_model->model_common.model_mesh->mesh_common.indices = (struct Vector*)malloc(sizeof(struct Vector));
-  new_model->model_common.model_mesh->mesh_common.vertices = (struct Vector*)malloc(sizeof(struct Vector));
+  new_model->model_common.model_mesh = (struct Mesh*)calloc(1, sizeof(struct Mesh));
+  new_model->model_common.model_mesh->mesh_common.indices = (struct Vector*)calloc(1, sizeof(struct Vector));
+  new_model->model_common.model_mesh->mesh_common.vertices = (struct Vector*)calloc(1, sizeof(struct Vector));
 
   *new_model->model_common.model_mesh->mesh_common.indices = *model->model_common.model_mesh->mesh_common.indices;
   *new_model->model_common.model_mesh->mesh_common.vertices = *model->model_common.model_mesh->mesh_common.vertices;
   //(new_model->animated) ? mesh_model_init(new_model->model_mesh) : mesh_model_static_init(new_model->model_mesh);
-  new_model->model_common.model_mesh->mesh_common.indices->items = (void*)malloc(model->model_common.model_mesh->mesh_common.indices->capacity * model->model_common.model_mesh->mesh_common.indices->memory_size);
+  new_model->model_common.model_mesh->mesh_common.indices->items = (void*)calloc(1, model->model_common.model_mesh->mesh_common.indices->capacity * model->model_common.model_mesh->mesh_common.indices->memory_size);
   memcpy(new_model->model_common.model_mesh->mesh_common.indices->items, model->model_common.model_mesh->mesh_common.indices->items, model->model_common.model_mesh->mesh_common.indices->capacity * model->model_common.model_mesh->mesh_common.indices->memory_size);
 
-  new_model->model_common.model_mesh->mesh_common.vertices->items = (void*)malloc(model->model_common.model_mesh->mesh_common.vertices->capacity * model->model_common.model_mesh->mesh_common.vertices->memory_size);
+  new_model->model_common.model_mesh->mesh_common.vertices->items = (void*)calloc(1, model->model_common.model_mesh->mesh_common.vertices->capacity * model->model_common.model_mesh->mesh_common.vertices->memory_size);
   memcpy(new_model->model_common.model_mesh->mesh_common.vertices->items, model->model_common.model_mesh->mesh_common.vertices->items, model->model_common.model_mesh->mesh_common.vertices->capacity * model->model_common.model_mesh->mesh_common.vertices->memory_size);
 
   new_model->model_common.model_mesh->mesh_common.mesh_type = model->model_common.model_mesh->mesh_common.mesh_type;
@@ -136,12 +135,12 @@ struct Model* model_get_clone(struct Model* model, struct APICommon* api_common)
 
   if (new_model->model_common.animated) {
     new_model->model_common.root_joint = model_create_joints_clone(model->model_common.root_joint);
-    new_model->model_common.animator = (struct Animator*)malloc(sizeof(struct Animator));
+    new_model->model_common.animator = (struct Animator*)calloc(1, sizeof(struct Animator));
     animator_init(new_model->model_common.animator, &(new_model->model_common));
     animator_do_animation(new_model->model_common.animator, new_model->model_common.animation);
   }
 
-  model->model_func.model_clone_init(&new_model->model_common, api_common);
+  model->model_func.model_clone_init(&(new_model->model_common), api_common);
 
   return new_model;
 }
@@ -161,6 +160,9 @@ void model_clone_delete(struct Model* model, struct APICommon* api_common) {
 }
 
 void model_render(struct Model* model, struct GBuffer* gbuffer, double delta_time) {
+  if (model->model_common.animated)
+    animator_update(model->model_common.animator, delta_time);
+
   model->model_func.model_render(&(model->model_common), gbuffer, delta_time);
 }
 

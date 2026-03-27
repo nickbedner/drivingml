@@ -245,9 +245,9 @@ static inline mat4 mat4_look_at(vec3 eye, vec3 center, vec3 up) {
   vec3 f, u, s;
 
   f = vec3_sub(center, eye);
-  f = vec3_normalise(f);
+  f = vec3_normalize(f);
 
-  s = vec3_normalise(vec3_cross_product(f, up));
+  s = vec3_normalize(vec3_cross_product(f, up));
   u = vec3_cross_product(s, f);
 
   dest.vecs[0].data[0] = s.data[0];
@@ -313,7 +313,7 @@ static inline mat4 mat4_rotate(mat4 m1, float angle, vec3 axis) {
   c = cosf(angle);
 
   ////////////////////////////////////////////////////////////////
-  axisn = vec3_normalise(axis);
+  axisn = vec3_normalize(axis);
   v = vec3_scale(axisn, 1.0f - c);
   vs = vec3_scale(axisn, sinf(angle));
 

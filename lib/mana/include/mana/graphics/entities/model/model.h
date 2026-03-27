@@ -9,10 +9,10 @@
 #endif
 
 struct ModelFunc {
-  void (*model_clone_init)(struct ModelCommon *, struct APICommon *);
-  void (*model_clone_delete)(struct ModelCommon *, struct APICommon *);
-  void (*model_render)(struct ModelCommon *, struct GBuffer *, double);
-  void (*model_update_uniforms)(struct ModelCommon *, struct APICommon *, struct GBuffer *, vec3d, vec3);
+  void (*model_clone_init)(struct ModelCommon*, struct APICommon*);
+  void (*model_clone_delete)(struct ModelCommon*, struct APICommon*);
+  void (*model_render)(struct ModelCommon*, struct GBuffer*, double);
+  void (*model_update_uniforms)(struct ModelCommon*, struct APICommon*, struct GBuffer*, vec3d, vec3, vec3, vec3, vec3);
 };
 
 #ifdef VULKAN_API_SUPPORTED
@@ -27,11 +27,11 @@ struct Model {
   struct ModelCommon model_common;
 };
 
-uint_fast8_t model_init(struct Model *model, struct APICommon *api_common, struct ModelSettings *model_settings, size_t num);
-void model_delete(struct Model *model, struct APICommon *api_common);
-struct Model *model_get_clone(struct Model *model, struct APICommon *api_common);
+uint_fast8_t model_init(struct Model* model, struct APICommon* api_common, struct ModelSettings* model_settings, size_t num);
+void model_delete(struct Model* model, struct APICommon* api_common);
+struct Model* model_get_clone(struct Model* model, struct APICommon* api_common);
 
-void model_clone_delete(struct Model *model, struct APICommon *api_common);
-void model_render(struct Model *model, struct GBuffer *gbuffer, double delta_time);
-void model_update_uniforms(struct Model *model, struct APICommon *api_common, struct GBuffer *gbuffer, vec3d position, vec3 light_pos);
-void model_recreate(struct Model *model, struct APICommon *api_common);
+void model_clone_delete(struct Model* model, struct APICommon* api_common);
+void model_render(struct Model* model, struct GBuffer* gbuffer, double delta_time);
+void model_update_uniforms(struct Model* model, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec3 light_pos, vec3 diffuse_color, vec3 ambient_color, vec3 specular_light);
+void model_recreate(struct Model* model, struct APICommon* api_common);

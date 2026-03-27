@@ -216,6 +216,12 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/startfinish.png", true);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/cloud.png", true);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/map.png", true);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/testmodel/diffuse.png", true);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/testmodel/albedo.png", true);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/testmodel/normal.png", true);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/testmodel/roughness.png", true);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/testmodel/metallic.png", true);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/testmodel/ao.png", true);
   sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_TRILINEAR, .mode_type = MODE_REPEAT, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_CUSTOM, .mip_count = 5, .premultiplied_alpha = true, .max_anisotropy = 1.0f};
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/waterm1.png", false);
   sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_NEAREST, .mode_type = MODE_CLAMP_TO_EDGE, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_NONE, .mip_count = 1, .premultiplied_alpha = true, .max_anisotropy = 1.0f};
@@ -389,6 +395,20 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   water_init(&(game->water), &(mana->api.api_common), &(game->water_shader.shader), texture_manager_get(game->sprite_manager.sprite_manager_common.texture_manager, "/textures/waterm1.png"));
   game->water.water_common.position = (vec3){.x = 0.0f, .y = 0.0f, .z = -5.0f};
   game->water.water_common.scale = (vec3){.x = 1024.0f, .y = 1024.0f, .z = 1.0f};
+
+  model_cache_init(&(game->model_cache), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 128);
+  struct ModelSettings model_settings = (struct ModelSettings){
+      .path = "./assets/models/testmodel/model.dae",
+      .shader = &(game->model_cache.model_shader.shader),
+      .diffuse_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/albedo.png"),
+      .normal_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/normal.png"),
+      .metallic_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/metallic.png"),
+      .roughness_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/roughness.png"),
+      .ao_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/ao.png"),
+      5};
+  model_cache_add(&(game->model_cache), &(mana->api.api_common), &model_settings, 0);
+  game->test_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/testmodel/model.dae");
+  game->test_model->model_common.rotation = mat4_to_quaternion(mat4_rotate(MAT4_IDENTITY, (float)M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0}));
 }
 
 void game_delete(struct Game* game, struct Mana* mana) {
@@ -860,6 +880,15 @@ void game_render(struct Game* game, struct Mana* mana, double delta_time) {
       window->should_resize = false;
     }
 
+    // Diffuse sun directional light
+    float sun_intensity = 4.0f;
+    vec3 sun_dir = vec3_normalize((vec3){.x = 0.35f, .y = 0.25f, .z = -0.90f});
+    vec3 diffuse_color = (vec3){.x = 1.0f * sun_intensity, .y = 0.96f * sun_intensity, .z = 0.86f * sun_intensity};
+    // Soft sky fill, not white
+    vec3 ambient_color = (vec3){.x = 0.10f, .y = 0.14f, .z = 0.18f};
+    vec3 specular_light = (vec3){.x = 1.0f, .y = 0.98f, .z = 0.95f};
+
+    model_update_uniforms(game->test_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), sun_dir, diffuse_color, ambient_color, specular_light);
     water_update_uniforms(&(game->water), api_common, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height);
     sprite_manager_update(&(game->sprite_manager), delta_time);
     sprite_manager_update_uniforms(&(game->sprite_manager), api_common, &(window->gbuffer->gbuffer_common));
@@ -868,6 +897,8 @@ void game_render(struct Game* game, struct Mana* mana, double delta_time) {
     gbuffer_start(window->gbuffer, &(window->swap_chain->swap_chain_common), window->renderer.renderer_settings.msaa_samples);
 
     water_render(&(game->water), &(window->gbuffer->gbuffer_common));
+
+    model_render(game->test_model, window->gbuffer, delta_time);
 
     // Transparent sprites
     vec3d cam_pos = camera_get_pos(&game->player.camera);
