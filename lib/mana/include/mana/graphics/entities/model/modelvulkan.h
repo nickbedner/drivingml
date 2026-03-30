@@ -10,4 +10,4 @@
 void model_vulkan_clone_init(struct ModelCommon* model_common, struct APICommon* api_common);
 void model_vulkan_clone_delete(struct ModelCommon* model_common, struct APICommon* api_common);
 void model_vulkan_render(struct ModelCommon* model_common, struct GBuffer* gbuffer, double delta_time);
-void model_vulkan_update_uniforms(struct ModelCommon* model_common, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec3 light_pos, vec3 diffuse_color, vec3 ambient_color, vec3 specular_light);
+void model_vulkan_update_uniforms(struct ModelCommon* model_common, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec4 light_pos, vec4 diffuse_color, vec4 ambient_color, vec4 specular_light);

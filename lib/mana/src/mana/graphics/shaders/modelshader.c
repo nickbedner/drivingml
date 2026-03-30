@@ -5,7 +5,7 @@ uint_fast8_t model_shader_init(struct ModelShader* model_shader, struct APICommo
   shader_settings->vertex_shader = "model";
   shader_settings->fragment_shader = "model";
   shader_settings->front_face = SHADER_FRONT_FACE_COUNTER_CLOCKWISE;
-  shader_settings->cull_mode = SHADER_CULL_MODE_BACK_BIT;  // SHADER_CULL_MODE_NONE;
+  shader_settings->cull_mode = SHADER_CULL_MODE_BACK_BIT;
   shader_settings->depth_test = depth_test;
   shader_settings->depth_write = depth_write;
   shader_settings->supersampled = false;

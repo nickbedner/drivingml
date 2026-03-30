@@ -31,7 +31,7 @@ struct Mesh* geometry_loader_extract_model_data(struct APICommon* api_common, st
 void geometry_loader_read_raw_data(struct ModelData* model_data, struct XmlNode* mesh_data, struct Vector* vertex_weights, bool inverted_y) {
   geometry_loader_read_positions(model_data, mesh_data, vertex_weights);
   geometry_loader_read_normals(model_data, mesh_data);
-  geometry_loader_read_texture_coordinates(model_data, mesh_data, inverted_y);
+  bool tex_coords_read = geometry_loader_read_texture_coordinates(model_data, mesh_data, inverted_y);
   geometry_loader_read_colors(model_data, mesh_data);
 }
 
@@ -97,35 +97,70 @@ void geometry_loader_read_normals(struct ModelData* model_data, struct XmlNode* 
   free(raw_data);
 }
 
-void geometry_loader_read_texture_coordinates(struct ModelData* model_data, struct XmlNode* mesh_data, bool inverted_y) {
-  struct XmlNode* material_node = xml_node_get_child(mesh_data, "polylist");
-  if (material_node == NULL)
-    material_node = xml_node_get_child(mesh_data, "triangles");
-  // if (xml_node_get_child_with_attribute(material_node, "input", "semantic", "TEXCOORD") == NULL)
-  //   material_node = xml_node_get_child(mesh_data, "vertices");
+bool geometry_loader_read_texture_coordinates(struct ModelData* model_data, struct XmlNode* mesh_data, bool inverted_y) {
+  struct XmlNode* primitive = xml_node_get_child(mesh_data, "polylist");
+  if (primitive == NULL)
+    primitive = xml_node_get_child(mesh_data, "triangles");
+  if (primitive == NULL)
+    return false;
 
-  char* tex_coords_id = xml_node_get_attribute(xml_node_get_child_with_attribute(material_node, "input", "semantic", "TEXCOORD"), "source") + 1;
-  struct XmlNode* tex_coords_data = xml_node_get_child(xml_node_get_child_with_attribute(mesh_data, "source", "id", tex_coords_id), "float_array");
-  int32_t count = atoi(xml_node_get_attribute(tex_coords_data, "count"));
-  int32_t stride = atoi(xml_node_get_attribute(xml_node_get_child(xml_node_get_child(xml_node_get_child_with_attribute(mesh_data, "source", "id", tex_coords_id), "technique_common"), "accessor"), "stride"));
+  struct XmlNode* tex_input = xml_node_get_child_with_attribute(primitive, "input", "semantic", "TEXCOORD");
+  if (tex_input == NULL)
+    return false;  // no UVs on this mesh
+
+  const char* source_attr = xml_node_get_attribute(tex_input, "source");
+  if (source_attr == NULL || source_attr[0] != '#')
+    return false;
+
+  const char* tex_coords_id = source_attr + 1;
+
+  struct XmlNode* source_node = xml_node_get_child_with_attribute(mesh_data, "source", "id", tex_coords_id);
+  if (source_node == NULL)
+    return false;
+
+  struct XmlNode* tex_coords_data = xml_node_get_child(source_node, "float_array");
+  if (tex_coords_data == NULL)
+    return false;
+
+  struct XmlNode* technique_common = xml_node_get_child(source_node, "technique_common");
+  if (technique_common == NULL)
+    return false;
+
+  struct XmlNode* accessor = xml_node_get_child(technique_common, "accessor");
+  if (accessor == NULL)
+    return false;
+
+  int32_t count = atoi(xml_node_get_attribute(accessor, "count"));
+  int32_t stride = atoi(xml_node_get_attribute(accessor, "stride"));
+  if (stride <= 0 || stride > 4)
+    return false;
 
   char* raw_data = _strdup(xml_node_get_data(tex_coords_data));
+  if (raw_data == NULL)
+    return false;
+
   char* next_token = NULL;
-  char* raw_part = strtok_s(raw_data, " ", &next_token);
-  for (size_t tex_coord_num = 0; tex_coord_num < (size_t)count && raw_part != NULL; tex_coord_num++) {
+  char* raw_part = strtok_s(raw_data, " \t\r\n", &next_token);
+
+  for (int32_t tex_coord_num = 0; tex_coord_num < count; tex_coord_num++) {
     vec4 tex_coord = {0};
-    for (size_t dim_num = 0; dim_num < (size_t)stride; dim_num++) {
-      // if (inverted_y)
-      tex_coord.data[dim_num] = (float)atof(raw_part);
-      // else
-      //   tex_coord.data[dim_num] = 1.0f - (float)atof(raw_part);
-      raw_part = strtok_s(NULL, " ", &next_token);
+
+    for (int32_t dim_num = 0; dim_num < stride; dim_num++) {
+      if (raw_part == NULL) {
+        free(raw_data);
+        return false;
+      }
+
+      float v = (float)atof(raw_part);
+      tex_coord.data[dim_num] = (inverted_y && dim_num == 1) ? (1.0f - v) : v;
+      raw_part = strtok_s(NULL, " \t\r\n", &next_token);
     }
 
     vector_push_back(model_data->tex_coords, &tex_coord);
   }
 
   free(raw_data);
+  return true;
 }
 
 void geometry_loader_read_colors(struct ModelData* model_data, struct XmlNode* mesh_data) {
@@ -258,23 +293,60 @@ void geometry_loader_process_vertex(struct ModelData* model_data, int32_t positi
 
 float geometry_loader_convert_data_to_arrays(struct ModelData* model_data, struct Mesh* model_mesh, bool animated, bool inverted_y) {
   float furthest_point = 0.0f;
+
   for (size_t vertex_num = 0; vertex_num < vector_size(model_data->vertices); vertex_num++) {
     struct RawVertexModel* current_vertex = (struct RawVertexModel*)vector_get(model_data->vertices, vertex_num);
+
+    if (current_vertex == NULL)
+      continue;
+
     if (current_vertex->length > furthest_point)
       furthest_point = current_vertex->length;
 
     vec3 model_position = current_vertex->position;
-    vec3 model_normal = *(vec3*)vector_get(model_data->normals, (size_t)(current_vertex->normal_index));
-    vec3 model_color = *(vec3*)vector_get(model_data->colors, (size_t)(current_vertex->color_index));
-    vec2 model_tex_coord = *(vec2*)vector_get(model_data->tex_coords, (size_t)(current_vertex->texture_index));
-    // if (inverted_y)
-    //   model_tex_coord.v = 1.0f - model_tex_coord.v;
+
+    /* Safe defaults for missing attributes */
+    vec3 model_normal = (vec3){.x = 0.0f, .y = 0.0f, .z = 1.0f};
+    vec3 model_color = (vec3){.x = 1.0f, .y = 1.0f, .z = 1.0f};
+    vec2 model_tex_coord = (vec2){.x = 0.0f, .y = 0.0f};
+
+    /* Normal */
+    if (current_vertex->normal_index >= 0 && (size_t)current_vertex->normal_index < vector_size(model_data->normals)) {
+      vec3* normal_ptr = (vec3*)vector_get(model_data->normals, (size_t)current_vertex->normal_index);
+      if (normal_ptr != NULL)
+        model_normal = *normal_ptr;
+    }
+
+    /* Color */
+    if (current_vertex->color_index >= 0 && (size_t)current_vertex->color_index < vector_size(model_data->colors)) {
+      vec3* color_ptr = (vec3*)vector_get(model_data->colors, (size_t)current_vertex->color_index);
+      if (color_ptr != NULL)
+        model_color = *color_ptr;
+    }
+
+    /* Texture coordinates */
+    if (current_vertex->texture_index >= 0 && (size_t)current_vertex->texture_index < vector_size(model_data->tex_coords)) {
+      vec2* tex_ptr = (vec2*)vector_get(model_data->tex_coords, (size_t)current_vertex->texture_index);
+      if (tex_ptr != NULL)
+        model_tex_coord = *tex_ptr;
+    }
+
+    if (inverted_y)
+      model_tex_coord.v = 1.0f - model_tex_coord.v;
 
     if (animated) {
-      struct VertexSkinData* model_weights = current_vertex->weights_data;
+      ivec3 joint_ids = (ivec3){.x = 0, .y = 0, .z = 0};
+      vec3 joint_weights = (vec3){.x = 0.0f, .y = 0.0f, .z = 0.0f};
 
-      ivec3 joint_ids = *(ivec3*)model_weights->joint_ids->items;
-      vec3 joint_weights = *(vec3*)model_weights->weights->items;
+      if (current_vertex->weights_data != NULL) {
+        struct VertexSkinData* model_weights = current_vertex->weights_data;
+
+        if (model_weights->joint_ids != NULL && model_weights->joint_ids->items != NULL && vector_size(model_weights->joint_ids) >= 3)
+          joint_ids = *(ivec3*)model_weights->joint_ids->items;
+
+        if (model_weights->weights != NULL && model_weights->weights->items != NULL && vector_size(model_weights->weights) >= 3)
+          joint_weights = *(vec3*)model_weights->weights->items;
+      }
 
       struct VertexModel new_vertice = (struct VertexModel){.position = model_position, .normal = model_normal, .tex_coord = model_tex_coord, .color = model_color, .joints_ids = joint_ids, .weights = joint_weights};
       mesh_assign_vertex(model_mesh, &new_vertice);

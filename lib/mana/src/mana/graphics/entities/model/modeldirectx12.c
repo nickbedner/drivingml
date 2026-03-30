@@ -73,16 +73,12 @@ void model_directx_12_render(struct ModelCommon* model_common, struct GBuffer* g
   gbuffer->gbuffer_common.gbuffer_directx12.command_list->lpVtbl->DrawIndexedInstanced(gbuffer->gbuffer_common.gbuffer_directx12.command_list, (UINT)model_common->model_mesh->mesh_common.indices->size, 1, 0, 0, 0);
 }
 
-void model_directx_12_update_uniforms(struct ModelCommon* model_common, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec3 light_pos, vec3 diffuse_color, vec3 ambient_color, vec3 specular_light) {
+void model_directx_12_update_uniforms(struct ModelCommon* model_common, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec4 light_pos, vec4 diffuse_color, vec4 ambient_color, vec4 specular_light) {
   struct LightingUniformBufferObject light_ubo = {0};
-  // light_ubo.direction = light_pos;
-  light_ubo.direction = vec3d_to_vec3(position);
-  vec3 light_ambient = (vec3){.data[0] = 1.0f, .data[1] = 1.0f, .data[2] = 1.0f};
-  light_ubo.ambient_color = light_ambient;
-  vec3 light_diffuse = (vec3){.data[0] = 1.0f, .data[1] = 1.0f, .data[2] = 1.0f};
-  light_ubo.diffuse_colour = light_diffuse;
-  vec3 light_specular = (vec3){.data[0] = 1.0f, .data[1] = 1.0f, .data[2] = 1.0f};
-  light_ubo.specular_colour = light_specular;
+  light_ubo.direction = light_pos;
+  light_ubo.ambient_color = ambient_color;
+  light_ubo.diffuse_color = diffuse_color;
+  light_ubo.specular_color = specular_light;
 
   struct ModelUniformBufferObject ubom = {0};
   ubom.proj = gbuffer->gbuffer_common.projection_matrix;

@@ -111,6 +111,7 @@ struct SkeletonData {
 };
 
 enum {
+  MODEL_ERROR = 0,
   MODEL_SUCCESS = 1
 };
 

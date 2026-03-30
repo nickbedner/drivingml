@@ -123,11 +123,6 @@ static inline vec3 vec3_normalize(vec3 v1) {
   if (length > 0)
     return (vec3){.x = v1.data[0] / length, .y = v1.data[1] / length, .z = v1.data[2] / length};
   return v1;
-  // float length = vec3_magnitude(v1);
-  // if (length > 0)
-  //   return vec3_divs(v1, length);
-  ////return vec3_scale(v1, ((float)1.0) / length);
-  // return v1;
 }
 
 static inline vec3 vec3_old_skool_normalise(vec3 v1) {

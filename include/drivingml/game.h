@@ -45,6 +45,8 @@ struct Game {
   struct Sprite* trees[MAX_TREES];
 
   struct Model* test_model;
+  struct Model* test_static_model;
+  struct Model* coin_model;
 
   SOCKET sock;
 

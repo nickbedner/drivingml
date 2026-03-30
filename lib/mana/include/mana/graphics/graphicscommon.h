@@ -29,8 +29,8 @@ static const vec4 COLOR_SUN_BLUE = {.x = 0.0f, .y = 0.5098f, .z = 0.8627f, .w = 
 static const vec4 COLOR_CORNFLOWER_BLUE = {.x = 0.392f, .y = 0.584f, .z = 0.929f, .w = 1.0f};
 
 struct LightingUniformBufferObject {
-  vec3 direction;
-  vec3 ambient_color;
-  vec3 diffuse_colour;
-  vec3 specular_colour;
+  alignas(16) vec4 direction;
+  alignas(16) vec4 ambient_color;
+  alignas(16) vec4 diffuse_color;
+  alignas(16) vec4 specular_color;
 };

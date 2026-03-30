@@ -12,7 +12,7 @@ struct ModelFunc {
   void (*model_clone_init)(struct ModelCommon*, struct APICommon*);
   void (*model_clone_delete)(struct ModelCommon*, struct APICommon*);
   void (*model_render)(struct ModelCommon*, struct GBuffer*, double);
-  void (*model_update_uniforms)(struct ModelCommon*, struct APICommon*, struct GBuffer*, vec3d, vec3, vec3, vec3, vec3);
+  void (*model_update_uniforms)(struct ModelCommon*, struct APICommon*, struct GBuffer*, vec3d, vec4, vec4, vec4, vec4);
 };
 
 #ifdef VULKAN_API_SUPPORTED
@@ -33,5 +33,5 @@ struct Model* model_get_clone(struct Model* model, struct APICommon* api_common)
 
 void model_clone_delete(struct Model* model, struct APICommon* api_common);
 void model_render(struct Model* model, struct GBuffer* gbuffer, double delta_time);
-void model_update_uniforms(struct Model* model, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec3 light_pos, vec3 diffuse_color, vec3 ambient_color, vec3 specular_light);
+void model_update_uniforms(struct Model* model, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec4 light_pos, vec4 diffuse_color, vec4 ambient_color, vec4 specular_light);
 void model_recreate(struct Model* model, struct APICommon* api_common);

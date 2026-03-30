@@ -1,11 +1,33 @@
 #include "mana/graphics/utilities/collada/modelskeleton.h"
 
 struct SkeletonData* skeleton_loader_extract_bone_data(struct XmlNode* visual_scene_node, struct Vector* bone_order, bool inverted_y) {
-  struct XmlNode* armature_data = xml_node_get_child_with_attribute(xml_node_get_child(visual_scene_node, "visual_scene"), "node", "id", "Armature");
+  struct XmlNode* visual_scene = xml_node_get_child(visual_scene_node, "visual_scene");
+  if (!visual_scene) {
+    return NULL;
+  }
+
+  struct XmlNode* armature_data =
+      xml_node_get_child_with_attribute(visual_scene, "node", "id", "Armature");
+
+  if (!armature_data) {
+    armature_data = xml_node_get_child_with_attribute(visual_scene, "node", "id", "AllRoot");
+  }
+
+  if (!armature_data) {
+    return NULL;
+  }
+
   struct XmlNode* head_node = xml_node_get_child(armature_data, "node");
+  if (!head_node) {
+    return NULL;
+  }
 
   int32_t joint_count = 0;
   struct JointData* head_joint = skeleton_loader_load_joint_data(head_node, bone_order, true, &joint_count, inverted_y);
+  if (!head_joint) {
+    return NULL;
+  }
+
   struct SkeletonData* skeleton_data = (struct SkeletonData*)malloc(sizeof(struct SkeletonData));
   skeleton_data_init(skeleton_data, joint_count, head_joint);
   return skeleton_data;

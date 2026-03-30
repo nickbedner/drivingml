@@ -1,5 +1,9 @@
 #include "mana/graphics/entities/model/model.h"
 
+static inline bool xml_node_has_children(struct XmlNode* node) {
+  return node != NULL && node->child_nodes != NULL && node->child_nodes->num_buckets > 0;
+}
+
 uint_fast8_t model_init(struct Model* model, struct APICommon* api_common, struct ModelSettings* model_settings, size_t num) {
 #ifdef VULKAN_API_SUPPORTED
   if (api_common->api_type == API_VULKAN)
@@ -11,49 +15,119 @@ uint_fast8_t model_init(struct Model* model, struct APICommon* api_common, struc
 #endif
 
   struct XmlNode* collada_node = xml_parser_load_xml_file(model_settings->path);
-  struct XmlNode* library_controllers_node = xml_node_get_child(collada_node, "library_controllers");  // If texture is null, use custom 8x8 ubo color palette
-  model->model_common.animated = !(library_controllers_node == NULL || library_controllers_node->child_nodes == NULL || library_controllers_node->child_nodes->num_buckets == 0);
+  if (collada_node == NULL)
+    return MODEL_ERROR;
+
+  struct XmlNode* library_controllers_node = xml_node_get_child(collada_node, "library_controllers");
+  struct XmlNode* library_geometries_node = xml_node_get_child(collada_node, "library_geometries");
+  struct XmlNode* visual_scenes_node = xml_node_get_child(collada_node, "library_visual_scenes");
+  struct XmlNode* anim_node = xml_node_get_child(collada_node, "library_animations");
+
+  bool has_skin = xml_node_has_children(library_controllers_node);
+  bool has_animation = xml_node_has_children(anim_node);
+
+  /* For this engine, only treat as animated if it has both skin and animation data */
+  model->model_common.animated = has_skin && has_animation;
+
+  model->model_common.animator = NULL;
+  model->model_common.animation = NULL;
+  model->model_common.root_joint = NULL;
+  model->model_common.joints = NULL;
 
   struct SkinningData* skinning_data = NULL;
+
   if (model->model_common.animated) {
     skinning_data = skin_loader_extract_skin_data(library_controllers_node, model_settings->max_weights);
-    model->model_common.joints = skeleton_loader_extract_bone_data(xml_node_get_child(collada_node, "library_visual_scenes"), skinning_data->joint_order, api_common->inverted_y);
-    model->model_common.model_mesh = geometry_loader_extract_model_data(api_common, xml_node_get_child(collada_node, "library_geometries"), skinning_data->vertices_skin_data, model->model_common.animated, api_common->inverted_y);
 
-    model->model_common.root_joint = model_create_joints(model->model_common.joints->head_joint);
-    model->model_common.animator = (struct Animator*)malloc(sizeof(struct Animator));
-    animator_init(model->model_common.animator, &(model->model_common));
-    joint_calc_inverse_bind_transform(model->model_common.root_joint, MAT4_IDENTITY);
-
-    struct XmlNode* anim_node = xml_node_get_child(collada_node, "library_animations");
-    struct XmlNode* joints_node = xml_node_get_child(collada_node, "library_visual_scenes");
-    struct AnimationData* animation_data = animation_extract_animation(anim_node, joints_node, api_common->inverted_y);
-
-    struct ArrayList* frames = (struct ArrayList*)malloc(sizeof(struct ArrayList));
-    array_list_init(frames);
-
-    for (size_t frame_num = 0; frame_num < array_list_size(animation_data->key_frames); frame_num++)
-      array_list_add(frames, model_create_key_frame((struct KeyFrameData*)array_list_get(animation_data->key_frames, frame_num)));
-
-    model->model_common.animation = (struct Animation*)malloc(sizeof(struct Animation));
-    animation_init(model->model_common.animation, animation_data->length_seconds, frames);
-
-    for (size_t frame_num = 0; frame_num < array_list_size(animation_data->key_frames); frame_num++) {
-      struct KeyFrameData* key_frame_data = (struct KeyFrameData*)array_list_get(animation_data->key_frames, frame_num);
-      for (size_t transform_num = 0; transform_num < array_list_size(key_frame_data->joint_transforms); transform_num++) {
-        struct JointTransformData* joint_transform_data = (struct JointTransformData*)array_list_get(key_frame_data->joint_transforms, transform_num);
-        free(joint_transform_data->joint_name_id);
-        free(joint_transform_data);
-      }
-      array_list_delete(key_frame_data->joint_transforms);
-      free(key_frame_data->joint_transforms);
-      free(key_frame_data);
+    if (skinning_data == NULL) {
+      xml_parser_delete(collada_node);
+      return MODEL_ERROR;
     }
-    array_list_delete(animation_data->key_frames);
-    free(animation_data->key_frames);
-    free(animation_data);
 
-    animator_do_animation(model->model_common.animator, model->model_common.animation);
+    model->model_common.joints =
+        skeleton_loader_extract_bone_data(visual_scenes_node, skinning_data->joint_order, api_common->inverted_y);
+
+    model->model_common.model_mesh =
+        geometry_loader_extract_model_data(api_common, library_geometries_node, skinning_data->vertices_skin_data, model->model_common.animated, api_common->inverted_y);
+
+    if (model->model_common.joints != NULL &&
+        model->model_common.joints->head_joint != NULL) {
+      model->model_common.root_joint =
+          model_create_joints(model->model_common.joints->head_joint);
+
+      if (model->model_common.root_joint != NULL)
+        joint_calc_inverse_bind_transform(model->model_common.root_joint, MAT4_IDENTITY);
+    }
+
+    /* Animator can exist even if there is no animation clip */
+    model->model_common.animator = (struct Animator*)malloc(sizeof(struct Animator));
+    if (model->model_common.animator != NULL)
+      animator_init(model->model_common.animator, &(model->model_common));
+
+    /* Only try to load animation if library_animations exists */
+    if (anim_node != NULL && visual_scenes_node != NULL) {
+      struct AnimationData* animation_data =
+          animation_extract_animation(anim_node, visual_scenes_node, api_common->inverted_y);
+
+      if (animation_data != NULL &&
+          animation_data->key_frames != NULL &&
+          array_list_size(animation_data->key_frames) > 0) {
+        struct ArrayList* frames = (struct ArrayList*)malloc(sizeof(struct ArrayList));
+        if (frames != NULL) {
+          array_list_init(frames);
+
+          for (size_t frame_num = 0; frame_num < array_list_size(animation_data->key_frames); frame_num++) {
+            array_list_add(
+                frames,
+                model_create_key_frame(
+                    (struct KeyFrameData*)array_list_get(animation_data->key_frames, frame_num)));
+          }
+
+          model->model_common.animation = (struct Animation*)malloc(sizeof(struct Animation));
+          if (model->model_common.animation != NULL) {
+            animation_init(model->model_common.animation, animation_data->length_seconds, frames);
+
+            if (model->model_common.animator != NULL)
+              animator_do_animation(model->model_common.animator,
+                                    model->model_common.animation);
+          } else {
+            array_list_delete(frames);
+            free(frames);
+          }
+        }
+      }
+
+      /* cleanup animation_data if it was created */
+      if (animation_data != NULL) {
+        if (animation_data->key_frames != NULL) {
+          for (size_t frame_num = 0; frame_num < array_list_size(animation_data->key_frames); frame_num++) {
+            struct KeyFrameData* key_frame_data =
+                (struct KeyFrameData*)array_list_get(animation_data->key_frames, frame_num);
+
+            if (key_frame_data != NULL) {
+              if (key_frame_data->joint_transforms != NULL) {
+                for (size_t transform_num = 0; transform_num < array_list_size(key_frame_data->joint_transforms); transform_num++) {
+                  struct JointTransformData* joint_transform_data =
+                      (struct JointTransformData*)array_list_get(
+                          key_frame_data->joint_transforms, transform_num);
+
+                  if (joint_transform_data != NULL) {
+                    free(joint_transform_data->joint_name_id);
+                    free(joint_transform_data);
+                  }
+                }
+                array_list_delete(key_frame_data->joint_transforms);
+                free(key_frame_data->joint_transforms);
+              }
+              free(key_frame_data);
+            }
+          }
+          array_list_delete(animation_data->key_frames);
+          free(animation_data->key_frames);
+        }
+        free(animation_data);
+      }
+    }
 
     for (size_t joint_num = 0; joint_num < vector_size(skinning_data->joint_order); joint_num++)
       free(*((char**)vector_get(skinning_data->joint_order, joint_num)));
@@ -63,18 +137,21 @@ uint_fast8_t model_init(struct Model* model, struct APICommon* api_common, struc
 
     for (size_t vertice_num = 0; vertice_num < vector_size(skinning_data->vertices_skin_data); vertice_num++) {
       struct VertexSkinData* vertex_skin_data = (struct VertexSkinData*)vector_get(skinning_data->vertices_skin_data, vertice_num);
-      vector_delete(vertex_skin_data->joint_ids);
-      free(vertex_skin_data->joint_ids);
-      vector_delete(vertex_skin_data->weights);
-      free(vertex_skin_data->weights);
+
+      if (vertex_skin_data != NULL) {
+        vector_delete(vertex_skin_data->joint_ids);
+        free(vertex_skin_data->joint_ids);
+        vector_delete(vertex_skin_data->weights);
+        free(vertex_skin_data->weights);
+      }
     }
 
     vector_delete(skinning_data->vertices_skin_data);
     free(skinning_data->vertices_skin_data);
-
     free(skinning_data);
-  } else
-    model->model_common.model_mesh = geometry_loader_extract_model_data(api_common, xml_node_get_child(collada_node, "library_geometries"), NULL, model->model_common.animated, api_common->inverted_y);
+  } else {
+    model->model_common.model_mesh = geometry_loader_extract_model_data(api_common, library_geometries_node, NULL, model->model_common.animated, api_common->inverted_y);
+  }
 
   model->model_common.path = _strdup(model_settings->path);
   model->model_common.model_diffuse_texture = model_settings->diffuse_texture;
@@ -86,18 +163,27 @@ uint_fast8_t model_init(struct Model* model, struct APICommon* api_common, struc
   model->model_common.model_num = num;
 
   xml_parser_delete(collada_node);
-
   return MODEL_SUCCESS;
 }
 
 void model_delete(struct Model* model, struct APICommon* api_common) {
   if (model->model_common.animated) {
-    model_delete_joints_data(model->model_common.joints->head_joint);
-    free(model->model_common.joints);
-    model_delete_joints(model->model_common.root_joint);
-    model_delete_animation(model->model_common.animation);
-    free(model->model_common.animation);
-    free(model->model_common.animator);
+    if (model->model_common.joints != NULL) {
+      if (model->model_common.joints->head_joint != NULL)
+        model_delete_joints_data(model->model_common.joints->head_joint);
+      free(model->model_common.joints);
+    }
+
+    if (model->model_common.root_joint != NULL)
+      model_delete_joints(model->model_common.root_joint);
+
+    if (model->model_common.animation != NULL) {
+      model_delete_animation(model->model_common.animation);
+      free(model->model_common.animation);
+    }
+
+    if (model->model_common.animator != NULL)
+      free(model->model_common.animator);
   }
 
   free(model->model_common.path);
@@ -105,7 +191,7 @@ void model_delete(struct Model* model, struct APICommon* api_common) {
   free(model->model_common.model_mesh);
 }
 
-void model_update_uniforms(struct Model* model, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec3 light_pos, vec3 diffuse_color, vec3 ambient_color, vec3 specular_light) {
+void model_update_uniforms(struct Model* model, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec4 light_pos, vec4 diffuse_color, vec4 ambient_color, vec4 specular_light) {
   model->model_func.model_update_uniforms(&model->model_common, api_common, gbuffer, position, light_pos, diffuse_color, ambient_color, specular_light);
 }
 
@@ -160,7 +246,7 @@ void model_clone_delete(struct Model* model, struct APICommon* api_common) {
 }
 
 void model_render(struct Model* model, struct GBuffer* gbuffer, double delta_time) {
-  if (model->model_common.animated)
+  if (model->model_common.animated && model->model_common.animator != NULL)
     animator_update(model->model_common.animator, delta_time);
 
   model->model_func.model_render(&(model->model_common), gbuffer, delta_time);

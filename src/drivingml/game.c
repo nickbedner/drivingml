@@ -16,8 +16,8 @@ static float wrap_angle_0_2pi(float a) {
   return a;
 }
 
-static float yaw_from_xy(float x, float y) {
-  return atan2f(y, x);
+static float yaw_from_xz(float x, float z) {
+  return atan2f(z, x);
 }
 
 static uint32_t car_frame_from_camera(float heading, float steer, vec3 car_pos, vec3d camera_pos) {
@@ -28,23 +28,19 @@ static uint32_t car_frame_from_camera(float heading, float steer, vec3 car_pos, 
 
   const float TURN_DEADZONE = 0.25f;
 
-  // Direction from car -> camera in world xy
+  // Direction from car -> camera in world XZ
   float to_cam_x = (float)(camera_pos.x - (double)car_pos.x);
-  float to_cam_y = (float)(camera_pos.y - (double)car_pos.y);
-  float camera_yaw = yaw_from_xy(to_cam_x, to_cam_y);
+  float to_cam_z = (float)(camera_pos.z - (double)car_pos.z);
+  float camera_yaw = yaw_from_xz(to_cam_x, to_cam_z);
 
-  // Car forward direction in world XY
-  float car_forward_yaw = yaw_from_xy(-cosf(heading), -sinf(heading));
-
-  // 0 means camera is looking at the FRONT of the car
-  float relative_yaw = wrap_angle_0_2pi(camera_yaw - car_forward_yaw);
-
+  // Car forward direction in world XZ
+  float car_back_yaw = yaw_from_xz(cosf(heading), -sinf(heading));
+  float relative_yaw = wrap_angle_0_2pi(car_back_yaw - camera_yaw);
   float step = (2.0f * (float)M_PI) / (float)BASE_FRAME_COUNT;
 
   uint32_t frame = (uint32_t)((relative_yaw + 0.5f * step) / step);
   frame %= BASE_FRAME_COUNT;
 
-  // Only use the extra steering frames when we're looking at the front
   if (frame == FRONT_FRAME) {
     if (steer < -TURN_DEADZONE)
       return TURN_LEFT_FRAME;
@@ -54,16 +50,13 @@ static uint32_t car_frame_from_camera(float heading, float steer, vec3 car_pos, 
 
   return frame;
 }
+
 static quat sprite_billboard_rotation(vec3 car_pos, vec3d camera_pos) {
   float to_cam_x = (float)(camera_pos.x - (double)car_pos.x);
-  float to_cam_y = (float)(camera_pos.y - (double)car_pos.y);
-  float camera_yaw = yaw_from_xy(to_cam_x, to_cam_y);
+  float to_cam_z = (float)(camera_pos.z - (double)car_pos.z);
+  float yaw = atan2f(to_cam_x, to_cam_z);
 
-  mat4 rot = mat4_rotate(MAT4_IDENTITY, (float)-M_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
-
-  // Use camera yaw instead of heading
-  rot = mat4_rotate(rot, -camera_yaw - (float)M_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
-
+  mat4 rot = mat4_rotate(MAT4_IDENTITY, yaw, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
   return mat4_to_quaternion(rot);
 }
 
@@ -80,7 +73,7 @@ static int recv_all(SOCKET sock, char* buffer, int size) {
 }
 
 static inline void place_marker(struct Sprite* marker, float x, float y) {
-  marker->sprite_common.position = (vec3){.x = x, .y = y, .z = 2.35f * 2.5f};
+  marker->sprite_common.position = (vec3){.x = x, .y = 2.35f * 2.5f, .z = y};
   marker->sprite_common.scale = (vec3){.x = 2.5f, .y = 2.5f, .z = 0.0f};
   mat4 marker_rotation_0 = mat4_rotate(MAT4_IDENTITY, (float)-M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
   marker_rotation_0 = mat4_rotate(marker_rotation_0, (float)M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
@@ -117,10 +110,10 @@ static void load_map_from_xml(struct Game* game, struct Mana* mana, const char* 
     float x = px ? (float)atof(px) : 0.0f;
     float y = py ? (float)atof(py) : 0.0f;
 
-    game->track->sprite_common.position = (vec3){.x = x, .y = y, .z = 0};
+    game->track->sprite_common.position = (vec3){.x = x, .y = 0.0f, .z = y};
     game->track->sprite_common.scale = (vec3){.x = scale, .y = scale, .z = 0};
 
-    mat4 rot = mat4_rotate(MAT4_IDENTITY, (float)M_PI, (vec3){.x = 0.0, .y = 0.5, .z = 0.0});
+    mat4 rot = mat4_rotate(MAT4_IDENTITY, (float)-M_PI / 2.0f, (vec3){.x = 1.0f, .y = 0.0f, .z = 0.0f});
     game->track->sprite_common.rotation = mat4_to_quaternion(rot);
   }
 
@@ -178,7 +171,7 @@ static void load_map_from_xml(struct Game* game, struct Mana* mana, const char* 
             &(mana->api.api_common),
             "/textures/tree.png");
 
-        game->trees[i]->sprite_common.position = (vec3){.x = x, .y = y, .z = 4.5f};
+        game->trees[i]->sprite_common.position = (vec3){.x = x, .y = 4.5f, .z = y};
         game->trees[i]->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
 
         mat4 rot = mat4_rotate(MAT4_IDENTITY, -(float)M_PI / 2, (vec3){.x = 0.5, .y = 0, .z = 0});
@@ -222,6 +215,10 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/testmodel/roughness.png", true);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/testmodel/metallic.png", true);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/testmodel/ao.png", true);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/coin/coin.png", true);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/coin/coinod.png", true);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/coin/coinon.png", true);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/coin/coinom.png", true);
   sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_TRILINEAR, .mode_type = MODE_REPEAT, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_CUSTOM, .mip_count = 5, .premultiplied_alpha = true, .max_anisotropy = 1.0f};
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/waterm1.png", false);
   sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_NEAREST, .mode_type = MODE_CLAMP_TO_EDGE, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_NONE, .mip_count = 1, .premultiplied_alpha = true, .max_anisotropy = 1.0f};
@@ -292,33 +289,6 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   snprintf(path, MAX_LENGTH_OF_PATH, "%s/maps.xml", mana->api.api_common.asset_directory);
   load_map_from_xml(game, mana, path, "track0");
 
-  // game->fence = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/fence.png");
-  // game->fence->sprite_common.position = (vec3){.x = 0, .y = 0.0f, .z = 2.5f};
-  // game->fence->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
-  // mat4 fence_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  // fence_rotation = mat4_rotate(fence_rotation, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-  // game->fence->sprite_common.rotation = mat4_to_quaternion(fence_rotation);
-
-  // game->cloud = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/cloud.png");
-  // game->cloud->sprite_common.position = (vec3){.x = 0, .y = -5000.0f, .z = 2.5f};
-  // game->cloud->sprite_common.scale = (vec3){.x = 500.0f, .y = 500.0f, .z = 0.0f};
-  // mat4 cloud_rotation = mat4_rotate(MAT4_IDENTITY, -M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  // cloud_rotation = mat4_rotate(cloud_rotation, M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-  // game->cloud->sprite_common.rotation = mat4_to_quaternion(cloud_rotation);
-
-  // TODO: This needs to be 3D, sprite sorting messing it all up
-  // game->floor_plane = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/floor_plane.png");
-  // game->floor_plane->sprite_common.position = (vec3){.x = 0.0f, .y = 0.0f, .z = -5.1f};
-  // game->floor_plane->sprite_common.scale = (vec3){.x = 50000.0f, .y = 50000.0f, .z = 0.0f};
-  // mat4 rot = mat4_rotate(MAT4_IDENTITY, M_PI, (vec3){0.0, 0.5, 0.0});
-  // game->floor_plane->sprite_common.rotation = mat4_to_quaternion(rot);
-  //
-  // game->mario = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), L"/textures/rb.png");
-  // game->mario_position = (vec3){.x = 10.0f, .y = 95.0f, .z = 0.75};
-  // game->mario->sprite_common.position = game->mario_position;
-  // game->mario->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
-  // game->car_heading = 0.0f;  // M_PI / 2.0f;  // facing down -Y
-
   if (!EVAL_MODE) {
     WSADATA wsa;
     struct sockaddr_in server;
@@ -350,7 +320,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->timer = 0;
   game->start_timer = 0;
 
-  game->starting_pos = (vec3){.x = 175.0f, .y = 20.0f, .z = 0.75f};
+  game->starting_pos = (vec3){.x = 175.0f, .y = 0.75f, .z = 20.0f};
   game->starting_heading = 0.0f;
 
   if (EVAL_MODE)
@@ -374,7 +344,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
       load_ac_model("checkpoints/ac_weights500.bin", &(game->npcs[npc_num].model));
     }
     game->npcs[npc_num].speed = 0.0f;
-    game->npcs[npc_num].position = (vec3){.x = game->starting_pos.x - ((float)npc_num * 8), .y = game->starting_pos.y + ((float)(npc_num % 4) * 5.0f), .z = game->starting_pos.z};
+    game->npcs[npc_num].position = (vec3){.x = game->starting_pos.x - ((float)npc_num * 8), .y = game->starting_pos.y, .z = game->starting_pos.z + ((float)(npc_num % 4) * 5.0f)};
     game->npcs[npc_num].sprite->sprite_common.position = game->npcs[npc_num].position;
     game->npcs[npc_num].sprite->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
     game->npcs[npc_num].heading = game->starting_heading;  // M_PI / 2.0f;  // facing down -Y
@@ -393,22 +363,49 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 
   water_shader_init(&(game->water_shader), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 3);
   water_init(&(game->water), &(mana->api.api_common), &(game->water_shader.shader), texture_manager_get(game->sprite_manager.sprite_manager_common.texture_manager, "/textures/waterm1.png"));
-  game->water.water_common.position = (vec3){.x = 0.0f, .y = 0.0f, .z = -5.0f};
-  game->water.water_common.scale = (vec3){.x = 1024.0f, .y = 1024.0f, .z = 1.0f};
+  game->water.water_common.position = (vec3){.x = 0.0f, .y = -5.0f, .z = 0.0f};
+  game->water.water_common.scale = (vec3){.x = 1024.0f, .y = 1.0f, .z = 1024.0f};
 
   model_cache_init(&(game->model_cache), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 128);
   struct ModelSettings model_settings = (struct ModelSettings){
       .path = "./assets/models/testmodel/model.dae",
       .shader = &(game->model_cache.model_shader.shader),
+      .diffuse_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/diffuse.png"),
+      .normal_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/normal.png"),
+      .metallic_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/metallic.png"),
+      .roughness_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/roughness.png"),
+      .ao_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/ao.png"),
+      5};
+  model_cache_add(&(game->model_cache), &(mana->api.api_common), &model_settings, 0, true);
+  game->test_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/testmodel/model.dae");
+
+  struct ModelSettings model_static_settings = (struct ModelSettings){
+      .path = "./assets/models/cube/cube.dae",
+      .shader = &(game->model_cache.model_static_shader.shader),
       .diffuse_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/albedo.png"),
       .normal_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/normal.png"),
       .metallic_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/metallic.png"),
       .roughness_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/roughness.png"),
       .ao_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/ao.png"),
       5};
-  model_cache_add(&(game->model_cache), &(mana->api.api_common), &model_settings, 0);
-  game->test_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/testmodel/model.dae");
-  game->test_model->model_common.rotation = mat4_to_quaternion(mat4_rotate(MAT4_IDENTITY, (float)M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0}));
+  model_cache_add(&(game->model_cache), &(mana->api.api_common), &model_static_settings, 0, false);
+  game->test_static_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/cube/cube.dae");
+  game->test_static_model->model_common.scale = (vec3){.x = 1.0f, .y = 1.0f, .z = 1.0f};
+  game->test_static_model->model_common.position = (vec3){.x = 5.0f, .y = 2.0f, .z = 0.0f};
+
+  struct ModelSettings coin_settings = (struct ModelSettings){
+      .path = "./assets/models/coin/coin.dae",
+      .shader = &(game->model_cache.model_static_shader.shader),
+      .diffuse_texture = texture_manager_get(&(game->texture_manager), "/models/coin/coin.png"),
+      .normal_texture = texture_manager_get(&(game->texture_manager), "/models/coin/coinom.png"),
+      .metallic_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/metallic.png"),
+      .roughness_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/roughness.png"),
+      .ao_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/ao.png"),
+      5};
+  model_cache_add(&(game->model_cache), &(mana->api.api_common), &coin_settings, 1, false);
+  game->coin_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/coin/coin.dae");
+  game->coin_model->model_common.scale = (vec3){.x = 10.0f, .y = 10.0f, .z = 10.0f};
+  game->coin_model->model_common.position = (vec3){.x = 15.0f, .y = 2.0f, .z = 0.0f};
 }
 
 void game_delete(struct Game* game, struct Mana* mana) {
@@ -553,15 +550,15 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
     // Movement + progress based reward
     float heading = game->npcs[ai_num].heading;
-    vec3 forward_vel = (vec3){.x = -(float)cosf(heading), .y = -(float)sinf(heading), .z = 0.0f};
+    vec3 forward_vel = (vec3){.x = (float)cosf(heading), .y = 0.0f, .z = -(float)sinf(heading)};
 
     // Current marker position
     vec3 marker_pos = game->marker[game->npcs[ai_num].current_marker]->sprite_common.position;
 
     // Distance BEFORE movement
     float dx_before = marker_pos.x - game->npcs[ai_num].position.x;
-    float dy_before = marker_pos.y - game->npcs[ai_num].position.y;
-    float dist_before = sqrtf(dx_before * dx_before + dy_before * dy_before);
+    float dz_before = marker_pos.z - game->npcs[ai_num].position.z;
+    float dist_before = sqrtf(dx_before * dx_before + dz_before * dz_before);
 
     bool hit_tree = false;
 
@@ -574,7 +571,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
     //  Move car
     game->npcs[ai_num].position.x += forward_vel.x * game->npcs[ai_num].speed * (float)delta_time;
-    game->npcs[ai_num].position.y += forward_vel.y * game->npcs[ai_num].speed * (float)delta_time;
+    game->npcs[ai_num].position.z += forward_vel.z * game->npcs[ai_num].speed * (float)delta_time;
 
     const float TREE_RADIUS = 1.75f;
     const float TREE_SKIN = 0.20f;  // extra push-out margin
@@ -587,41 +584,38 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
       vec3 tree_pos = game->trees[t]->sprite_common.position;
 
       float dx = game->npcs[ai_num].position.x - tree_pos.x;
-      float dy = game->npcs[ai_num].position.y - tree_pos.y;
-      float dist = sqrtf(dx * dx + dy * dy);
+      float dz = game->npcs[ai_num].position.z - tree_pos.z;
+      float dist = sqrtf(dx * dx + dz * dz);
 
       if (dist < TREE_RADIUS) {
         hit_tree = true;
 
         // Start from pre-move position so we do not stay embedded in the tree
         float resolve_x = prev_pos.x;
-        float resolve_y = prev_pos.y;
+        float resolve_z = prev_pos.z;
 
         float rdx = resolve_x - tree_pos.x;
-        float rdy = resolve_y - tree_pos.y;
-        float rdist = sqrtf(rdx * rdx + rdy * rdy);
+        float rdz = resolve_z - tree_pos.z;
+        float rdist = sqrtf(rdx * rdx + rdz * rdz);
 
-        float nx, ny;
+        float nx, nz;
         if (rdist > 1e-4f) {
           nx = rdx / rdist;
-          ny = rdy / rdist;
+          nz = rdz / rdist;
         } else if (dist > 1e-4f) {
           nx = dx / dist;
-          ny = dy / dist;
+          nz = dz / dist;
         } else {
-          // Fallback: use opposite of forward direction
           nx = -forward_vel.x;
-          ny = -forward_vel.y;
+          nz = -forward_vel.z;
         }
 
-        // Push slightly outside the tree, not exactly on the boundary
         game->npcs[ai_num].position.x = tree_pos.x + nx * (TREE_RADIUS + TREE_SKIN);
-        game->npcs[ai_num].position.y = tree_pos.y + ny * (TREE_RADIUS + TREE_SKIN);
+        game->npcs[ai_num].position.z = tree_pos.z + nz * (TREE_RADIUS + TREE_SKIN);
 
-        // Estimate impact speed along the collision normal
         float vx = forward_vel.x * speed_before_move;
-        float vy = forward_vel.y * speed_before_move;
-        float impact_speed = fabsf(vx * nx + vy * ny);
+        float vz = forward_vel.z * speed_before_move;
+        float impact_speed = fabsf(vx * nx + vz * nz);
 
         // Bounce backward
         game->npcs[ai_num].speed = -fmaxf(MIN_BOUNCE_SPEED, impact_speed * BOUNCE_RESTITUTION);
@@ -629,20 +623,18 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
         // Turn slightly away from the tree so the AI does not keep rehitting it
         float current_heading = game->npcs[ai_num].heading;
 
-        float fx = -cosf(current_heading);
-        float fy = -sinf(current_heading);
-        float rx = fy;
-        float ry = -fx;
+        float rx = -sinf(current_heading);
+        float rz = -cosf(current_heading);
 
         // Tree position in carspace
         float to_tree_x = tree_pos.x - game->npcs[ai_num].position.x;
-        float to_tree_y = tree_pos.y - game->npcs[ai_num].position.y;
-        float tree_side = to_tree_x * rx + to_tree_y * ry;
+        float to_tree_z = tree_pos.z - game->npcs[ai_num].position.z;
+        float tree_side = to_tree_x * rx + to_tree_z * rz;
 
         if (fabsf(tree_side) < TREE_SIDE_EPS) {
           float to_marker_x = marker_pos.x - game->npcs[ai_num].position.x;
-          float to_marker_y = marker_pos.y - game->npcs[ai_num].position.y;
-          tree_side = to_marker_x * rx + to_marker_y * ry;
+          float to_marker_z = marker_pos.z - game->npcs[ai_num].position.z;
+          tree_side = to_marker_x * rx + to_marker_z * rz;
         }
 
         if (tree_side > 0.0f)
@@ -670,8 +662,8 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
     //  Distance AFTER movement
     float dx_after = marker_pos.x - game->npcs[ai_num].position.x;
-    float dy_after = marker_pos.y - game->npcs[ai_num].position.y;
-    float dist_after = sqrtf(dx_after * dx_after + dy_after * dy_after);
+    float dz_after = marker_pos.z - game->npcs[ai_num].position.z;
+    float dist_after = sqrtf(dx_after * dx_after + dz_after * dz_after);
 
     // Main dense signal: reward distance reduction
     float progress = dist_before - dist_after;
@@ -706,15 +698,15 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
 
     // World delta to target, basically aiming towards it
     float dxw = next_marker.x - game->npcs[ai_num].position.x;
-    float dyw = next_marker.y - game->npcs[ai_num].position.y;
-    // Car forward/right basis
+    float dzw = next_marker.z - game->npcs[ai_num].position.z;
+
     float fx = -cosf(game->npcs[ai_num].heading);
-    float fy = -sinf(game->npcs[ai_num].heading);
-    float rx = fy;
-    float ry = -fx;
-    // Marker error in car frame
-    float forward_err = dxw * fx + dyw * fy;
-    float right_err = dxw * rx + dyw * ry;
+    float fz = sinf(game->npcs[ai_num].heading);
+    float rx = -sinf(game->npcs[ai_num].heading);
+    float rz = -cosf(game->npcs[ai_num].heading);
+
+    float forward_err = dxw * fx + dzw * fz;
+    float right_err = dxw * rx + dzw * rz;
 
     // Normalization constants
     const float norm = 150.0f;
@@ -730,10 +722,10 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
       vec3 tree_pos = game->trees[t]->sprite_common.position;
 
       float dx = tree_pos.x - game->npcs[ai_num].position.x;
-      float dy = tree_pos.y - game->npcs[ai_num].position.y;
+      float dz = tree_pos.z - game->npcs[ai_num].position.z;
 
-      float forward = dx * fx + dy * fy;
-      float right = dx * rx + dy * ry;
+      float forward = dx * fx + dz * fz;
+      float right = dx * rx + dz * rz;
 
       if (forward <= 0.0f)
         continue;
@@ -839,7 +831,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
       follow = game->current_npcs - 1;
 
     game->player.look_at_pos = (vec3d){.x = (double)game->npcs[follow].position.x, .y = (double)game->npcs[follow].position.y, .z = (double)game->npcs[follow].position.z};
-    game->player.camera.look_at_azimuth = (double)game->npcs[follow].heading + M_PI;
+    game->player.camera.look_at_azimuth = -(double)game->npcs[follow].heading;
   }
 
   player_update(&(game->player), input_manager_get_controller_actions(input_manager), input_manager_get_controller_action_list_length(input_manager));
@@ -851,7 +843,7 @@ void game_update(struct Game* game, struct Mana* mana, double delta_time) {
     game->marker[marker_num]->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(marker_rotation, (float)-game->player.camera.look_at_azimuth, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f}));
     // TODO: Commented out temporarily because we just want to hide markers for now
     // if (EVAL_MODE)
-    game->marker[marker_num]->sprite_common.position.z = -10000.0f;
+    game->marker[marker_num]->sprite_common.position.y = -10000.0f;
   }
   mat4 flag1_rotation = mat4_rotate(MAT4_IDENTITY, -(float)M_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
   flag1_rotation = mat4_rotate(flag1_rotation, (float)M_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
@@ -882,13 +874,16 @@ void game_render(struct Game* game, struct Mana* mana, double delta_time) {
 
     // Diffuse sun directional light
     float sun_intensity = 4.0f;
-    vec3 sun_dir = vec3_normalize((vec3){.x = 0.35f, .y = 0.25f, .z = -0.90f});
-    vec3 diffuse_color = (vec3){.x = 1.0f * sun_intensity, .y = 0.96f * sun_intensity, .z = 0.86f * sun_intensity};
+    vec3 sun_dir = vec3_normalize((vec3){.x = 0.35f, .y = -0.90f, .z = 0.25f});
+    vec4 full_dir = (vec4){.x = sun_dir.x, .y = sun_dir.y, .z = sun_dir.z, .w = 0.15f};
+    vec4 diffuse_color = (vec4){.x = 1.0f * sun_intensity, .y = 0.96f * sun_intensity, .z = 0.86f * sun_intensity, .w = 0.0f};
     // Soft sky fill, not white
-    vec3 ambient_color = (vec3){.x = 0.10f, .y = 0.14f, .z = 0.18f};
-    vec3 specular_light = (vec3){.x = 1.0f, .y = 0.98f, .z = 0.95f};
+    vec4 ambient_color = (vec4){.x = 0.10f, .y = 0.14f, .z = 0.18f, .w = 0.0f};
+    vec4 specular_light = (vec4){.x = 1.0f, .y = 0.98f, .z = 0.95f, .w = 0.0f};
 
-    model_update_uniforms(game->test_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), sun_dir, diffuse_color, ambient_color, specular_light);
+    model_update_uniforms(game->test_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
+    model_update_uniforms(game->test_static_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
+    model_update_uniforms(game->coin_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
     water_update_uniforms(&(game->water), api_common, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height);
     sprite_manager_update(&(game->sprite_manager), delta_time);
     sprite_manager_update_uniforms(&(game->sprite_manager), api_common, &(window->gbuffer->gbuffer_common));
@@ -899,6 +894,8 @@ void game_render(struct Game* game, struct Mana* mana, double delta_time) {
     water_render(&(game->water), &(window->gbuffer->gbuffer_common));
 
     model_render(game->test_model, window->gbuffer, delta_time);
+    model_render(game->test_static_model, window->gbuffer, delta_time);
+    model_render(game->coin_model, window->gbuffer, delta_time);
 
     // Transparent sprites
     vec3d cam_pos = camera_get_pos(&game->player.camera);

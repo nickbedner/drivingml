@@ -1,32 +1,142 @@
 #include "mana/graphics/utilities/collada/modelanimation.h"
 
 struct AnimationData* animation_extract_animation(struct XmlNode* animation_data, struct XmlNode* joint_hierarchy, bool inverted_y) {
-  char* root_node = xml_node_get_attribute(xml_node_get_child(xml_node_get_child_with_attribute(xml_node_get_child(joint_hierarchy, "visual_scene"), "node", "id", "Armature"), "node"), "id");
-  struct Vector* times = animation_get_key_times(animation_data);
-  float duration = *(float*)vector_get(times, vector_size(times) - 1);
-  struct ArrayList* key_frames = animation_init_key_frames(times);
+  char* root_node = NULL;
+  float duration = 0.0f;
+  struct Vector* times = NULL;
+  struct ArrayList* key_frames = NULL;
+  struct ArrayList* animation_nodes = NULL;
+  struct AnimationData* anim_data = NULL;
+
+  if (animation_data == NULL || joint_hierarchy == NULL)
+    return NULL;
+
+  /* Find root joint name safely */
+  struct XmlNode* visual_scene = xml_node_get_child(joint_hierarchy, "visual_scene");
+  if (visual_scene == NULL)
+    return NULL;
+
+  struct XmlNode* armature_node = xml_node_get_child_with_attribute(visual_scene, "node", "id", "Armature");
+
+  struct XmlNode* root_joint_node = NULL;
+  if (armature_node != NULL)
+    root_joint_node = xml_node_get_child(armature_node, "node");
+
+  /* Fallback: use first node in visual_scene if no Armature wrapper exists */
+  if (root_joint_node == NULL)
+    root_joint_node = xml_node_get_child(visual_scene, "node");
+
+  if (root_joint_node != NULL)
+    root_node = xml_node_get_attribute(root_joint_node, "id");
+
+  if (root_node == NULL)
+    return NULL;
+
+  times = animation_get_key_times(animation_data);
+  if (times == NULL)
+    return NULL;
+
+  if (vector_size(times) == 0) {
+    vector_delete(times);
+    free(times);
+    return NULL; /* no animation keys in this file */
+  }
+
+  duration = *(float*)vector_get(times, vector_size(times) - 1);
+
+  key_frames = animation_init_key_frames(times);
+
   vector_delete(times);
   free(times);
-  struct ArrayList* animation_node = xml_node_get_children(animation_data, "animation");
-  for (size_t joint_node_num = 0; joint_node_num < array_list_size(animation_node); joint_node_num++)
-    animation_load_joint_transform(key_frames, (struct XmlNode*)array_list_get(animation_node, joint_node_num), root_node, inverted_y);
-  struct AnimationData* anim_data = (struct AnimationData*)malloc(sizeof(struct AnimationData));
+  times = NULL;
+
+  if (key_frames == NULL)
+    return NULL;
+
+  animation_nodes = xml_node_get_children(animation_data, "animation");
+  if (animation_nodes != NULL) {
+    for (size_t joint_node_num = 0; joint_node_num < array_list_size(animation_nodes); joint_node_num++) {
+      struct XmlNode* joint_anim = (struct XmlNode*)array_list_get(animation_nodes, joint_node_num);
+      if (joint_anim != NULL)
+        animation_load_joint_transform(key_frames, joint_anim, root_node, inverted_y);
+    }
+  }
+
+  anim_data = (struct AnimationData*)malloc(sizeof(struct AnimationData));
+  if (anim_data == NULL) {
+    /* cleanup key_frames here if you have a destructor for it */
+    return NULL;
+  }
+
   animation_data_init(anim_data, duration, key_frames);
   return anim_data;
 }
 
 struct Vector* animation_get_key_times(struct XmlNode* animation_data) {
-  struct XmlNode* time_data = xml_node_get_child(xml_node_get_child(xml_node_get_child(animation_data, "animation"), "source"), "float_array");
-  char* raw_times = _strdup(xml_node_get_data(time_data));
   struct Vector* times = (struct Vector*)malloc(sizeof(struct Vector));
+  if (times == NULL)
+    return NULL;
+
   vector_init(times, sizeof(float));
+
+  if (animation_data == NULL)
+    return times;
+
+  /* Some files wrap channels in an inner <animation>, some may already pass one in */
+  struct XmlNode* animation_node = xml_node_get_child(animation_data, "animation");
+  if (animation_node == NULL)
+    animation_node = animation_data;
+
+  if (animation_node == NULL)
+    return times;
+
+  /* Best case: find the sampler INPUT source (time keys) */
+  struct XmlNode* sampler_node = xml_node_get_child(animation_node, "sampler");
+  struct XmlNode* input_node = NULL;
+  const char* time_source_attr = NULL;
+  const char* time_source_id = NULL;
+  struct XmlNode* source_node = NULL;
+  struct XmlNode* time_data = NULL;
+
+  if (sampler_node != NULL) {
+    input_node = xml_node_get_child_with_attribute(sampler_node, "input", "semantic", "INPUT");
+    if (input_node != NULL) {
+      time_source_attr = xml_node_get_attribute(input_node, "source");
+      if (time_source_attr != NULL && time_source_attr[0] == '#') {
+        time_source_id = time_source_attr + 1;
+        source_node = xml_node_get_child_with_attribute(animation_node, "source", "id", time_source_id);
+      }
+    }
+  }
+
+  /* Fallback: use the first <source> if no sampler/input path exists */
+  if (source_node == NULL)
+    source_node = xml_node_get_child(animation_node, "source");
+
+  if (source_node == NULL)
+    return times;
+
+  time_data = xml_node_get_child(source_node, "float_array");
+  if (time_data == NULL)
+    return times;
+
+  const char* data_text = xml_node_get_data(time_data);
+  if (data_text == NULL)
+    return times;
+
+  char* raw_times = _strdup(data_text);
+  if (raw_times == NULL)
+    return times;
+
   char* next_token = NULL;
-  char* raw_part = strtok_s(raw_times, " ", &next_token);
+  char* raw_part = strtok_s(raw_times, " \t\r\n", &next_token);
+
   while (raw_part != NULL) {
     float time = (float)atof(raw_part);
     vector_push_back(times, &time);
-    raw_part = strtok_s(NULL, " ", &next_token);
+    raw_part = strtok_s(NULL, " \t\r\n", &next_token);
   }
+
   free(raw_times);
   return times;
 }

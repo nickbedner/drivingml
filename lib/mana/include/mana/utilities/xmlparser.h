@@ -60,10 +60,10 @@ static inline void xml_node_delete(struct XmlNode* xml_node) {
 }
 
 static inline char* xml_node_get_attribute(struct XmlNode* xml_node, char* attr) {
-  if (xml_node->attributes != NULL)
-    return *(char**)map_get(xml_node->attributes, attr);
-  else
+  if (xml_node == NULL || xml_node->attributes == NULL)
     return NULL;
+  else
+    return *(char**)map_get(xml_node->attributes, attr);
 }
 
 static inline struct XmlNode* xml_node_get_child(struct XmlNode* xml_node, char* child_name) {

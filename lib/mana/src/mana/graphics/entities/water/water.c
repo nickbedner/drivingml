@@ -25,10 +25,10 @@ uint_fast8_t water_init(struct Water* water, struct APICommon* api_common, struc
   float half_w = width * 0.5f;
   float half_h = height * 0.5f;
 
-  vec3 pos1 = {.x = -half_w, .y = -half_h, .z = 0.0f};
-  vec3 pos2 = {.x = half_w, .y = -half_h, .z = 0.0f};
-  vec3 pos3 = {.x = half_w, .y = half_h, .z = 0.0f};
-  vec3 pos4 = {.x = -half_w, .y = half_h, .z = 0.0f};
+  vec3 pos1 = {.x = -half_w, .y = 0.0f, .z = -half_h};
+  vec3 pos2 = {.x = half_w, .y = 0.0f, .z = -half_h};
+  vec3 pos3 = {.x = half_w, .y = 0.0f, .z = half_h};
+  vec3 pos4 = {.x = -half_w, .y = 0.0f, .z = half_h};
 
   vec2 uv1 = {.x = 0.0f, .y = 0.0f};
   vec2 uv2 = {.x = 1.0f, .y = 0.0f};

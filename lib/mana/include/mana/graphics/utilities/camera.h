@@ -65,15 +65,15 @@ struct Camera {
 static inline void camera_init(struct Camera* camera, double max_radius) {
   camera->camera_state = CAMERA_FLY;
 
-  camera->eye = (vec3d){.x = 0.0, .y = -1.0, .z = 0.0};
+  camera->eye = (vec3d){.x = 0.0, .y = 0.0, .z = 1.0};
+  camera->up = (vec3d){.x = 0.0, .y = 1.0, .z = 0.0};
   camera->target = VEC3D_ZERO;
-  camera->up = (vec3d){.x = 0.0, .y = 0.0, .z = 1.0};
   camera->zoom = 45.0;
 
   camera->is_interpoliating = 0;
-  camera->lerp_eye = (vec3d){.x = 0.0, .y = -1.0, .z = 0.0};
+  camera->lerp_eye = (vec3d){.x = 0.0, .y = 0.0, .z = 1.0};
+  camera->lerp_up = (vec3d){.x = 0.0, .y = 1.0, .z = 0.0};
   camera->lerp_target = VEC3D_ZERO;
-  camera->lerp_up = (vec3d){.x = 0.0, .y = 0.0, .z = 1.0};
   camera->lerp_zoom = 45.0;
 
   camera->field_of_view_y = M_PI / 6.0;
@@ -272,15 +272,16 @@ static inline void camera_update_parameters_from_camera(struct Camera* camera) {
   vec3d up = mat3d_transform_transpose(camera->look_at_fixed_to_local_rotation, camera->look_at_up);
 
   camera->look_at_range = sqrt(eye_position.x * eye_position.x + eye_position.y * eye_position.y + eye_position.z * eye_position.z);
-  camera->look_at_elevation = asin(eye_position.z / camera->look_at_range);
+  camera->look_at_elevation = asin(eye_position.y / camera->look_at_range);
 
-  if ((eye_position.x * eye_position.x + eye_position.y * eye_position.y) < (up.x * up.x + up.y * up.y)) {
-    if (eye_position.z > 0.0)
-      camera->look_at_azimuth = atan2(-up.y, -up.x);
+  if ((eye_position.x * eye_position.x + eye_position.z * eye_position.z) < (up.x * up.x + up.z * up.z)) {
+    if (eye_position.y > 0.0)
+      camera->look_at_azimuth = atan2(-up.z, -up.x);
     else
-      camera->look_at_azimuth = atan2(up.y, up.x);
-  } else
-    camera->look_at_azimuth = atan2(eye_position.y, eye_position.x);
+      camera->look_at_azimuth = atan2(up.z, up.x);
+  } else {
+    camera->look_at_azimuth = atan2(eye_position.z, eye_position.x);
+  }
 }
 
 static inline void camera_update_camera_from_parameters(struct Camera* camera) {
@@ -291,14 +292,14 @@ static inline void camera_update_camera_from_parameters(struct Camera* camera) {
   // Look at
   camera->look_at_target = camera->look_at_center_point;
 
-  double range_time_sin_elevation = camera->look_at_range * cos(camera->look_at_elevation);
-  camera->look_at_eye = (vec3d){.x = range_time_sin_elevation * cos(camera->look_at_azimuth), .y = range_time_sin_elevation * sin(camera->look_at_azimuth), .z = camera->look_at_range * sin(camera->look_at_elevation)};
+  double range_time_cos_elevation = camera->look_at_range * cos(camera->look_at_elevation);
+  camera->look_at_eye = (vec3d){.x = range_time_cos_elevation * cos(camera->look_at_azimuth), .y = camera->look_at_range * sin(camera->look_at_elevation), .z = range_time_cos_elevation * sin(camera->look_at_azimuth)};
 
-  vec3d right = vec3d_cross_product(camera->look_at_eye, (vec3d){.x = 0.0, .y = 0.0, .z = 1.0});
+  vec3d right = vec3d_cross_product(camera->look_at_eye, (vec3d){.x = 0.0, .y = 1.0, .z = 0.0});
   camera->look_at_up = vec3d_normalise(vec3d_cross_product(right, camera->look_at_eye));
 
   if (isnan(camera->look_at_up.x))
-    camera->look_at_up = (vec3d){.x = -cos(camera->look_at_azimuth), .y = -sin(camera->look_at_azimuth), .z = 0.0};
+    camera->look_at_up = (vec3d){.x = -cos(camera->look_at_azimuth), .y = 0.0, .z = -sin(camera->look_at_azimuth)};
 
   mat3d local_to_fixed = mat3d_transpose(camera->look_at_fixed_to_local_rotation);
   camera->look_at_eye = mat3d_transform_transpose(local_to_fixed, camera->look_at_eye);
@@ -313,7 +314,8 @@ static inline void camera_look_at_view_point(struct Camera* camera, float longit
   double cos_lat = cos((double)latitude);
   double sin_lon = sin((double)longitude);
   double sin_lat = sin((double)latitude);
-  camera->look_at_fixed_to_local_rotation = (mat3d){.m00 = -sin_lon, .m01 = cos_lon, .m02 = 0.0, .m10 = -sin_lat * cos_lon, .m11 = -sin_lat * sin_lon, .m12 = cos_lat, .m20 = cos_lat * cos_lon, .m21 = cos_lat * sin_lon, .m22 = sin_lat};
+
+  camera->look_at_fixed_to_local_rotation = (mat3d){.m00 = -sin_lon, .m01 = 0.0, .m02 = cos_lon, .m10 = -sin_lat * cos_lon, .m11 = cos_lat, .m12 = -sin_lat * sin_lon, .m20 = cos_lat * cos_lon, .m21 = sin_lat, .m22 = cos_lat * sin_lon};
 
   camera_update_camera_from_parameters(camera);
 }

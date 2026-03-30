@@ -39,23 +39,17 @@ uint_fast8_t sprite_init(struct Sprite* sprite, struct APICommon* api_common, st
   vec2 uv3;
   vec2 uv4;
 
-  if (api_common->inverted_y) {
-    pos1 = (vec3){.x = -tex_norm_width_half, .y = -tex_norm_height_half, .z = 0.0f};
-    pos2 = (vec3){.x = tex_norm_width_half, .y = -tex_norm_height_half, .z = 0.0f};
-    pos3 = (vec3){.x = tex_norm_width_half, .y = tex_norm_height_half, .z = 0.0f};
-    pos4 = (vec3){.x = -tex_norm_width_half, .y = tex_norm_height_half, .z = 0.0f};
+  pos1 = (vec3){.x = -tex_norm_width_half, .y = tex_norm_height_half, .z = 0.0f};
+  pos2 = (vec3){.x = tex_norm_width_half, .y = tex_norm_height_half, .z = 0.0f};
+  pos3 = (vec3){.x = tex_norm_width_half, .y = -tex_norm_height_half, .z = 0.0f};
+  pos4 = (vec3){.x = -tex_norm_width_half, .y = -tex_norm_height_half, .z = 0.0f};
 
+  if (api_common->inverted_y) {
     uv1 = (vec2){.u = 0.0f, .v = 0.0f};
     uv2 = (vec2){.u = 1.0f, .v = 0.0f};
     uv3 = (vec2){.u = 1.0f, .v = 1.0f};
     uv4 = (vec2){.u = 0.0f, .v = 1.0f};
-
   } else {
-    pos1 = (vec3){.x = -tex_norm_width_half, .y = tex_norm_height_half, .z = 0.0f};
-    pos2 = (vec3){.x = tex_norm_width_half, .y = tex_norm_height_half, .z = 0.0f};
-    pos3 = (vec3){.x = tex_norm_width_half, .y = -tex_norm_height_half, .z = 0.0f};
-    pos4 = (vec3){.x = -tex_norm_width_half, .y = -tex_norm_height_half, .z = 0.0f};
-
     uv1 = (vec2){.u = 0.0f, .v = 1.0f};
     uv2 = (vec2){.u = 1.0f, .v = 1.0f};
     uv3 = (vec2){.u = 1.0f, .v = 0.0f};

@@ -80,7 +80,7 @@ void geometry_loader_read_raw_data(struct ModelData* model_data, struct XmlNode*
 void geometry_loader_read_positions(struct ModelData* model_data, struct XmlNode* mesh_data, struct Vector* vertex_weights);
 void geometry_loader_read_normals(struct ModelData* model_data, struct XmlNode* mesh_data);
 void geometry_loader_read_colors(struct ModelData* model_data, struct XmlNode* mesh_data);
-void geometry_loader_read_texture_coordinates(struct ModelData* model_data, struct XmlNode* mesh_data, bool inverted_y);
+bool geometry_loader_read_texture_coordinates(struct ModelData* model_data, struct XmlNode* mesh_data, bool inverted_y);
 void geometry_loader_assemble_vertices(struct ModelData* model_data, struct XmlNode* mesh_data, bool inverted_y);
 void geometry_loader_process_vertex(struct ModelData* model_data, int position_index, int normal_index, int tex_coord_index, int color_index);
 float geometry_loader_convert_data_to_arrays(struct ModelData* model_data, struct Mesh* model_mesh, bool animated, bool inverted_y);

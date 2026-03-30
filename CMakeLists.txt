@@ -34,7 +34,6 @@ add_subdirectory(lib/Mana buildmana)
 # Shader Compilation
 # =========================
 set(SHADER_OUTPUTS)
-
 if (MANA_PLATFORM_WINDOWS)
     set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin/glslangValidator.exe")
 
@@ -48,7 +47,6 @@ if (MANA_PLATFORM_WINDOWS)
     )
 
     foreach(GLSL ${GLSL_SOURCE_FILES})
-
         file(RELATIVE_PATH REL_PATH
             ${CMAKE_CURRENT_SOURCE_DIR}/lib/mana/assets/shaders/glsl
             ${GLSL})
@@ -60,7 +58,7 @@ if (MANA_PLATFORM_WINDOWS)
             set(REL_DIR "${REL_DIR}/")
         endif()
 
-        set(SPIRV "${CMAKE_BINARY_DIR}/shaders/${REL_DIR}${FILE_NAME}.spv")
+        set(SPIRV "${CMAKE_BINARY_DIR}/assets/shaders/spirv/${REL_DIR}${FILE_NAME}.spv")
 
         get_filename_component(SPIRV_DIR "${SPIRV}" DIRECTORY)
         file(MAKE_DIRECTORY ${SPIRV_DIR})

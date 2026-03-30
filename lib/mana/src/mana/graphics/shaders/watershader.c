@@ -5,7 +5,7 @@ uint_fast8_t water_shader_init(struct WaterShader* water_shader, struct APICommo
   shader_settings->vertex_shader = "water";
   shader_settings->fragment_shader = "water";
   shader_settings->front_face = SHADER_FRONT_FACE_COUNTER_CLOCKWISE;
-  shader_settings->cull_mode = SHADER_CULL_MODE_NONE;  // SHADER_CULL_MODE_BACK_BIT
+  shader_settings->cull_mode = SHADER_CULL_MODE_BACK_BIT;
   shader_settings->depth_test = true;
   shader_settings->depth_write = false;
   shader_settings->supersampled = true;

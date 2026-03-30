@@ -58,12 +58,12 @@ void model_vulkan_render(struct ModelCommon* model_common, struct GBuffer* gbuff
   vkCmdDrawIndexed(cmd, (uint32_t)model_common->model_mesh->mesh_common.indices->size, 1, 0, 0, 0);
 }
 
-void model_vulkan_update_uniforms(struct ModelCommon* model_common, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec3 light_pos, vec3 diffuse_color, vec3 ambient_color, vec3 specular_light) {
+void model_vulkan_update_uniforms(struct ModelCommon* model_common, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec4 light_pos, vec4 diffuse_color, vec4 ambient_color, vec4 specular_light) {
   struct LightingUniformBufferObject light_ubo = {0};
   light_ubo.direction = light_pos;
   light_ubo.ambient_color = ambient_color;
-  light_ubo.diffuse_colour = diffuse_color;
-  light_ubo.specular_colour = specular_light;
+  light_ubo.diffuse_color = diffuse_color;
+  light_ubo.specular_color = specular_light;
 
   struct ModelUniformBufferObject ubom = {0};
   ubom.proj = gbuffer->gbuffer_common.projection_matrix;

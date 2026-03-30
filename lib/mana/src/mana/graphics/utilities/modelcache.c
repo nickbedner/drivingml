@@ -5,9 +5,12 @@ void model_cache_init(struct ModelCache* model_cache, struct APICommon* api_comm
   map_init(&model_cache->models, sizeof(struct Model*));
 
   model_shader_init(&(model_cache->model_shader), api_common, width, height, supersample_scale, gbuffer_common, true, true, msaa_samples, descriptors);
+  model_static_shader_init(&(model_cache->model_static_shader), api_common, width, height, supersample_scale, gbuffer_common, true, true, msaa_samples, descriptors);
 
   model_cache->model_descriptor_set = (VkDescriptorSet*)calloc(descriptors, sizeof(VkDescriptorSet));
   vulkan_graphics_utils_create_descriptors(&(api_common->vulkan_api), model_cache->model_descriptor_set, &(model_cache->model_shader.shader.shader_common.shader_vulkan.descriptor_set_layout), &(model_cache->model_shader.shader.shader_common.shader_vulkan.descriptor_pool), model_cache->model_shader.shader.shader_common.shader_settings.descriptors);
+  model_cache->model_static_descriptor_set = (VkDescriptorSet*)calloc(descriptors, sizeof(VkDescriptorSet));
+  vulkan_graphics_utils_create_descriptors(&(api_common->vulkan_api), model_cache->model_static_descriptor_set, &(model_cache->model_static_shader.shader.shader_common.shader_vulkan.descriptor_set_layout), &(model_cache->model_static_shader.shader.shader_common.shader_vulkan.descriptor_pool), model_cache->model_static_shader.shader.shader_common.shader_settings.descriptors);
 }
 
 void model_cache_delete(struct ModelCache* model_cache, struct APICommon* api_common) {
@@ -22,31 +25,18 @@ void model_cache_delete(struct ModelCache* model_cache, struct APICommon* api_co
   map_delete(&model_cache->models);
 }
 
-// TODO: Maybe allow for init from structs instead out outside
-void model_cache_add(struct ModelCache* model_cache, struct APICommon* api_common, struct ModelSettings* model_settings, size_t num) {
+void model_cache_add(struct ModelCache* model_cache, struct APICommon* api_common, struct ModelSettings* model_settings, size_t num, bool animated) {
   struct Model* model = (struct Model*)malloc(sizeof(struct Model));
-  model->model_common.model_vulkan.descriptor_set = &(model_cache->model_descriptor_set[num]);
-  model_init(model, api_common, model_settings, num);
-  map_set(&(model_cache->models), model->model_common.path, &model);  // Store full path in case of models having same texture name like diffuse
-}
 
-//// TODO: Maybe allow for init from structs instead out outside
-// void model_cache_add(struct ModelCache *model_cache, struct APICommon *api_common, size_t n_models, ...) {
-//   va_list args;
-//   va_start(args, n_models);
-//
-//   while (n_models-- > 0) {
-//     struct ModelSettings model_settings = va_arg(args, struct ModelSettings);
-//     struct Model *model = malloc(sizeof(struct Model));
-//     model_init(model, api_common, model_settings);
-//     map_set(&(model_cache->models), model->model_common.path, &model); // Store full path in case of models having same texture name like diffuse
-//   }
-//
-//   va_end(args);
-// }
+  if (animated)
+    model->model_common.model_vulkan.descriptor_set = &(model_cache->model_descriptor_set[num]);
+  else
+    model->model_common.model_vulkan.descriptor_set = &(model_cache->model_static_descriptor_set[num]);
+
+  model_init(model, api_common, model_settings, num);
+  map_set(&(model_cache->models), model->model_common.path, &model);
+}
 
 struct Model* model_cache_get(struct ModelCache* model_cache, struct APICommon* api_common, char* model_name) {
   return model_get_clone(*((struct Model**)map_get(&(model_cache->models), model_name)), api_common);
 }
-
-// TODO: Maybe get instanced/batched where specific vertex data is not needed
