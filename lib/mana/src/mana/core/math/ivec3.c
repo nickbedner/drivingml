@@ -1,6 +1,6 @@
 #include "mana/core/math/ivec3.h"
 
-ivec3 ivec3_set(int num) {
+ivec3 ivec3_set(i32 num) {
   return (ivec3){.data[0] = num, .data[1] = num, .data[2] = num};
 }
 

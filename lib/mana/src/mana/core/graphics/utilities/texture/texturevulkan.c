@@ -162,7 +162,7 @@ u8 texture_vulkan_init(struct TextureCommon* texture_common, struct TextureManag
   u32 mip_levels = 1;
   if (layer_count == 1) {
     if (texture_settings.mip_type == MIP_GENERATE)
-      mip_levels = (u32)(floor(log2(MAX(texture_common->width, texture_common->height)))) + 1;
+      mip_levels = (u32)(real64_floor(real64_log2(MAX(texture_common->width, texture_common->height)))) + 1;
     else if (texture_settings.mip_type == MIP_CUSTOM)
       mip_levels = texture_settings.mip_count;
   }

@@ -89,7 +89,7 @@ void qef_solver_add_simp(struct QefSolver* qef_solver, vec3 p, vec3 n) {
   qef_solver->has_solution = FALSE;
   // XNA normal
   // r32 ls = n.x * n.x + n.y * n.y + n.z * n.z;
-  // r32 length = (r32)sqrt(ls);
+  // r32 length = (r32)real64_sqrt(ls);
   // n = (vec3){.x = n.x / length, .y = n.y / length, .z = n.z / length};
   //
   n = vec3_old_skool_normalise(n);
@@ -153,7 +153,7 @@ r32 qef_solver_get_error_pos(struct QefSolver* qef_solver, vec3 pos) {
 
   qef_solver->last_error = vec3_dot(pos, atax) - 2 * vec3_dot(pos, qef_solver->atb) + qef_solver->data.btb;
 
-  if (isnan(qef_solver->last_error))
+  if (real32_isnan(qef_solver->last_error))
     qef_solver->last_error = 10000;
 
   return qef_solver->last_error;
@@ -180,20 +180,20 @@ void qef_solver_set_atb(struct QefSolver* qef_solver) {
 }
 
 internal r32 calc_pinv(const r32 x, const r32 tol) {
-  return (fabsf(x) < tol || fabsf(1 / x) < tol) ? 0 : (1 / x);
+  return (real32_fabs(x) < tol || real32_fabs(1 / x) < tol) ? 0 : (1 / x);
 }
 
 internal void calc_symmetric_givens_coefficients(const r32 a_pp, const r32 a_pq, const r32 a_qq, r32* c, r32* s) {
-  if (fabsf(a_pq) < FLT_EPSILON) {
+  if (real32_fabs(a_pq) < R32_EPSILON) {
     *c = 1.0;
     *s = 0.0;
     return;
   }
 
   const r32 tau = (a_qq - a_pp) / (2 * a_pq);
-  const r32 stt = sqrtf(1.0f + tau * tau);
+  const r32 stt = real32_sqrt(1.0f + tau * tau);
   const r32 tan = 1.0f / ((tau >= 0) ? (tau + stt) : (tau - stt));
-  *c = 1.0f / sqrtf(1.0f + tan * tan);
+  *c = 1.0f / real32_sqrt(1.0f + tan * tan);
   *s = tan * (*c);
 }
 
@@ -289,7 +289,7 @@ internal void rot12_post(mat3* m, const r32 c, const r32 s) {
 }
 
 internal void rotate01(mat3* vtav, mat3* v) {
-  if (fabsf((*vtav).vecs[0].data[1]) < FLT_EPSILON)
+  if (real32_fabs((*vtav).vecs[0].data[1]) < R32_EPSILON)
     return;
 
   r32 c = 0.0f, s = 0.0f;
@@ -300,7 +300,7 @@ internal void rotate01(mat3* vtav, mat3* v) {
 }
 
 internal void rotate02(mat3* vtav, mat3* v) {
-  if (fabsf((*vtav).vecs[0].data[2]) < FLT_EPSILON)
+  if (real32_fabs((*vtav).vecs[0].data[2]) < R32_EPSILON)
     return;
 
   r32 c = 0.0f, s = 0.0f;
@@ -311,7 +311,7 @@ internal void rotate02(mat3* vtav, mat3* v) {
 }
 
 internal void rotate12(mat3* vtav, mat3* v) {
-  if (fabsf((*vtav).vecs[1].data[2]) < FLT_EPSILON)
+  if (real32_fabs((*vtav).vecs[1].data[2]) < R32_EPSILON)
     return;
 
   r32 c = 0.0f, s = 0.0f;
@@ -322,7 +322,7 @@ internal void rotate12(mat3* vtav, mat3* v) {
 }
 
 internal r32 off(mat3 vtav) {
-  return sqrtf(2 * ((vtav.vecs[0].data[0] * vtav.vecs[0].data[0]) + (vtav.vecs[0].data[0] * vtav.vecs[0].data[0]) + (vtav.vecs[1].data[0] * vtav.vecs[1].data[0])));
+  return real32_sqrt(2 * ((vtav.vecs[0].data[0] * vtav.vecs[0].data[0]) + (vtav.vecs[0].data[0] * vtav.vecs[0].data[0]) + (vtav.vecs[1].data[0] * vtav.vecs[1].data[0])));
 }
 
 r32 qef_solver_solve(struct QefSolver* qef_solver, vec3* outx, const r32 svd_tol, const int svd_sweeps, const r32 pinv_tol) {
@@ -354,7 +354,7 @@ r32 qef_solver_solve(struct QefSolver* qef_solver, vec3* outx, const r32 svd_tol
   vtav.vecs[1].data[2] = qef_solver->data.ata_12;
   vtav.vecs[2].data[2] = qef_solver->data.ata_22;
 
-  r32 fnorm_vtav = sqrtf((vtav.vecs[0].data[0] * vtav.vecs[0].data[0]) + (vtav.vecs[0].data[0] * vtav.vecs[0].data[0]) + (vtav.vecs[0].data[0] * vtav.vecs[0].data[0]) + (v.vecs[0].data[0] * v.vecs[0].data[0]) + (v.vecs[1].data[0] * v.vecs[1].data[0]) + (v.vecs[1].data[0] * v.vecs[1].data[0]) + (v.vecs[0].data[0] * v.vecs[0].data[0]) + (v.vecs[1].data[0] * v.vecs[1].data[0]) + (v.vecs[2].data[0] * v.vecs[2].data[0]));
+  r32 fnorm_vtav = real32_sqrt((vtav.vecs[0].data[0] * vtav.vecs[0].data[0]) + (vtav.vecs[0].data[0] * vtav.vecs[0].data[0]) + (vtav.vecs[0].data[0] * vtav.vecs[0].data[0]) + (v.vecs[0].data[0] * v.vecs[0].data[0]) + (v.vecs[1].data[0] * v.vecs[1].data[0]) + (v.vecs[1].data[0] * v.vecs[1].data[0]) + (v.vecs[0].data[0] * v.vecs[0].data[0]) + (v.vecs[1].data[0] * v.vecs[1].data[0]) + (v.vecs[2].data[0] * v.vecs[2].data[0]));
   const r32 delta = svd_tol * fnorm_vtav;
 
   for (int i = 0; i < svd_sweeps && off(vtav) > delta; ++i) {
@@ -401,7 +401,7 @@ r32 qef_solver_solve(struct QefSolver* qef_solver, vec3* outx, const r32 svd_tol
   const r32 result = vec3_dot(vtmp, vtmp);
 
   // Add scaled
-  if (isnan(result))
+  if (real32_isnan(result))
     qef_solver->x = qef_solver->mass_point;
   else
     qef_solver->x = vec3_add(qef_solver->x, qef_solver->mass_point);

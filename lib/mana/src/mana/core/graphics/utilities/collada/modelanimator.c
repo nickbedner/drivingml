@@ -25,7 +25,7 @@ void animator_update(struct Animator* animator, r64 delta_time) {
 void animator_increase_animation_time(struct Animator* animator, r64 delta_time) {
   animator->animation_time += (r32)delta_time / 2.0f;
   if (animator->animation_time > animator->current_animation->length)
-    animator->animation_time = fmodf(animator->animation_time, animator->current_animation->length);
+    animator->animation_time = real32_fmod(animator->animation_time, animator->current_animation->length);
 }
 
 struct Map* animator_calculate_current_animation_pose(struct Animator* animator) {

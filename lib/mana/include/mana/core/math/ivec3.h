@@ -17,6 +17,7 @@ typedef struct ivec3 {
 
 global const ivec3 IVEC3_ZERO = {.data[0] = 0, .data[1] = 0, .data[2] = 0};
 
+ivec3 ivec3_set(i32 num);
 ivec3 ivec3_add(ivec3 a, ivec3 b);
 ivec3 ivec3_sub(ivec3 a, ivec3 b);
 ivec3 ivec3_mul(ivec3 a, ivec3 b);

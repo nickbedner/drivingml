@@ -96,7 +96,7 @@ global inline r32* sphere_noise_eval_3d(struct SphereNoise* sphere_noise, size_t
 //   r32 length_y = sphere_noise->position[1] + sphere_noise->sphere_origin[1] - y_pos;
 //   r32 length_z = sphere_noise->position[2] + sphere_noise->sphere_origin[2] - z_pos;
 //
-//   r32 magnitude = sqrtf((length_x * length_x) + (length_y * length_y) + (length_z * length_z));
+//   r32 magnitude = real32_sqrt((length_x * length_x) + (length_y * length_y) + (length_z * length_z));
 //
 //   return (sphere_noise->radius < magnitude) ? -10.0f : 10.0f;
 // }
@@ -106,7 +106,7 @@ global inline r32 sphere_noise_eval_3d_single(struct SphereNoise* sphere_noise, 
   r32 length_y = sphere_noise->position[1] - y_pos;
   r32 length_z = sphere_noise->position[2] - z_pos;
 
-  r32 magnitude = sqrtf((length_x * length_x) + (length_y * length_y) + (length_z * length_z));
+  r32 magnitude = real32_sqrt((length_x * length_x) + (length_y * length_y) + (length_z * length_z));
 
   // return (sphere_noise->radius < magnitude) ? 1.0f : -1.0f;
 
@@ -130,7 +130,7 @@ global inline r32* sphere_noise_eval_3d_fallback(struct SphereNoise* sphere_nois
         r32 length_y = sphere_noise->position[1] + sphere_noise->sphere_origin[1] - y_dim;
         r32 length_z = sphere_noise->position[2] + sphere_noise->sphere_origin[2] - z_dim;
 
-        r32 magnitude = sqrtf((length_x * length_x) + (length_y * length_y) + (length_z * length_z));
+        r32 magnitude = real32_sqrt((length_x * length_x) + (length_y * length_y) + (length_z * length_z));
 
         *(noise_set + (x_dim + (y_dim * x_size) + (z_dim * (x_size * y_size)))) = sphere_noise->radius - magnitude;
       }

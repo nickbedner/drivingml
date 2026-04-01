@@ -1,6 +1,5 @@
 #pragma once
 
-#include "mana/core/math/half.h"
 #include "mana/core/math/ivec3.h"
 #include "mana/core/math/mat3.h"
 #include "mana/core/math/mat3d.h"
@@ -8,6 +7,9 @@
 #include "mana/core/math/mat4d.h"
 #include "mana/core/math/quat.h"
 #include "mana/core/math/quatd.h"
+#include "mana/core/math/real16.h"
+#include "mana/core/math/real32.h"
+#include "mana/core/math/real64.h"
 #include "mana/core/math/vec2.h"
 #include "mana/core/math/vec3.h"
 #include "mana/core/math/vec3d.h"

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "mana/core/corecommon.h"
+#include <mana/core/corecommon.h>
+#include <mana/core/math/real32.h>
 
 typedef struct vec3 {
   union {

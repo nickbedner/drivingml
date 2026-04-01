@@ -75,7 +75,7 @@ internal inline void camera_init(struct Camera* camera, r64 max_radius) {
   camera->lerp_target = VEC3D_ZERO;
   camera->lerp_zoom = 45.0;
 
-  camera->field_of_view_y = M_PI / 6.0;
+  camera->field_of_view_y = R64_PI / 6.0;
   camera->aspect_ratio = 1.0;
 
   // Fly
@@ -97,7 +97,7 @@ internal inline void camera_init(struct Camera* camera, r64 max_radius) {
   camera->look_at_fixed_to_local_rotation = MAT3D_IDENTITY;
   camera->look_at_zoom_factor = 5.0;
   camera->look_at_zoom_rate_range_adjustment = max_radius;
-  camera->look_at_maximum_zoom_rate = DBL_MAX;
+  camera->look_at_maximum_zoom_rate = R64_MAX;
   camera->look_at_minimum_zoom_rate = max_radius / 100.0;
   camera->look_at_rotate_factor = 1.0 / max_radius;
   camera->look_at_rotate_rate_range_adjustment = max_radius;
@@ -144,7 +144,7 @@ internal inline vec3d camera_get_pos(struct Camera* camera) {
 }
 
 internal inline mat4 camera_get_projection_matrix(struct Camera* camera, struct Window* window) {
-  r32 f = 1.0f / (r32)tan(degree_to_radian_d(camera->zoom) / 2.0);
+  r32 f = 1.0f / (r32)real64_tan(degree_to_radian_d(camera->zoom) / 2.0);
   mat4 dest = MAT4_ZERO;
   dest.vecs[0].data[0] = f / ((r32)window->renderer.renderer_settings.width / (r32)window->renderer.renderer_settings.height);
   dest.vecs[1].data[1] = f;
@@ -207,13 +207,13 @@ internal inline void camera_fly_roll_right(struct Camera* camera, r64 seconds) {
 }
 
 internal inline r64 camera_field_of_view_x(struct Camera* camera) {
-  return (2.0 * atan(camera->aspect_ratio * tan(camera->field_of_view_y * 0.5)));
+  return (2.0 * real64_atan(camera->aspect_ratio * real64_tan(camera->field_of_view_y * 0.5)));
 }
 
 internal inline void camera_zoom_to_target(struct Camera* camera, r64 radius) {
   vec3d to_eye = vec3d_normalise(vec3d_sub(camera->look_at_eye, camera->look_at_target));
 
-  r64 sin_val = sin(MIN(camera_field_of_view_x(camera), camera->field_of_view_y) * 0.5);
+  r64 sin_val = real64_sin(MIN(camera_field_of_view_x(camera), camera->field_of_view_y) * 0.5);
   r64 distance = radius / sin_val;
   camera->look_at_eye = vec3d_add(camera->look_at_target, vec3d_scale(to_eye, distance));
 }
@@ -245,18 +245,18 @@ internal inline void camera_rotate(struct Camera* camera, int width, int height,
     r64 azimuth_window_ratio = (r64)width / (r64)window_width;
     r64 elevation_window_ratio = (r64)height / (r64)window_height;
 
-    camera->look_at_azimuth -= rotate_rate * azimuth_window_ratio * (2.0 * M_PI);
-    camera->look_at_elevation += rotate_rate * elevation_window_ratio * M_PI;
+    camera->look_at_azimuth -= rotate_rate * azimuth_window_ratio * (2.0 * R64_PI);
+    camera->look_at_elevation += rotate_rate * elevation_window_ratio * R64_PI;
 
-    while (camera->look_at_azimuth > M_PI)
-      camera->look_at_azimuth -= (2.0 * M_PI);
-    while (camera->look_at_azimuth < -M_PI)
-      camera->look_at_azimuth += (2.0 * M_PI);
+    while (camera->look_at_azimuth > R64_PI)
+      camera->look_at_azimuth -= (2.0 * R64_PI);
+    while (camera->look_at_azimuth < -R64_PI)
+      camera->look_at_azimuth += (2.0 * R64_PI);
 
-    while (camera->look_at_elevation < -M_PI_2)
-      camera->look_at_elevation = -M_PI_2;
-    while (camera->look_at_elevation > M_PI_2)
-      camera->look_at_elevation = M_PI_2;
+    while (camera->look_at_elevation < -R64_PI_2)
+      camera->look_at_elevation = -R64_PI_2;
+    while (camera->look_at_elevation > R64_PI_2)
+      camera->look_at_elevation = R64_PI_2;
   }
 }
 
@@ -270,16 +270,16 @@ internal inline void camera_update_parameters_from_camera(struct Camera* camera)
   vec3d eye_position = mat3d_transform_transpose(camera->look_at_fixed_to_local_rotation, vec3d_sub(camera->look_at_eye, camera->look_at_target));
   vec3d up = mat3d_transform_transpose(camera->look_at_fixed_to_local_rotation, camera->look_at_up);
 
-  camera->look_at_range = sqrt(eye_position.x * eye_position.x + eye_position.y * eye_position.y + eye_position.z * eye_position.z);
-  camera->look_at_elevation = asin(eye_position.y / camera->look_at_range);
+  camera->look_at_range = real64_sqrt(eye_position.x * eye_position.x + eye_position.y * eye_position.y + eye_position.z * eye_position.z);
+  camera->look_at_elevation = real64_asin(eye_position.y / camera->look_at_range);
 
   if ((eye_position.x * eye_position.x + eye_position.z * eye_position.z) < (up.x * up.x + up.z * up.z)) {
     if (eye_position.y > 0.0)
-      camera->look_at_azimuth = atan2(-up.z, -up.x);
+      camera->look_at_azimuth = real64_atan2(-up.z, -up.x);
     else
-      camera->look_at_azimuth = atan2(up.z, up.x);
+      camera->look_at_azimuth = real64_atan2(up.z, up.x);
   } else {
-    camera->look_at_azimuth = atan2(eye_position.z, eye_position.x);
+    camera->look_at_azimuth = real64_atan2(eye_position.z, eye_position.x);
   }
 }
 
@@ -291,14 +291,14 @@ internal inline void camera_update_camera_from_parameters(struct Camera* camera)
   // Look at
   camera->look_at_target = camera->look_at_center_point;
 
-  r64 range_time_cos_elevation = camera->look_at_range * cos(camera->look_at_elevation);
-  camera->look_at_eye = (vec3d){.x = range_time_cos_elevation * cos(camera->look_at_azimuth), .y = camera->look_at_range * sin(camera->look_at_elevation), .z = range_time_cos_elevation * sin(camera->look_at_azimuth)};
+  r64 range_time_cos_elevation = camera->look_at_range * real64_cos(camera->look_at_elevation);
+  camera->look_at_eye = (vec3d){.x = range_time_cos_elevation * real64_cos(camera->look_at_azimuth), .y = camera->look_at_range * real64_sin(camera->look_at_elevation), .z = range_time_cos_elevation * real64_sin(camera->look_at_azimuth)};
 
   vec3d right = vec3d_cross_product(camera->look_at_eye, (vec3d){.x = 0.0, .y = 1.0, .z = 0.0});
   camera->look_at_up = vec3d_normalise(vec3d_cross_product(right, camera->look_at_eye));
 
-  if (isnan(camera->look_at_up.x))
-    camera->look_at_up = (vec3d){.x = -cos(camera->look_at_azimuth), .y = 0.0, .z = -sin(camera->look_at_azimuth)};
+  if (real64_isnan(camera->look_at_up.x))
+    camera->look_at_up = (vec3d){.x = -real64_cos(camera->look_at_azimuth), .y = 0.0, .z = -real64_sin(camera->look_at_azimuth)};
 
   mat3d local_to_fixed = mat3d_transpose(camera->look_at_fixed_to_local_rotation);
   camera->look_at_eye = mat3d_transform_transpose(local_to_fixed, camera->look_at_eye);
@@ -309,10 +309,10 @@ internal inline void camera_update_camera_from_parameters(struct Camera* camera)
 internal inline void camera_look_at_view_point(struct Camera* camera, r32 longitude, r32 latitude, vec3d center_point) {
   camera->look_at_center_point = center_point;
 
-  r64 cos_lon = cos((r64)longitude);
-  r64 cos_lat = cos((r64)latitude);
-  r64 sin_lon = sin((r64)longitude);
-  r64 sin_lat = sin((r64)latitude);
+  r64 cos_lon = real64_cos((r64)longitude);
+  r64 cos_lat = real64_cos((r64)latitude);
+  r64 sin_lon = real64_sin((r64)longitude);
+  r64 sin_lat = real64_sin((r64)latitude);
 
   camera->look_at_fixed_to_local_rotation = (mat3d){.m00 = -sin_lon, .m01 = 0.0, .m02 = cos_lon, .m10 = -sin_lat * cos_lon, .m11 = cos_lat, .m12 = -sin_lat * sin_lon, .m20 = cos_lat * cos_lon, .m21 = sin_lat, .m22 = cos_lat * sin_lon};
 

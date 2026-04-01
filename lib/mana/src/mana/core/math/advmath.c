@@ -1,15 +1,15 @@
 #include "mana/core/math/advmath.h"
 
 r32 degree_to_radian(r32 degree) {
-  return degree * (r32)M_PI / 180.0f;
+  return degree * (r32)R32_PI / 180.0f;
 }
 
 r64 degree_to_radian_d(r64 degree) {
-  return degree * M_PI / 180.0;
+  return degree * R64_PI / 180.0;
 }
 
 r32 radian_to_degree(r32 radian) {
-  return radian * 180.0f / (r32)M_PI;
+  return radian * 180.0f / (r32)R32_PI;
 }
 
 vec4 vec3_to_vec4(vec3 v1) {
@@ -27,22 +27,22 @@ mat4 quaternion_to_mat4(quat rotation) {
   r32 yz = rotation.data[1] * rotation.data[2];
   r32 yw = rotation.data[1] * rotation.data[3];
   r32 zw = rotation.data[2] * rotation.data[3];
-  r32 xSquared = rotation.data[0] * rotation.data[0];
-  r32 ySquared = rotation.data[1] * rotation.data[1];
-  r32 zSquared = rotation.data[2] * rotation.data[2];
+  r32 x_squared = rotation.data[0] * rotation.data[0];
+  r32 y_squared = rotation.data[1] * rotation.data[1];
+  r32 z_squared = rotation.data[2] * rotation.data[2];
 
   mat4 dest;
-  dest.m00 = 1 - 2 * (ySquared + zSquared);
+  dest.m00 = 1 - 2 * (y_squared + z_squared);
   dest.m01 = 2 * (xy - zw);
   dest.m02 = 2 * (xz + yw);
   dest.m03 = 0;
   dest.m10 = 2 * (xy + zw);
-  dest.m11 = 1 - 2 * (xSquared + zSquared);
+  dest.m11 = 1 - 2 * (x_squared + z_squared);
   dest.m12 = 2 * (yz - xw);
   dest.m13 = 0;
   dest.m20 = 2 * (xz - yw);
   dest.m21 = 2 * (yz + xw);
-  dest.m22 = 1 - 2 * (xSquared + ySquared);
+  dest.m22 = 1 - 2 * (x_squared + y_squared);
   dest.m23 = 0;
   dest.m30 = 0;
   dest.m31 = 0;
@@ -103,32 +103,32 @@ quat mat4_to_quaternion(mat4 matrix) {
   quat dest;
   r32 diagonal = matrix.m00 + matrix.m11 + matrix.m22;
   if (diagonal > 0) {
-    r32 w4 = (r32)(sqrtf(diagonal + 1.0f) * 2.0f);
+    r32 w4 = (r32)(real32_sqrt(diagonal + 1.0f) * 2.0f);
     dest.data[3] = w4 / 4.0f;
     dest.data[0] = (matrix.m21 - matrix.m12) / w4;
     dest.data[1] = (matrix.m02 - matrix.m20) / w4;
     dest.data[2] = (matrix.m10 - matrix.m01) / w4;
   } else if ((matrix.m00 > matrix.m11) && (matrix.m00 > matrix.m22)) {
-    r32 x4 = (r32)(sqrtf(1.0f + matrix.m00 - matrix.m11 - matrix.m22) * 2.0f);
+    r32 x4 = (r32)(real32_sqrt(1.0f + matrix.m00 - matrix.m11 - matrix.m22) * 2.0f);
     dest.data[3] = (matrix.m21 - matrix.m12) / x4;
     dest.data[0] = x4 / 4.0f;
     dest.data[1] = (matrix.m01 + matrix.m10) / x4;
     dest.data[2] = (matrix.m02 + matrix.m20) / x4;
   } else if (matrix.m11 > matrix.m22) {
-    r32 y4 = (r32)(sqrtf(1.0f + matrix.m11 - matrix.m00 - matrix.m22) * 2.0f);
+    r32 y4 = (r32)(real32_sqrt(1.0f + matrix.m11 - matrix.m00 - matrix.m22) * 2.0f);
     dest.data[3] = (matrix.m02 - matrix.m20) / y4;
     dest.data[0] = (matrix.m01 + matrix.m10) / y4;
     dest.data[1] = y4 / 4.0f;
     dest.data[2] = (matrix.m12 + matrix.m21) / y4;
   } else {
-    r32 z4 = (r32)(sqrtf(1.0f + matrix.m22 - matrix.m00 - matrix.m11) * 2.0f);
+    r32 z4 = (r32)(real32_sqrt(1.0f + matrix.m22 - matrix.m00 - matrix.m11) * 2.0f);
     dest.data[3] = (matrix.m10 - matrix.m01) / z4;
     dest.data[0] = (matrix.m02 + matrix.m20) / z4;
     dest.data[1] = (matrix.m12 + matrix.m21) / z4;
     dest.data[2] = z4 / 4.0f;
   }
 
-  r32 mag = sqrtf(dest.data[3] * dest.data[3] + dest.data[0] * dest.data[0] + dest.data[1] * dest.data[1] + dest.data[2] * dest.data[2]);
+  r32 mag = real32_sqrt(dest.data[3] * dest.data[3] + dest.data[0] * dest.data[0] + dest.data[1] * dest.data[1] + dest.data[2] * dest.data[2]);
   dest.data[3] /= mag;
   dest.data[0] /= mag;
   dest.data[1] /= mag;

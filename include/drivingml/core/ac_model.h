@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mana/core/corecommon.h"
+#include "mana/core/math/advmath.h"
 
 #define INPUTS 7
 #define HIDDEN_1 128

@@ -1,6 +1,4 @@
-#pragma once
-
-#include "mana/core/math/half.h"
+#include "mana/core/math/real16.h"
 
 u32 as_uint(const r32 x) {
   return *(const u32*)&x;

@@ -56,7 +56,7 @@ vec3 vec3_add_scaled_vector(vec3 v1, vec3 v2, r32 scale) {
 }
 
 r32 vec3_magnitude(vec3 v1) {
-  return sqrtf(v1.data[0] * v1.data[0] + v1.data[1] * v1.data[1] + v1.data[2] * v1.data[2]);
+  return real32_sqrt(v1.data[0] * v1.data[0] + v1.data[1] * v1.data[1] + v1.data[2] * v1.data[2]);
 }
 
 r32 vec3_square_magnitude(vec3 v1) {
@@ -74,14 +74,14 @@ vec3 vec3_trim(vec3 v1, r32 size) {
 
 vec3 vec3_normalize(vec3 v1) {
   r32 ls = v1.data[0] * v1.data[0] + v1.data[1] * v1.data[1] + v1.data[2] * v1.data[2];
-  r32 length = sqrtf(ls);
+  r32 length = real32_sqrt(ls);
   if (length > 0)
     return (vec3){.x = v1.data[0] / length, .y = v1.data[1] / length, .z = v1.data[2] / length};
   return v1;
 }
 
 vec3 vec3_old_skool_normalise(vec3 v1) {
-  r32 factor = 1.0f / sqrtf((v1.data[0] * v1.data[0]) + (v1.data[1] * v1.data[1]) + (v1.data[2] * v1.data[2]));
+  r32 factor = 1.0f / real32_sqrt((v1.data[0] * v1.data[0]) + (v1.data[1] * v1.data[1]) + (v1.data[2] * v1.data[2]));
   return (vec3){.data[0] = v1.data[0] * factor, .data[1] = v1.data[1] * factor, .data[2] = v1.data[2] * factor};
 }
 

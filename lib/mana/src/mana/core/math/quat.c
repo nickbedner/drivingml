@@ -8,15 +8,15 @@ quat quaternion_normalise(quat q1) {
   r32 d = q1.data[0] * q1.data[0] + q1.data[1] * q1.data[1] + q1.data[2] * q1.data[2] + q1.data[3] * q1.data[3];
 
   // if (d < 0.0f)
-  if (d < FLT_EPSILON)
+  if (d < R32_EPSILON)
     return QUAT_DEFAULT;
 
-  d = 1.0f / sqrtf(d);
+  d = 1.0f / real32_sqrt(d);
   return (quat){.data[0] = q1.data[0] * d, .data[1] = q1.data[1] * d, .data[2] = q1.data[2] * d, .data[3] = q1.data[3] * d};
 }
 
 r32 quaternion_magnitude(quat q1) {
-  return sqrtf(q1.data[0] * q1.data[0] + q1.data[1] * q1.data[1] + q1.data[2] * q1.data[2] + q1.data[3] * q1.data[3]);
+  return real32_sqrt(q1.data[0] * q1.data[0] + q1.data[1] * q1.data[1] + q1.data[2] * q1.data[2] + q1.data[3] * q1.data[3]);
 }
 
 quat quaternion_add(quat q1, quat q2) {
@@ -66,7 +66,7 @@ quat quat_interpolate_linear(quat a, quat b, r32 blend) {
     dest.data[2] = blendI * a.data[2] + blend * b.data[2];
   }
 
-  r32 mag = sqrtf(dest.data[3] * dest.data[3] + dest.data[0] * dest.data[0] + dest.data[1] * dest.data[1] + dest.data[2] * dest.data[2]);
+  r32 mag = real32_sqrt(dest.data[3] * dest.data[3] + dest.data[0] * dest.data[0] + dest.data[1] * dest.data[1] + dest.data[2] * dest.data[2]);
   dest.data[3] /= mag;
   dest.data[0] /= mag;
   dest.data[1] /= mag;

@@ -101,7 +101,7 @@ void water_directx_12_update_uniforms(struct WaterCommon* water_common, struct A
   fubo.params1 = (vec4){0};
   {
     r32 base_height = 548.0f;
-    r32 bias = log2f((r32)height / base_height);
+    r32 bias = real32_log2((r32)height / base_height);
     fubo.params1.x = bias;
   }
 

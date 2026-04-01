@@ -143,14 +143,14 @@ void outputSineWave(void) {
 
     // Generate a sine wave and output it to the buffer
     r64 pitch = 220.0;
-    r64 radians_per_second = pitch * 2.0 * M_PI;
+    r64 radians_per_second = pitch * 2.0 * R32_PI;
     for (u32 j = 0; j < frames; j++) {
-      // Generate a sample value using the sin() function
+      // Generate a sample value using the real64_sin() function
       // r32 frequency = MIN_FREQUENCY + (time * sweep_rate) * (MAX_FREQUENCY - MIN_FREQUENCY);
       // r32 phase = frequency * j / format->nSamplesPerSec * 2 * PI;
-      // r32 sample = amplitude * sin(phase);
+      // r32 sample = amplitude * real64_sin(phase);
 
-      r64 sample = sin((time + j * seconds_per_frame) * radians_per_second);
+      r64 sample = real64_sin((time + j * seconds_per_frame) * radians_per_second);
 
       // Note: Turns sine wave into square wave
       // if (sample > 0.5)

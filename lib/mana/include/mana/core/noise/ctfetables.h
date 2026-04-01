@@ -2,7 +2,6 @@
 
 #include "mana/core/math/advmath.h"
 
-
 #define TABLE_SIZE 1000
 #define TABLE_NAME "SIN_TABLE"
 
@@ -15,8 +14,8 @@ int main() {
 
   // Generate the table
   for (int i = 0; i < TABLE_SIZE; i++) {
-    r64 x = (M_PI * i) / (TABLE_SIZE / 2);
-    r64 y = sin(x);
+    r64 x = (R32_PI * i) / (TABLE_SIZE / 2);
+    r64 y = real64_sin(x);
     fprintf(f, "%ff, ", y);
   }
 

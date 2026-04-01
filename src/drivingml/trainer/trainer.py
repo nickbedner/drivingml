@@ -184,9 +184,9 @@ while True:
     dx, dy, speed, azimuth, tree_dx, tree_dy, reward, done = struct.unpack("<7fi", data)
     # Normalize speed to help with training
     speed = np.tanh(speed / 120.0)
-    # Simplifies and normalizes azimuth into sin and cos angles for model
+    # Simplifies and normalizes azimuth into real64_sin and real64_cos angles for model
     # For example in azimuth 0 and 360 are the same but can look different for the model
-    azimuth = np.sin(azimuth), np.cos(azimuth)
+    azimuth = np.real64_sin(azimuth), np.real64_cos(azimuth)
 
     # Creates and input tensor for the model
     state = torch.tensor(

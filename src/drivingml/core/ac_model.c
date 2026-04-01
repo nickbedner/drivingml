@@ -82,7 +82,7 @@ void ac_forward(const struct ACModel* model, const r32 state_vector[INPUTS], r32
 
   // Deterministic eval mode: action = tanh(mean), remvember tanh converts the network’s raw output into a valid action range
   for (int i = 0; i < ACTIONS; i++) {
-    action_output[i] = tanhf(mean[i]);
+    action_output[i] = real32_tanh(mean[i]);
 
     // Same clamp as python
     const r32 eps = 1e-6f;

@@ -8,7 +8,7 @@
 #include "drivingml/game.h"
 
 internal r32 wrap_angle_0_2pi(r32 a) {
-  const r32 tau = 2.0f * (r32)M_PI;
+  const r32 tau = 2.0f * (r32)R32_PI;
 
   while (a < 0.0f) a += tau;
   while (a >= tau) a -= tau;
@@ -17,7 +17,7 @@ internal r32 wrap_angle_0_2pi(r32 a) {
 }
 
 internal r32 yaw_from_xz(r32 x, r32 z) {
-  return atan2f(z, x);
+  return real32_atan2(z, x);
 }
 
 internal u32 car_frame_from_camera(r32 heading, r32 steer, vec3 car_pos, vec3d camera_pos) {
@@ -34,9 +34,9 @@ internal u32 car_frame_from_camera(r32 heading, r32 steer, vec3 car_pos, vec3d c
   r32 camera_yaw = yaw_from_xz(to_cam_x, to_cam_z);
 
   // Car forward direction in world XZ
-  r32 car_back_yaw = yaw_from_xz(cosf(heading), -sinf(heading));
+  r32 car_back_yaw = yaw_from_xz(real32_cos(heading), -real32_sin(heading));
   r32 relative_yaw = wrap_angle_0_2pi(car_back_yaw - camera_yaw);
-  r32 step = (2.0f * (r32)M_PI) / (r32)BASE_FRAME_COUNT;
+  r32 step = (2.0f * (r32)R32_PI) / (r32)BASE_FRAME_COUNT;
 
   u32 frame = (u32)((relative_yaw + 0.5f * step) / step);
   frame %= BASE_FRAME_COUNT;
@@ -54,7 +54,7 @@ internal u32 car_frame_from_camera(r32 heading, r32 steer, vec3 car_pos, vec3d c
 internal quat sprite_billboard_rotation(vec3 car_pos, vec3d camera_pos) {
   r32 to_cam_x = (r32)(camera_pos.x - (r64)car_pos.x);
   r32 to_cam_z = (r32)(camera_pos.z - (r64)car_pos.z);
-  r32 yaw = atan2f(to_cam_x, to_cam_z);
+  r32 yaw = real32_atan2(to_cam_x, to_cam_z);
 
   mat4 rot = mat4_rotate(MAT4_IDENTITY, yaw, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
   return mat4_to_quaternion(rot);
@@ -75,8 +75,8 @@ internal i32 recv_all(SOCKET sock, char* buffer, i32 size) {
 internal inline void place_marker(struct Sprite* marker, r32 x, r32 y) {
   marker->sprite_common.position = (vec3){.x = x, .y = 2.35f * 2.5f, .z = y};
   marker->sprite_common.scale = (vec3){.x = 2.5f, .y = 2.5f, .z = 0.0f};
-  mat4 marker_rotation_0 = mat4_rotate(MAT4_IDENTITY, (r32)-M_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  marker_rotation_0 = mat4_rotate(marker_rotation_0, (r32)M_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
+  mat4 marker_rotation_0 = mat4_rotate(MAT4_IDENTITY, (r32)-R32_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
+  marker_rotation_0 = mat4_rotate(marker_rotation_0, (r32)R32_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
   marker->sprite_common.rotation = mat4_to_quaternion(marker_rotation_0);
 }
 
@@ -113,7 +113,7 @@ internal void load_map_from_xml(struct Game* game, struct Mana* mana, const char
     game->track->sprite_common.position = (vec3){.x = x, .y = 0.0f, .z = y};
     game->track->sprite_common.scale = (vec3){.x = scale, .y = scale, .z = 0};
 
-    mat4 rot = mat4_rotate(MAT4_IDENTITY, (r32)-M_PI / 2.0f, (vec3){.x = 1.0f, .y = 0.0f, .z = 0.0f});
+    mat4 rot = mat4_rotate(MAT4_IDENTITY, (r32)-R32_PI / 2.0f, (vec3){.x = 1.0f, .y = 0.0f, .z = 0.0f});
     game->track->sprite_common.rotation = mat4_to_quaternion(rot);
   }
 
@@ -174,7 +174,7 @@ internal void load_map_from_xml(struct Game* game, struct Mana* mana, const char
         game->trees[i]->sprite_common.position = (vec3){.x = x, .y = 4.5f, .z = y};
         game->trees[i]->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
 
-        mat4 rot = mat4_rotate(MAT4_IDENTITY, -(r32)M_PI / 2, (vec3){.x = 0.5, .y = 0, .z = 0});
+        mat4 rot = mat4_rotate(MAT4_IDENTITY, -(r32)R32_PI / 2, (vec3){.x = 0.5, .y = 0, .z = 0});
         game->trees[i]->sprite_common.rotation = mat4_to_quaternion(rot);
       }
     }
@@ -347,7 +347,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
     game->npcs[npc_num].position = (vec3){.x = game->starting_pos.x - ((r32)npc_num * 8), .y = game->starting_pos.y, .z = game->starting_pos.z + ((r32)(npc_num % 4) * 5.0f)};
     game->npcs[npc_num].sprite->sprite_common.position = game->npcs[npc_num].position;
     game->npcs[npc_num].sprite->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
-    game->npcs[npc_num].heading = game->starting_heading;  // M_PI / 2.0f;  // facing down -Y
+    game->npcs[npc_num].heading = game->starting_heading;  // R32_PI / 2.0f;  // facing down -Y
     game->npcs[npc_num].current_marker = 0;
     game->npcs[npc_num].last_action[0] = 0.0f;
     game->npcs[npc_num].last_action[1] = 0.0f;
@@ -550,7 +550,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
 
     // Movement + progress based reward
     r32 heading = game->npcs[ai_num].heading;
-    vec3 forward_vel = (vec3){.x = (r32)cosf(heading), .y = 0.0f, .z = -(r32)sinf(heading)};
+    vec3 forward_vel = (vec3){.x = (r32)real32_cos(heading), .y = 0.0f, .z = -(r32)real32_sin(heading)};
 
     // Current marker position
     vec3 marker_pos = game->marker[game->npcs[ai_num].current_marker]->sprite_common.position;
@@ -558,7 +558,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
     // Distance BEFORE movement
     r32 dx_before = marker_pos.x - game->npcs[ai_num].position.x;
     r32 dz_before = marker_pos.z - game->npcs[ai_num].position.z;
-    r32 dist_before = sqrtf(dx_before * dx_before + dz_before * dz_before);
+    r32 dist_before = real32_sqrt(dx_before * dx_before + dz_before * dz_before);
 
     b8 hit_tree = FALSE;
 
@@ -585,7 +585,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
 
       r32 dx = game->npcs[ai_num].position.x - tree_pos.x;
       r32 dz = game->npcs[ai_num].position.z - tree_pos.z;
-      r32 dist = sqrtf(dx * dx + dz * dz);
+      r32 dist = real32_sqrt(dx * dx + dz * dz);
 
       if (dist < TREE_RADIUS) {
         hit_tree = TRUE;
@@ -596,7 +596,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
 
         r32 rdx = resolve_x - tree_pos.x;
         r32 rdz = resolve_z - tree_pos.z;
-        r32 rdist = sqrtf(rdx * rdx + rdz * rdz);
+        r32 rdist = real32_sqrt(rdx * rdx + rdz * rdz);
 
         r32 nx, nz;
         if (rdist > 1e-4f) {
@@ -615,23 +615,23 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
 
         r32 vx = forward_vel.x * speed_before_move;
         r32 vz = forward_vel.z * speed_before_move;
-        r32 impact_speed = fabsf(vx * nx + vz * nz);
+        r32 impact_speed = real32_fabs(vx * nx + vz * nz);
 
         // Bounce backward
-        game->npcs[ai_num].speed = -fmaxf(MIN_BOUNCE_SPEED, impact_speed * BOUNCE_RESTITUTION);
+        game->npcs[ai_num].speed = -real32_fmax(MIN_BOUNCE_SPEED, impact_speed * BOUNCE_RESTITUTION);
 
         // Turn slightly away from the tree so the AI does not keep rehitting it
         r32 current_heading = game->npcs[ai_num].heading;
 
-        r32 rx = -sinf(current_heading);
-        r32 rz = -cosf(current_heading);
+        r32 rx = -real32_sin(current_heading);
+        r32 rz = -real32_cos(current_heading);
 
         // Tree position in carspace
         r32 to_tree_x = tree_pos.x - game->npcs[ai_num].position.x;
         r32 to_tree_z = tree_pos.z - game->npcs[ai_num].position.z;
         r32 tree_side = to_tree_x * rx + to_tree_z * rz;
 
-        if (fabsf(tree_side) < TREE_SIDE_EPS) {
+        if (real32_fabs(tree_side) < TREE_SIDE_EPS) {
           r32 to_marker_x = marker_pos.x - game->npcs[ai_num].position.x;
           r32 to_marker_z = marker_pos.z - game->npcs[ai_num].position.z;
           tree_side = to_marker_x * rx + to_marker_z * rz;
@@ -653,7 +653,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
 
     // Apply damping
     r32 damping = 2.0f;
-    game->npcs[ai_num].speed *= expf((r32)((r64)-damping * delta_time));
+    game->npcs[ai_num].speed *= real32_exp((r32)((r64)-damping * delta_time));
 
     // Update sprite + camera
     game->npcs[ai_num].sprite->sprite_common.position = game->npcs[ai_num].position;
@@ -663,7 +663,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
     //  Distance AFTER movement
     r32 dx_after = marker_pos.x - game->npcs[ai_num].position.x;
     r32 dz_after = marker_pos.z - game->npcs[ai_num].position.z;
-    r32 dist_after = sqrtf(dx_after * dx_after + dz_after * dz_after);
+    r32 dist_after = real32_sqrt(dx_after * dx_after + dz_after * dz_after);
 
     // Main dense signal: reward distance reduction
     r32 progress = dist_before - dist_after;
@@ -691,7 +691,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
     reward -= 0.005f;
     // Steering penalty
     reward -= 0.01f * steer * steer;
-    reward -= 0.02f * fabsf(angle);
+    reward -= 0.02f * real32_fabs(angle);
 
     // Use the current target marker after checkpoint update so we head towards the next one if we just passed the checkpoint
     vec3 next_marker = game->marker[game->npcs[ai_num].current_marker]->sprite_common.position;
@@ -700,10 +700,10 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
     r32 dxw = next_marker.x - game->npcs[ai_num].position.x;
     r32 dzw = next_marker.z - game->npcs[ai_num].position.z;
 
-    r32 fx = -cosf(game->npcs[ai_num].heading);
-    r32 fz = sinf(game->npcs[ai_num].heading);
-    r32 rx = -sinf(game->npcs[ai_num].heading);
-    r32 rz = -cosf(game->npcs[ai_num].heading);
+    r32 fx = -real32_cos(game->npcs[ai_num].heading);
+    r32 fz = real32_sin(game->npcs[ai_num].heading);
+    r32 rx = -real32_sin(game->npcs[ai_num].heading);
+    r32 rz = -real32_cos(game->npcs[ai_num].heading);
 
     r32 forward_err = dxw * fx + dzw * fz;
     r32 right_err = dxw * rx + dzw * rz;
@@ -716,7 +716,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
     b8 found_tree_ahead = FALSE;
     r32 best_forward = obstacle_norm;
     r32 best_right = 0.0f;
-    r32 best_score = FLT_MAX;
+    r32 best_score = R32_MAX;
 
     for (i32 t = 0; t < game->total_trees; t++) {
       vec3 tree_pos = game->trees[t]->sprite_common.position;
@@ -730,7 +730,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
       if (forward <= 0.0f)
         continue;
 
-      r32 score = forward + 2.0f * fabsf(right);
+      r32 score = forward + 2.0f * real32_fabs(right);
       if (score < best_score) {
         found_tree_ahead = TRUE;
         best_score = score;
@@ -757,7 +757,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
       tree_dy = -1.0f;
 
     if (found_tree_ahead && tree_dx < 0.25f) {
-      r32 lateral = fabsf(tree_dy);
+      r32 lateral = real32_fabs(tree_dy);
       if (lateral < 0.15f) {
         r32 forward_term = (0.25f - tree_dx) / 0.25f;
         r32 lateral_term = (0.15f - lateral) / 0.15f;
@@ -815,8 +815,8 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
     } else {
       if (start == TRUE) {
         r32 value;
-        r32 speed_norm = tanhf(game->npcs[ai_num].speed / 120.0f);
-        r32 game_state[7] = {forward_err / norm, right_err / norm, speed_norm, sinf(heading), cosf(heading), tree_dx, tree_dy};
+        r32 speed_norm = real32_tanh(game->npcs[ai_num].speed / 120.0f);
+        r32 game_state[7] = {forward_err / norm, right_err / norm, speed_norm, real32_sin(heading), real32_cos(heading), tree_dx, tree_dy};
         ac_forward(&(game->npcs[ai_num].model), game_state, game->npcs[ai_num].last_action, &value);
       }
     }
@@ -838,18 +838,18 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
 
   // Make this always facing toward the camera
   for (i32 marker_num = 0; marker_num < game->total_markers; marker_num++) {
-    mat4 marker_rotation = mat4_rotate(MAT4_IDENTITY, -(r32)M_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
-    marker_rotation = mat4_rotate(marker_rotation, (r32)M_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
+    mat4 marker_rotation = mat4_rotate(MAT4_IDENTITY, -(r32)R32_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
+    marker_rotation = mat4_rotate(marker_rotation, (r32)R32_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
     game->marker[marker_num]->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(marker_rotation, (r32)-game->player.camera.look_at_azimuth, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f}));
     // TODO: Commented out temporarily because we just want to hide markers for now
     // if (EVAL_MODE)
     game->marker[marker_num]->sprite_common.position.y = -10000.0f;
   }
-  mat4 flag1_rotation = mat4_rotate(MAT4_IDENTITY, -(r32)M_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
-  flag1_rotation = mat4_rotate(flag1_rotation, (r32)M_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
+  mat4 flag1_rotation = mat4_rotate(MAT4_IDENTITY, -(r32)R32_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
+  flag1_rotation = mat4_rotate(flag1_rotation, (r32)R32_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
   game->flag1->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(flag1_rotation, (r32)-game->player.camera.look_at_azimuth, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f}));
-  mat4 flag2_rotation = mat4_rotate(MAT4_IDENTITY, -(r32)M_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
-  flag2_rotation = mat4_rotate(flag2_rotation, (r32)M_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
+  mat4 flag2_rotation = mat4_rotate(MAT4_IDENTITY, -(r32)R32_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
+  flag2_rotation = mat4_rotate(flag2_rotation, (r32)R32_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
   game->flag2->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(flag2_rotation, (r32)-game->player.camera.look_at_azimuth, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f}));
 }
 

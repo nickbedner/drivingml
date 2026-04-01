@@ -15,8 +15,8 @@
 #define RANGE 1.0
 #define EDGE_THRESHOLD 0.02
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
+#ifndef R32_PI
+#define R32_PI 3.14159265358979323846
 #endif
 
 typedef struct {
@@ -90,7 +90,7 @@ internal inline int solve_quadratic(r64 x[2], r64 a, r64 b, r64 c) {
 
   r64 dscr = b * b - 4 * a * c;
   if (dscr > 0) {
-    dscr = sqrt(dscr);
+    dscr = real64_sqrt(dscr);
     x[0] = (-b + dscr) / (2 * a);
     x[1] = (-b - dscr) / (2 * a);
     return 2;
@@ -110,24 +110,24 @@ internal inline int solve_cubic_normed(r64 *x, r64 a, r64 b, r64 c) {
   r64 q3 = q * q * q;
   r64 A, B;
   if (r2 < q3) {
-    r64 t = r / sqrt(q3);
+    r64 t = r / real64_sqrt(q3);
     if (t < -1) t = -1;
     if (t > 1) t = 1;
     t = acos(t);
     a /= 3;
-    q = -2 * sqrt(q);
-    x[0] = q * cos(t / 3) - a;
-    x[1] = q * cos((t + 2 * M_PI) / 3) - a;
-    x[2] = q * cos((t - 2 * M_PI) / 3) - a;
+    q = -2 * real64_sqrt(q);
+    x[0] = q * real64_cos(t / 3) - a;
+    x[1] = q * real64_cos((t + 2 * R32_PI) / 3) - a;
+    x[2] = q * real64_cos((t - 2 * R32_PI) / 3) - a;
     return 3;
   } else {
-    A = -pow(fabs(r) + sqrt(r2 - q3), 1 / 3.);
+    A = -pow(fabs(r) + real64_sqrt(r2 - q3), 1 / 3.);
     if (r < 0) A = -A;
     B = A == 0 ? 0 : q / A;
     a /= 3;
     x[0] = (A + B) - a;
     x[1] = -0.5 * (A + B) - a;
-    x[2] = 0.5 * sqrt(3.) * (A - B);
+    x[2] = 0.5 * real64_sqrt(3.) * (A - B);
     if (fabs(x[2]) < 1e-14)
       return 2;
     return 1;
@@ -805,7 +805,7 @@ internal inline int ex_msdf_glyph_mem(stbtt_fontinfo *font, u32 c, size_t w, siz
   // calculate edge-colors
   unsigned long long seed = 0;
   r64 anglethreshold = 3.0;
-  r64 crossthreshold = sin(anglethreshold);
+  r64 crossthreshold = real64_sin(anglethreshold);
   size_t corner_count = 0;
   for (int i = 0; i < contour_count; ++i)
     for (int j = 0; j < contour_data[i].edge_count; ++j)

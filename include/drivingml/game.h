@@ -1,6 +1,5 @@
 #pragma once
 
-#include <float.h>
 #include <mana/core/graphics/entities/sprite/sprite.h>
 #include <mana/core/graphics/entities/water/water.h>
 #include <mana/core/graphics/shaders/modelshader.h>
@@ -15,7 +14,6 @@
 
 #include "drivingml/core/ac_model.h"
 #include "drivingml/core/player.h"
-
 
 #define EVAL_MODE TRUE
 

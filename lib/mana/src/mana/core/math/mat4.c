@@ -272,12 +272,12 @@ mat4 mat4_rotate(mat4 m1, r32 angle, vec3 axis) {
   vec3 axisn, v, vs;
   r32 c;
 
-  c = cosf(angle);
+  c = real32_cos(angle);
 
   ////////////////////////////////////////////////////////////////
   axisn = vec3_normalize(axis);
   v = vec3_scale(axisn, 1.0f - c);
-  vs = vec3_scale(axisn, sinf(angle));
+  vs = vec3_scale(axisn, real32_sin(angle));
 
   // TODO: Kinda hacky
   vec3 r1, r2, r3;

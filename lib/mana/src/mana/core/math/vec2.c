@@ -29,21 +29,21 @@ r32 vec2_dot(vec2 a, vec2 b) {
 }
 
 b8 vec2_equals(vec2 v1, vec2 v2) {
-  return (fabsf(v1.x - v2.x) < FLT_EPSILON) && (fabsf(v1.y - v2.y) < FLT_EPSILON);
+  return (real32_fabs(v1.x - v2.x) < R32_EPSILON) && (real32_fabs(v1.y - v2.y) < R32_EPSILON);
 }
 
 // Note: Have no clue how this works going off the book
 vec2 vec2_normalise(vec2 v1) {
-  r32 mag = sqrtf((v1.data[0] * v1.data[0]) + (v1.data[1] * v1.data[1]));
+  r32 mag = real32_sqrt((v1.data[0] * v1.data[0]) + (v1.data[1] * v1.data[1]));
   r32 inv_mag = 1.0f / mag;
-  if (fabsf(0.0f * inv_mag) < FLT_EPSILON) {
+  if (real32_fabs(0.0f * inv_mag) < R32_EPSILON) {
     v1.x = v1.x * inv_mag;
     v1.y = v1.y * inv_mag;
   }
   return v1;
 }
 
-inline r32 vec2_mul_inner(vec2 const a, vec2 const b) {
+r32 vec2_mul_inner(vec2 const a, vec2 const b) {
   r32 p = 0.0f;
   int i;
   for (i = 0; i < 2; ++i)
@@ -52,7 +52,7 @@ inline r32 vec2_mul_inner(vec2 const a, vec2 const b) {
 }
 
 r32 vec2_len(vec2 const v) {
-  return sqrtf(vec2_mul_inner(v, v));
+  return real32_sqrt(vec2_mul_inner(v, v));
 }
 
 // TODO: Figure out which norm is better
@@ -61,7 +61,7 @@ vec2 vec2_norm(vec2 const v) {
   return vec2_scale(v, k);
 }
 
-int vec2_nonzero_sign(r32 n) {
+i32 vec2_nonzero_sign(r32 n) {
   return 2 * (n > 0) - 1;
 }
 

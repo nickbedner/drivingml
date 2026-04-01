@@ -45,7 +45,7 @@ vec3d vec3d_add_scaled_vector(vec3d v1, vec3d v2, r64 scale) {
 }
 
 r64 vec3d_magnitude(vec3d v1) {
-  return sqrt(v1.data[0] * v1.data[0] + v1.data[1] * v1.data[1] + v1.data[2] * v1.data[2]);
+  return real64_sqrt(v1.data[0] * v1.data[0] + v1.data[1] * v1.data[1] + v1.data[2] * v1.data[2]);
 }
 
 r64 vec3d_square_magnitude(vec3d v1) {
@@ -54,7 +54,7 @@ r64 vec3d_square_magnitude(vec3d v1) {
 
 vec3d vec3d_normalise(vec3d v1) {
   r64 ls = v1.data[0] * v1.data[0] + v1.data[1] * v1.data[1] + v1.data[2] * v1.data[2];
-  r64 length = sqrt(ls);
+  r64 length = real64_sqrt(ls);
   if (length > 0)
     return (vec3d){.x = v1.data[0] / length, .y = v1.data[1] / length, .z = v1.data[2] / length};
   return v1;

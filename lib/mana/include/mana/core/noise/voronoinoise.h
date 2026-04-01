@@ -132,7 +132,7 @@ global inline r32 voronoi_noise_eval_3d_single(struct VoronoiNoise* voronoi_nois
     r32 x_dist = x_candidate - x;
     r32 y_dist = y_candidate - y;
     r32 z_dist = z_candidate - z;
-    value = sqrt(x_dist * x_dist + y_dist * y_dist + z_dist * z_dist) * SQRT_3 - 1.0;
+    value = real64_sqrt(x_dist * x_dist + y_dist * y_dist + z_dist * z_dist) * SQRT_3 - 1.0;
   } else
     value = 0.0;
 
@@ -187,7 +187,7 @@ global inline r32* voronoi_noise_eval_3d_fallback(struct VoronoiNoise* voronoi_n
           r32 x_dist = x_candidate - x;
           r32 y_dist = y_candidate - y;
           r32 z_dist = z_candidate - z;
-          value = sqrt(x_dist * x_dist + y_dist * y_dist + z_dist * z_dist) * SQRT_3 - 1.0;
+          value = real64_sqrt(x_dist * x_dist + y_dist * y_dist + z_dist * z_dist) * SQRT_3 - 1.0;
         } else
           value = 0.0;
 
