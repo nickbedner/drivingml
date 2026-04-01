@@ -193,24 +193,24 @@ enum KeyState { PRESSED,
 
 struct Key {
   enum KeyState state;
-  bool pushed;
-  bool held;
+  b8 pushed;
+  b8 held;
 };
 
 struct KeyboardMouseController {
   struct Key keys[KEY_LIMIT];
-  double mouse_x_pos;
-  double mouse_y_pos;
-  double mouse_x_pos_prev;
-  double mouse_y_pos_prev;
-  double mouse_x_pos_diff;
-  double mouse_y_pos_diff;
-  double mouse_x_pos_locked;
-  double mouse_y_pos_locked;
-  double mouse_wheel;
-  bool show_cursor;
-  bool lock_cursor;
-  bool locked;
+  r64 mouse_x_pos;
+  r64 mouse_y_pos;
+  r64 mouse_x_pos_prev;
+  r64 mouse_y_pos_prev;
+  r64 mouse_x_pos_diff;
+  r64 mouse_y_pos_diff;
+  r64 mouse_x_pos_locked;
+  r64 mouse_y_pos_locked;
+  r64 mouse_wheel;
+  b8 show_cursor;
+  b8 lock_cursor;
+  b8 locked;
 };
 #endif
 
@@ -220,14 +220,14 @@ struct XboxController {
   XINPUT_STATE current_state;
   XINPUT_STATE previous_state;
 
-  uint_fast8_t assigned_player;
+  u8 assigned_player;
 #endif
 };
 #endif
 
 #ifdef PLAYSATION_CONTROLLER_SUPPORTED
 struct PlaystationController {
-  float placeholder;
+  r32 placeholder;
 };
 #endif
 
@@ -240,29 +240,29 @@ struct GamecubeController {
   BYTE buffer[GC_ADAPTER_TOTAL_BUFFER_SIZE];
   UCHAR read_pipe_id;
   UCHAR write_pipe_id;
-  bool reading_pending;
+  b8 reading_pending;
   // Note: Padding for 4 byte grouping
-  uint8_t _pad0;
+  u8 _pad0;
 
 #else
-  float placeholder;
+  r32 placeholder;
 #endif
 };
 #endif
 
 #ifdef JOYSTICK_CONTROLLER_SUPPORTED
 struct JoystickController {
-  float placeholder;
+  r32 placeholder;
 };
 #endif
 
 struct ControllerAction {
-  uint_fast8_t button;
-  bool pressed;
-  bool held;
-  bool released;
+  u8 button;
+  b8 pressed;
+  b8 held;
+  b8 released;
   // Note: For pressure sensitive buttons and normalized joystick values?
-  float value;
+  r32 value;
 };
 
 struct ControllerCommon {
@@ -287,6 +287,6 @@ struct ControllerCommon {
   struct ControllerAction controller_action_list[16];
   enum CONTROLLER_TYPE controller_type;
   // Note: player 0 is unassigned
-  uint_fast8_t player_num;
-  uint_fast8_t controller_action_list_size;
+  u8 player_num;
+  u8 controller_action_list_size;
 };

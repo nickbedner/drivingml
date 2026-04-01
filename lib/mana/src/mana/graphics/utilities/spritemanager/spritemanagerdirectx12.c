@@ -1,6 +1,6 @@
 #include "mana/graphics/utilities/spritemanager/spritemanagerdirectx12.h"
 
-uint_fast8_t sprite_manager_directx_12_init_sprite_pool(struct SpriteManagerCommon* sprite_manager_common, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, struct GBufferCommon* gbuffer_common, uint_fast8_t msaa_samples, uint_fast32_t descriptors) {
+u8 sprite_manager_directx_12_init_sprite_pool(struct SpriteManagerCommon* sprite_manager_common, struct APICommon* api_common, u32 width, u32 height, u8 supersample_scale, struct GBufferCommon* gbuffer_common, u8 msaa_samples, uint_fast32_t descriptors) {
   D3D12_DESCRIPTOR_HEAP_DESC heap_desc;
   memset(&heap_desc, 0, sizeof(D3D12_DESCRIPTOR_HEAP_DESC));
 

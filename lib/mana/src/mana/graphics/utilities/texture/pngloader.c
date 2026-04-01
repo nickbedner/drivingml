@@ -1,21 +1,21 @@
 #include "mana/graphics/utilities/texture/pngloader.h"
 
 // Helper function for Paeth filter
-static inline uint8_t paeth_predictor(uint8_t a, uint8_t b, uint8_t c) {
-  int32_t p = a + b - c;
-  int32_t pa = abs(p - a);
-  int32_t pb = abs(p - b);
-  int32_t pc = abs(p - c);
+internal inline u8 paeth_predictor(u8 a, u8 b, u8 c) {
+  i32 p = a + b - c;
+  i32 pa = abs(p - a);
+  i32 pb = abs(p - b);
+  i32 pc = abs(p - c);
   if (pa <= pb && pa <= pc)
-    return (uint8_t)a;
+    return (u8)a;
   else if (pb <= pc)
-    return (uint8_t)b;
+    return (u8)b;
   else
-    return (uint8_t)c;
+    return (u8)c;
 }
 
 // Function to reverse PNG filtering for a single scanline
-static inline void unfilter_scanline(uint8_t* recon, const uint8_t* scanline, const uint8_t* prev, size_t bytewidth, size_t length, uint8_t filter_type) {
+internal inline void unfilter_scanline(u8* recon, const u8* scanline, const u8* prev, size_t bytewidth, size_t length, u8 filter_type) {
   size_t i;
 
   switch (filter_type) {
@@ -77,19 +77,19 @@ static inline void unfilter_scanline(uint8_t* recon, const uint8_t* scanline, co
 }
 
 // Main function to reverse PNG filtering for the whole image
-static inline uint8_t* reverse_png_filtering(uint8_t* data, uint32_t width, uint32_t height, uint32_t bpp, uint8_t color_type) {
+internal inline u8* reverse_png_filtering(u8* data, u32 width, u32 height, u32 bpp, u8 color_type) {
   size_t linebytes = width * bpp;
 
-  uint8_t* prev_line = NULL;
-  uint8_t* pixels = (uint8_t*)calloc(1, linebytes * height);
-  uint8_t* start_pos = pixels;
+  u8* prev_line = NULL;
+  u8* pixels = (u8*)calloc(1, linebytes * height);
+  u8* start_pos = pixels;
   if (!pixels) {
     fprintf(stderr, "Memory allocation failed\n");
     exit(EXIT_FAILURE);
   }
 
-  for (uint32_t y = 0; y < height; y++) {
-    uint8_t filter_type = *data++;  // First byte of a scanline is the filter type
+  for (u32 y = 0; y < height; y++) {
+    u8 filter_type = *data++;  // First byte of a scanline is the filter type
 
     unfilter_scanline(pixels, data, prev_line, bpp, linebytes, filter_type);
 
@@ -104,10 +104,10 @@ static inline uint8_t* reverse_png_filtering(uint8_t* data, uint32_t width, uint
   pixels = start_pos;
 
   // if (color_type == 0) {
-  //   uint8_t *new_pixels = calloc(1, width * height * 4);
-  //   uint8_t *new_pixels_start_pos = new_pixels;
-  //   for (uint32_t y = 0; y < height; y++) {
-  //     for (uint32_t x = 0; x < width; x++) {
+  //   u8 *new_pixels = calloc(1, width * height * 4);
+  //   u8 *new_pixels_start_pos = new_pixels;
+  //   for (u32 y = 0; y < height; y++) {
+  //     for (u32 x = 0; x < width; x++) {
   //       new_pixels[0] = *pixels;
   //       new_pixels[1] = *pixels;
   //       new_pixels[2] = *pixels;
@@ -121,10 +121,10 @@ static inline uint8_t* reverse_png_filtering(uint8_t* data, uint32_t width, uint
   //   pixels = new_pixels_start_pos;
   // } else if (color_type == 2) {
   if (color_type == 2) {
-    uint8_t* new_pixels = (uint8_t*)calloc(1, width * height * 4);
-    uint8_t* new_pixels_start_pos = new_pixels;
-    for (uint32_t y = 0; y < height; y++) {
-      for (uint32_t x = 0; x < width; x++) {
+    u8* new_pixels = (u8*)calloc(1, width * height * 4);
+    u8* new_pixels_start_pos = new_pixels;
+    for (u32 y = 0; y < height; y++) {
+      for (u32 x = 0; x < width; x++) {
         new_pixels[0] = pixels[0];
         new_pixels[1] = pixels[1];
         new_pixels[2] = pixels[2];
@@ -141,11 +141,11 @@ static inline uint8_t* reverse_png_filtering(uint8_t* data, uint32_t width, uint
   return pixels;
 }
 
-static inline int32_t paeth_predictor_16(int32_t a, int32_t b, int32_t c) {
-  int32_t p = a + b - c;
-  int32_t pa = abs(p - a);
-  int32_t pb = abs(p - b);
-  int32_t pc = abs(p - c);
+internal inline i32 paeth_predictor_16(i32 a, i32 b, i32 c) {
+  i32 p = a + b - c;
+  i32 pa = abs(p - a);
+  i32 pb = abs(p - b);
+  i32 pc = abs(p - c);
 
   if (pa <= pb && pa <= pc)
     return a;
@@ -157,11 +157,11 @@ static inline int32_t paeth_predictor_16(int32_t a, int32_t b, int32_t c) {
 }
 
 // Check top byte whether to wrap or not
-static inline uint16_t calculate_wrap_around(uint16_t val1, uint16_t val2, uint8_t byte_val1, uint8_t byte_val2) {
-  // uint8_t clamp_val = (byte_val1 + byte_val2) % UCHAR_MAX;
-  uint8_t clamp_val = byte_val1 + byte_val2;
-  uint16_t corrected_short = clamp_val * 256;
-  uint16_t added_val = val1 + val2;
+internal inline u16 calculate_wrap_around(u16 val1, u16 val2, u8 byte_val1, u8 byte_val2) {
+  // u8 clamp_val = (byte_val1 + byte_val2) % UCHAR_MAX;
+  u8 clamp_val = byte_val1 + byte_val2;
+  u16 corrected_short = clamp_val * 256;
+  u16 added_val = val1 + val2;
   if (added_val > corrected_short + UCHAR_MAX)
     return corrected_short + UCHAR_MAX;
   if (added_val < corrected_short)
@@ -171,7 +171,7 @@ static inline uint16_t calculate_wrap_around(uint16_t val1, uint16_t val2, uint8
 }
 
 // Function to reverse PNG filtering for a single scanline
-static inline void unfilter_scanline_16bit(uint16_t* recon, const uint16_t* scanline, const uint16_t* prev, const uint8_t* prev_byte_line, uint8_t* byte_pixels, uint8_t* byte_data, size_t shortwidth, size_t length, uint8_t filter_type) {
+internal inline void unfilter_scanline_16bit(u16* recon, const u16* scanline, const u16* prev, const u8* prev_byte_line, u8* byte_pixels, u8* byte_data, size_t shortwidth, size_t length, u8 filter_type) {
   size_t i;
 
   switch (filter_type) {
@@ -228,11 +228,11 @@ static inline void unfilter_scanline_16bit(uint16_t* recon, const uint16_t* scan
     case 4: {  // Paeth
       if (prev) {
         for (i = 0; i < shortwidth; i++) {
-          recon[i] = calculate_wrap_around(scanline[i], (uint16_t)paeth_predictor_16(0, prev[i], 0), byte_data[i], paeth_predictor(0, prev_byte_line[i], 0));
+          recon[i] = calculate_wrap_around(scanline[i], (u16)paeth_predictor_16(0, prev[i], 0), byte_data[i], paeth_predictor(0, prev_byte_line[i], 0));
           byte_pixels[i] = byte_data[i] + paeth_predictor(0, prev_byte_line[i], 0);
         }
         for (i = shortwidth; i < length; i++) {
-          recon[i] = calculate_wrap_around(scanline[i], (uint16_t)paeth_predictor_16(recon[i - shortwidth], prev[i], prev[i - shortwidth]), byte_data[i], paeth_predictor(byte_pixels[i - shortwidth], prev_byte_line[i], prev_byte_line[i - shortwidth]));
+          recon[i] = calculate_wrap_around(scanline[i], (u16)paeth_predictor_16(recon[i - shortwidth], prev[i], prev[i - shortwidth]), byte_data[i], paeth_predictor(byte_pixels[i - shortwidth], prev_byte_line[i], prev_byte_line[i - shortwidth]));
           byte_pixels[i] = byte_data[i] + paeth_predictor(byte_pixels[i - shortwidth], prev_byte_line[i], prev_byte_line[i - shortwidth]);
         }
       } else {
@@ -241,7 +241,7 @@ static inline void unfilter_scanline_16bit(uint16_t* recon, const uint16_t* scan
           byte_pixels[i] = byte_data[i];
         }
         for (i = shortwidth; i < length; i++) {
-          recon[i] = calculate_wrap_around(scanline[i], (uint16_t)paeth_predictor_16(recon[i - shortwidth], 0, 0), byte_data[i], paeth_predictor(byte_pixels[i - shortwidth], 0, 0));
+          recon[i] = calculate_wrap_around(scanline[i], (u16)paeth_predictor_16(recon[i - shortwidth], 0, 0), byte_data[i], paeth_predictor(byte_pixels[i - shortwidth], 0, 0));
           byte_pixels[i] = byte_data[i] + paeth_predictor(byte_pixels[i - shortwidth], 0, 0);
         }
       }
@@ -254,39 +254,39 @@ static inline void unfilter_scanline_16bit(uint16_t* recon, const uint16_t* scan
   }
 }
 
-static inline uint16_t* reverse_png_filtering_16bit(uint8_t* data, uint32_t width, uint32_t height, uint32_t bpp, uint8_t color_type) {
+internal inline u16* reverse_png_filtering_16bit(u8* data, u32 width, u32 height, u32 bpp, u8 color_type) {
   size_t linebytes = width * bpp;  // Bytes per line
 
-  uint16_t* prev_line = NULL;
-  uint8_t* prev_byte_line = NULL;
-  // uint16_t *pixels = calloc(1, linebytes * height);
-  // uint16_t *pixels = (uint16_t *)_aligned_malloc(linebytes * height, alignof(uint16_t));
-  // uint16_t *aligned_data = (uint16_t *)_aligned_malloc(linebytes * height, alignof(uint16_t));
-  // uint8_t *byte_pixels = (uint8_t *)_aligned_malloc((linebytes * height) / 2, alignof(uint8_t));
-  // uint8_t *byte_data = (uint8_t *)_aligned_malloc((linebytes * height) / 2, alignof(uint8_t));
-  uint16_t* pixels = (uint16_t*)malloc(linebytes * height);
-  uint16_t* aligned_data = (uint16_t*)malloc(linebytes * height);
-  uint8_t* byte_pixels = (uint8_t*)malloc((linebytes * height) / 2);
-  uint8_t* byte_data = (uint8_t*)malloc((linebytes * height) / 2);
-  uint16_t* start_pos = pixels;
-  uint16_t* data_start_pos = aligned_data;
-  uint8_t* byte_pixels_start_pos = byte_pixels;
-  uint8_t* byte_data_start_pos = byte_data;
+  u16* prev_line = NULL;
+  u8* prev_byte_line = NULL;
+  // u16 *pixels = calloc(1, linebytes * height);
+  // u16 *pixels = (u16 *)_aligned_malloc(linebytes * height, alignof(u16));
+  // u16 *aligned_data = (u16 *)_aligned_malloc(linebytes * height, alignof(u16));
+  // u8 *byte_pixels = (u8 *)_aligned_malloc((linebytes * height) / 2, alignof(u8));
+  // u8 *byte_data = (u8 *)_aligned_malloc((linebytes * height) / 2, alignof(u8));
+  u16* pixels = (u16*)malloc(linebytes * height);
+  u16* aligned_data = (u16*)malloc(linebytes * height);
+  u8* byte_pixels = (u8*)malloc((linebytes * height) / 2);
+  u8* byte_data = (u8*)malloc((linebytes * height) / 2);
+  u16* start_pos = pixels;
+  u16* data_start_pos = aligned_data;
+  u8* byte_pixels_start_pos = byte_pixels;
+  u8* byte_data_start_pos = byte_data;
 
   // memset(pixels, 0, linebytes * height);
   // memset(aligned_data, 0, linebytes * height);
   // memset(byte_data, 0, (linebytes * height) / 2);
   // memset(byte_pixels, 0, (linebytes * height) / 2);
 
-  uint8_t* data_start = data;
-  for (uint32_t y = 0; y < height; y++) {
-    uint8_t* pixel_data = data_start + 1;
+  u8* data_start = data;
+  for (u32 y = 0; y < height; y++) {
+    u8* pixel_data = data_start + 1;
 
-    for (uint32_t i = 0; i < width * bpp / 2; i++) {
-      uint8_t high_byte, low_byte;
+    for (u32 i = 0; i < width * bpp / 2; i++) {
+      u8 high_byte, low_byte;
       memcpy(&high_byte, pixel_data + i * 2, 1);
       memcpy(&low_byte, pixel_data + i * 2 + 1, 1);
-      aligned_data[i] = (uint16_t)((high_byte << 8) | low_byte);
+      aligned_data[i] = (u16)((high_byte << 8) | low_byte);
       byte_data[i] = high_byte;
     }
 
@@ -302,8 +302,8 @@ static inline uint16_t* reverse_png_filtering_16bit(uint8_t* data, uint32_t widt
     exit(EXIT_FAILURE);
   }
 
-  for (uint32_t y = 0; y < height; y++) {
-    uint8_t filter_type = *data++;  // Read filter type as 8-bit value
+  for (u32 y = 0; y < height; y++) {
+    u8 filter_type = *data++;  // Read filter type as 8-bit value
 
     unfilter_scanline_16bit(pixels, aligned_data, prev_line, prev_byte_line, byte_pixels, byte_data, bpp / 2, linebytes / 2, filter_type);
 
@@ -322,10 +322,10 @@ static inline uint16_t* reverse_png_filtering_16bit(uint8_t* data, uint32_t widt
   pixels = start_pos;
 
   if (color_type == 0) {
-    uint16_t* new_pixels = (uint16_t*)calloc(1, width * height * 8);
-    uint16_t* new_pixels_start_pos = new_pixels;
-    for (uint32_t y = 0; y < height; y++) {
-      for (uint32_t x = 0; x < width; x++) {
+    u16* new_pixels = (u16*)calloc(1, width * height * 8);
+    u16* new_pixels_start_pos = new_pixels;
+    for (u32 y = 0; y < height; y++) {
+      for (u32 x = 0; x < width; x++) {
         new_pixels[0] = *pixels;
         new_pixels[1] = *pixels;
         new_pixels[2] = *pixels;
@@ -337,10 +337,10 @@ static inline uint16_t* reverse_png_filtering_16bit(uint8_t* data, uint32_t widt
     free(start_pos);
     pixels = new_pixels_start_pos;
   } else if (color_type == 2) {
-    uint16_t* new_pixels = (uint16_t*)calloc(1, width * height * 8);
-    uint16_t* new_pixels_start_pos = new_pixels;
-    for (uint32_t y = 0; y < height; y++) {
-      for (uint32_t x = 0; x < width; x++) {
+    u16* new_pixels = (u16*)calloc(1, width * height * 8);
+    u16* new_pixels_start_pos = new_pixels;
+    for (u32 y = 0; y < height; y++) {
+      for (u32 x = 0; x < width; x++) {
         new_pixels[0] = pixels[0];
         new_pixels[1] = pixels[1];
         new_pixels[2] = pixels[2];
@@ -360,13 +360,13 @@ static inline uint16_t* reverse_png_filtering_16bit(uint8_t* data, uint32_t widt
   return pixels;
 }
 
-// Manually define a simple byte-swapping function for uint32_t
-static inline uint32_t swap_uint32(uint32_t val) {
+// Manually define a simple byte-swapping function for u32
+internal inline u32 swap_uint32(u32 val) {
   return ((val << 24) & 0xff000000) | ((val << 8) & 0x00ff0000) | ((val >> 8) & 0x0000ff00) | ((val >> 24) & 0x000000ff);
 }
 
 // Function to concatenate IDAT chunks
-static inline unsigned char* concatenate_idat_chunks(FILE* fp, unsigned int* total_length) {
+internal inline unsigned char* concatenate_idat_chunks(FILE* fp, unsigned int* total_length) {
   unsigned int buffer_size = 1024;  // Initial buffer size
   unsigned char* buffer = (unsigned char*)malloc(buffer_size);
   if (buffer == NULL) {
@@ -378,9 +378,9 @@ static inline unsigned char* concatenate_idat_chunks(FILE* fp, unsigned int* tot
 
   // Read each chunk
   while (!feof(fp)) {
-    uint32_t length;
+    u32 length;
     unsigned char type[4];
-    uint32_t crc;
+    u32 crc;
 
     // Read the length of the chunk
     fread(&length, 4, 1, fp);
@@ -416,7 +416,7 @@ static inline unsigned char* concatenate_idat_chunks(FILE* fp, unsigned int* tot
 }
 
 // Function to determine the number of channels based on the color type
-static uint32_t get_png_color_type_channels(uint8_t color_type) {
+internal u32 get_png_color_type_channels(u8 color_type) {
   switch (color_type) {
     case 0:
       return 1;  // Grayscale
@@ -433,12 +433,12 @@ static uint32_t get_png_color_type_channels(uint8_t color_type) {
   }
 }
 
-static inline void process_IHDR(const uint8_t* ihdr_data, uint32_t* tex_width, uint32_t* tex_height, uint32_t* tex_channels, uint8_t* bit_depth, uint8_t* color_type) {
+internal inline void process_IHDR(const u8* ihdr_data, u32* tex_width, u32* tex_height, u32* tex_channels, u8* bit_depth, u8* color_type) {
   unsigned char compression_method, filter_method, interlace_method;
 
   // Extract width and height (each 4 bytes)
-  *tex_width = (uint32_t)(ihdr_data[0] << 24) | (uint32_t)(ihdr_data[1] << 16) | (uint32_t)(ihdr_data[2] << 8) | ihdr_data[3];
-  *tex_height = (uint32_t)(ihdr_data[4] << 24) | (uint32_t)(ihdr_data[5] << 16) | (uint32_t)(ihdr_data[6] << 8) | ihdr_data[7];
+  *tex_width = (u32)(ihdr_data[0] << 24) | (u32)(ihdr_data[1] << 16) | (u32)(ihdr_data[2] << 8) | ihdr_data[3];
+  *tex_height = (u32)(ihdr_data[4] << 24) | (u32)(ihdr_data[5] << 16) | (u32)(ihdr_data[6] << 8) | ihdr_data[7];
 
   // Extract bit depth, color type, compression method, filter method, interlace method (each 1 byte)
   *bit_depth = ihdr_data[8];
@@ -463,10 +463,10 @@ static inline void process_IHDR(const uint8_t* ihdr_data, uint32_t* tex_width, u
   *tex_channels = get_png_color_type_channels(*color_type);
 }
 
-static inline int read_chunk(FILE* fp, unsigned char** idat_concatenated, unsigned int* idat_length, unsigned int* idat_buffer_size, uint32_t* tex_width, uint32_t* tex_height, uint32_t* tex_channels, uint8_t* bit_depth, uint8_t* color_type) {
-  uint32_t length;
+internal inline int read_chunk(FILE* fp, unsigned char** idat_concatenated, unsigned int* idat_length, unsigned int* idat_buffer_size, u32* tex_width, u32* tex_height, u32* tex_channels, u8* bit_depth, u8* color_type) {
+  u32 length;
   unsigned char type[4];
-  uint32_t crc;
+  u32 crc;
 
   // Read the length of the chunk
   if (fread(&length, 4, 1, fp) != 1)
@@ -524,7 +524,7 @@ static inline int read_chunk(FILE* fp, unsigned char** idat_concatenated, unsign
   return 0;
 }
 
-static inline int check_png_signature(FILE* fp) {
+internal inline int check_png_signature(FILE* fp) {
   unsigned char signature[PNG_SIGNATURE_SIZE];
   fread(signature, 1, PNG_SIGNATURE_SIZE, fp);
 
@@ -537,7 +537,7 @@ static inline int check_png_signature(FILE* fp) {
   return 1;  // Valid PNG signature
 }
 
-void* png_loader_read_png(const char* filename, const char* asset_directory, uint32_t* tex_width, uint32_t* tex_height, uint32_t* tex_channels, uint8_t* bit_depth, uint8_t* color_type) {
+void* png_loader_read_png(const char* filename, const char* asset_directory, u32* tex_width, u32* tex_height, u32* tex_channels, u8* bit_depth, u8* color_type) {
   unsigned char* idat_concatenated = NULL;
   unsigned int idat_length = 0;
   unsigned int idat_buffer_size = 0;
@@ -581,7 +581,7 @@ void* png_loader_read_png(const char* filename, const char* asset_directory, uin
   a.zbuffer = idat_concatenated;
   a.zbuffer_end = idat_concatenated + idat_length;
 
-  if (do_zlib(&a, (int8_t*)decompressed_data, decompressed_length, 1, 1) == 0) {
+  if (do_zlib(&a, (i8*)decompressed_data, decompressed_length, 1, 1) == 0) {
     fprintf(stderr, "Decompression failed\n");
     free(decompressed_data);
     free(idat_concatenated);
@@ -600,9 +600,9 @@ void* png_loader_read_png(const char* filename, const char* asset_directory, uin
   void* pixels;
 
   if (*bit_depth == 8)
-    pixels = reverse_png_filtering((uint8_t*)a.zout_start, *tex_width, *tex_height, *tex_channels, *color_type);
+    pixels = reverse_png_filtering((u8*)a.zout_start, *tex_width, *tex_height, *tex_channels, *color_type);
   else if (*bit_depth == 16)
-    pixels = reverse_png_filtering_16bit((uint8_t*)a.zout_start, *tex_width, *tex_height, *tex_channels * 2, *color_type);
+    pixels = reverse_png_filtering_16bit((u8*)a.zout_start, *tex_width, *tex_height, *tex_channels * 2, *color_type);
   else {
     log_message(LOG_SEVERITY_WARNING, "Unsupported bit depth: %d\n", *bit_depth);
     free(decompressed_data);

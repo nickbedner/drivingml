@@ -1,6 +1,6 @@
 #include "mana/graphics/shaders/shaderdirectx12.h"
 
-static HRESULT __stdcall shader_directx_12_open(ID3DInclude* this_cpp, D3D_INCLUDE_TYPE include_type, LPCSTR p_file_name, LPCVOID p_parent_data, LPCVOID* pp_data, UINT* p_bytes) {
+internal HRESULT __stdcall shader_directx_12_open(ID3DInclude* this_cpp, D3D_INCLUDE_TYPE include_type, LPCSTR p_file_name, LPCVOID p_parent_data, LPCVOID* pp_data, UINT* p_bytes) {
   char full_path[MAX_LENGTH_OF_PATH];
   FILE* file;
   errno_t err;
@@ -20,7 +20,7 @@ static HRESULT __stdcall shader_directx_12_open(ID3DInclude* this_cpp, D3D_INCLU
   }
 
   fseek(file, 0, SEEK_END);
-  int64_t file_size = ftell(file);
+  i64 file_size = ftell(file);
   fseek(file, 0, SEEK_SET);
 
   char* buffer = (char*)malloc((size_t)file_size);
@@ -33,13 +33,13 @@ static HRESULT __stdcall shader_directx_12_open(ID3DInclude* this_cpp, D3D_INCLU
   return S_OK;
 }
 
-static HRESULT __stdcall shader_directx_12_close(ID3DInclude* this_cpp, LPCVOID p_data) {
+internal HRESULT __stdcall shader_directx_12_close(ID3DInclude* this_cpp, LPCVOID p_data) {
   // Note: This silences a warning about casting away const
   free((void*)(uintptr_t)p_data);
   return S_OK;
 }
 
-uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale) {
+u8 shader_directx_12_init(struct ShaderCommon* shader_common, struct APICommon* api_common, u32 width, u32 height, u8 supersample_scale) {
   // Define the vtable and structure inside the function
   ID3DIncludeVtbl v_table_c = {shader_directx_12_open, shader_directx_12_close};
 
@@ -49,8 +49,8 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
 
   struct D3DIncludeC include_handler = {&v_table_c};
 
-  uint16_t vertex_path[MAX_LENGTH_OF_PATH];
-  uint16_t fragment_path[MAX_LENGTH_OF_PATH];
+  u16 vertex_path[MAX_LENGTH_OF_PATH];
+  u16 fragment_path[MAX_LENGTH_OF_PATH];
 
   // Build full shader paths directly
   swprintf_s(vertex_path, MAX_LENGTH_OF_PATH, L"%hs/shaders/hlsl/%hs.hlsl", api_common->asset_directory, shader_common->shader_settings.vertex_shader);
@@ -128,16 +128,16 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
   D3D12_DESCRIPTOR_RANGE descriptor_table_ranges[SHADER_ATTACHMENT_LIMIT];
   ZeroMemory(descriptor_table_ranges, sizeof(descriptor_table_ranges));
 
-  uint32_t root_param_index = 0;
+  u32 root_param_index = 0;
 
-  for (uint_fast8_t constant_num = 0; constant_num < shader_common->shader_settings.uniforms_constants; constant_num++, root_param_index++) {
+  for (u8 constant_num = 0; constant_num < shader_common->shader_settings.uniforms_constants; constant_num++, root_param_index++) {
     root_parameters[root_param_index].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
     root_parameters[root_param_index].Descriptor.ShaderRegister = shader_common->shader_settings.uniform_constant_state[constant_num].shader_position;
     root_parameters[root_param_index].Descriptor.RegisterSpace = 0;
     root_parameters[root_param_index].ShaderVisibility = (shader_common->shader_settings.uniform_constant_state[constant_num].shader_stage == SHADER_STAGE_VERTEX) ? D3D12_SHADER_VISIBILITY_VERTEX : D3D12_SHADER_VISIBILITY_PIXEL;
   }
 
-  for (uint_fast8_t texture_num = 0; texture_num < shader_common->shader_settings.texture_samples; texture_num++, root_param_index++) {
+  for (u8 texture_num = 0; texture_num < shader_common->shader_settings.texture_samples; texture_num++, root_param_index++) {
     descriptor_table_ranges[texture_num].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
     descriptor_table_ranges[texture_num].NumDescriptors = 1;
     descriptor_table_ranges[texture_num].BaseShaderRegister = shader_common->shader_settings.texture_sample_state[texture_num].shader_position;
@@ -206,11 +206,11 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
     error_blob->lpVtbl->Release(error_blob);
 
   D3D12_INPUT_ELEMENT_DESC input_element_descs[32] = {0};
-  uint32_t num_attributes = mesh_get_input_layout(shader_common->shader_settings.mesh_type, input_element_descs);
+  u32 num_attributes = mesh_get_input_layout(shader_common->shader_settings.mesh_type, input_element_descs);
 
   /* count color render targets (skip depth) */
-  uint32_t color_targets = 0;
-  for (uint_fast8_t i = 0; i < shader_common->shader_settings.render_targets; i++)
+  u32 color_targets = 0;
+  for (u8 i = 0; i < shader_common->shader_settings.render_targets; i++)
     if (shader_common->shader_settings.render_target_format[i] != SHADER_RENDER_TARGET_FORMAT_D32_FLOAT)
       color_targets++;
 
@@ -270,8 +270,8 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
 
   for (int i = 0; i < 8; i++)
     pso_desc.RTVFormats[i] = DXGI_FORMAT_UNKNOWN;
-  uint32_t rtv_index = 0;
-  for (uint_fast8_t render_target_num = 0; render_target_num < shader_common->shader_settings.render_targets; render_target_num++) {
+  u32 rtv_index = 0;
+  for (u8 render_target_num = 0; render_target_num < shader_common->shader_settings.render_targets; render_target_num++) {
     if (shader_common->shader_settings.render_target_format[render_target_num] == SHADER_RENDER_TARGET_FORMAT_R8G8B8A8_UNORM)
       pso_desc.RTVFormats[rtv_index++] = DXGI_FORMAT_R8G8B8A8_UNORM;
     else if (shader_common->shader_settings.render_target_format[render_target_num] == SHADER_RENDER_TARGET_FORMAT_R11G11B10_FLOAT)
@@ -338,7 +338,7 @@ uint_fast8_t shader_directx_12_init(struct ShaderCommon* shader_common, struct A
   return 0;
 }
 
-uint_fast8_t shader_compute_directx_12_init(struct ShaderCommon* shader, struct APICommon* api_common) {
+u8 shader_compute_directx_12_init(struct ShaderCommon* shader, struct APICommon* api_common) {
   return 0;
 }
 
@@ -378,15 +378,15 @@ void shader_directx_12_delete(struct ShaderCommon* shader_common, struct APIComm
   // shader_common->shader_directx12.srv_gpu_handle = (D3D12_GPU_DESCRIPTOR_HANDLE){0};
 }
 
-void shader_directx_12_resize(struct ShaderCommon* shader_common, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale) {
+void shader_directx_12_resize(struct ShaderCommon* shader_common, struct APICommon* api_common, u32 width, u32 height, u8 supersample_scale) {
   shader_common->shader_directx12.viewport.TopLeftX = 0.0f;
   shader_common->shader_directx12.viewport.TopLeftY = 0.0f;
   if (shader_common->shader_settings.supersampled) {
-    shader_common->shader_directx12.viewport.Width = (float)(width * supersample_scale);
-    shader_common->shader_directx12.viewport.Height = (float)(height * supersample_scale);
+    shader_common->shader_directx12.viewport.Width = (r32)(width * supersample_scale);
+    shader_common->shader_directx12.viewport.Height = (r32)(height * supersample_scale);
   } else {
-    shader_common->shader_directx12.viewport.Width = (float)(width);
-    shader_common->shader_directx12.viewport.Height = (float)(height);
+    shader_common->shader_directx12.viewport.Width = (r32)(width);
+    shader_common->shader_directx12.viewport.Height = (r32)(height);
   }
   shader_common->shader_directx12.viewport.MinDepth = 0.0f;
   shader_common->shader_directx12.viewport.MaxDepth = 1.0f;

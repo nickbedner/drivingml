@@ -92,9 +92,9 @@ void outputSineWave(void) {
   if (FAILED(hr))
     return;
 
-  bool stop = false;
+  b8 stop = FALSE;
   // Start time at 0
-  double time = 0.0;
+  r64 time = 0.0;
 
   UINT32 max_frames;
   hr = client->lpVtbl->GetBufferSize(client, &max_frames);
@@ -138,19 +138,19 @@ void outputSineWave(void) {
       else
         return;
     }
-    double float_sample_rate = format->nSamplesPerSec;
-    double seconds_per_frame = 1.0 / float_sample_rate;
+    r64 float_sample_rate = format->nSamplesPerSec;
+    r64 seconds_per_frame = 1.0 / float_sample_rate;
 
     // Generate a sine wave and output it to the buffer
-    double pitch = 220.0;
-    double radians_per_second = pitch * 2.0 * M_PI;
-    for (uint32_t j = 0; j < frames; j++) {
+    r64 pitch = 220.0;
+    r64 radians_per_second = pitch * 2.0 * M_PI;
+    for (u32 j = 0; j < frames; j++) {
       // Generate a sample value using the sin() function
-      // float frequency = MIN_FREQUENCY + (time * sweep_rate) * (MAX_FREQUENCY - MIN_FREQUENCY);
-      // float phase = frequency * j / format->nSamplesPerSec * 2 * PI;
-      // float sample = amplitude * sin(phase);
+      // r32 frequency = MIN_FREQUENCY + (time * sweep_rate) * (MAX_FREQUENCY - MIN_FREQUENCY);
+      // r32 phase = frequency * j / format->nSamplesPerSec * 2 * PI;
+      // r32 sample = amplitude * sin(phase);
 
-      double sample = sin((time + j * seconds_per_frame) * radians_per_second);
+      r64 sample = sin((time + j * seconds_per_frame) * radians_per_second);
 
       // Note: Turns sine wave into square wave
       // if (sample > 0.5)
@@ -158,7 +158,7 @@ void outputSineWave(void) {
       // else
       //  sample = 0.0;
 
-      for (uint8_t channel = 0; channel < format->nChannels; channel++) {
+      for (u8 channel = 0; channel < format->nChannels; channel++) {
         if (format->wBitsPerSample == 8)
           ((INT8 *)buffer)[j * format->nChannels + channel] = (INT8)(sample * 127);
         else if (format->wBitsPerSample == 16)
@@ -169,7 +169,7 @@ void outputSineWave(void) {
           ((INT8 *)buffer)[(j * format->nChannels + channel) * 3 + 1] = (INT8)((sample24 >> 8) & 0xFF);
           ((INT8 *)buffer)[(j * format->nChannels + channel) * 3 + 2] = (INT8)((sample24 >> 16) & 0xFF);
         } else if (format->wBitsPerSample == 32)
-          ((float *)buffer)[j * format->nChannels + channel] = (float)(sample);
+          ((r32 *)buffer)[j * format->nChannels + channel] = (r32)(sample);
       }
     }
 
@@ -178,7 +178,7 @@ void outputSineWave(void) {
     if (FAILED(hr))
       return;
 
-    // time += (float)frames / (float)format->nSamplesPerSec;
+    // time += (r32)frames / (r32)format->nSamplesPerSec;
     time += seconds_per_frame * frames;
     Sleep(6);
   }
@@ -208,22 +208,22 @@ int load_audio(char *file, struct AudioClip *clip) {
 
   // Allocate memory for samples
   if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 8) {
-    clip->samples.int8 = (int8_t *)malloc(clip->header.subchunk2_size);
+    clip->samples.int8 = (i8 *)malloc(clip->header.subchunk2_size);
     memcpy(clip->samples.int8, wav_file + sizeof(struct WAVHeader), clip->header.subchunk2_size);
   } else if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 16) {
-    clip->samples.int16 = (int16_t *)malloc(clip->header.subchunk2_size);
+    clip->samples.int16 = (i16 *)malloc(clip->header.subchunk2_size);
     memcpy(clip->samples.int16, wav_file + sizeof(struct WAVHeader), clip->header.subchunk2_size);
   } else if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 24) {
-    clip->samples.int32 = (int32_t *)malloc(clip->header.subchunk2_size);
+    clip->samples.int32 = (i32 *)malloc(clip->header.subchunk2_size);
     memcpy(clip->samples.int32, wav_file + sizeof(struct WAVHeader), clip->header.subchunk2_size);
     const size_t samples = (clip->header.subchunk2_size / (clip->header.bits_per_sample / 8)) / clip->header.num_channels;
     for (size_t sample = 0; sample < samples; sample++)
       clip->samples.int32[sample] >>= 8;
   } else if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 32) {
-    clip->samples.int32 = (int32_t *)malloc(clip->header.subchunk2_size);
+    clip->samples.int32 = (i32 *)malloc(clip->header.subchunk2_size);
     memcpy(clip->samples.int8, wav_file + sizeof(struct WAVHeader), clip->header.subchunk2_size);
   } else if (clip->header.audio_format == 3 && clip->header.bits_per_sample == 32) {
-    clip->samples.float32 = (float *)malloc(clip->header.subchunk2_size);
+    clip->samples.float32 = (r32 *)malloc(clip->header.subchunk2_size);
     memcpy(clip->samples.int8, wav_file + sizeof(struct WAVHeader), clip->header.subchunk2_size);
   }
 

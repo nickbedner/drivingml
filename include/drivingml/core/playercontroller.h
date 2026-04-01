@@ -9,7 +9,7 @@
 
 #define TOTAL_DRIVINGML_ACTIONS 32
 
-static const uint_fast8_t PLAYER_CONTROLLER_DEFAULT_GAMECUBE_BINDINGS[TOTAL_DRIVINGML_ACTIONS + 1] = {
+global const u8 PLAYER_CONTROLLER_DEFAULT_GAMECUBE_BINDINGS[TOTAL_DRIVINGML_ACTIONS + 1] = {
     GC_CONTROLLER_ACTION_JOYSTICK_Y,
     GC_CONTROLLER_ACTION_JOYSTICK_Y,
     GC_CONTROLLER_ACTION_JOYSTICK_X,
@@ -45,7 +45,7 @@ static const uint_fast8_t PLAYER_CONTROLLER_DEFAULT_GAMECUBE_BINDINGS[TOTAL_DRIV
     GC_CONTROLLER_ACTION_LAST,
 };
 
-/*static const unint_fast8_t PLAYER_CONTROLLER_DEFAULT_KEYBOARD_BINDINGS[TOTAL_DRIVINGML_ACTIONS + 1] = {
+/*global const unint_fast8_t PLAYER_CONTROLLER_DEFAULT_KEYBOARD_BINDINGS[TOTAL_DRIVINGML_ACTIONS + 1] = {
     KB_CONTROLLER_ACTION_W,
     KB_CONTROLLER_ACTION_S,
     KB_CONTROLLER_ACTION_A,
@@ -124,4 +124,4 @@ struct PlayerController {
 void player_controller_init(struct PlayerController* player_controller);
 void player_controller_delete(struct PlayerController* player_controller);
 // Should action and value
-void player_controller_process_input(struct PlayerController* player_controller, struct ControllerAction* controller_action_list, uint_fast8_t controller_action_list_size);
+void player_controller_process_input(struct PlayerController* player_controller, struct ControllerAction* controller_action_list, u8 controller_action_list_size);

@@ -6,7 +6,7 @@ int main(int argc, char* argv[]) {
   log_message(LOG_SEVERITY_INFO, "Starting Driving ML...\n");
 
   struct DrivingML drivingml = {0};
-  const uint_fast8_t drivingml_error = drivingml_init(&drivingml);
+  const u8 drivingml_error = drivingml_init(&drivingml);
 
   switch (drivingml_error) {
     case (DRIVINGML_SUCCESS): {

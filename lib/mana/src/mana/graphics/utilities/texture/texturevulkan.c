@@ -1,31 +1,31 @@
 #include "mana/graphics/utilities/texture/texturevulkan.h"
 
-uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, void* pixels) {
+u8 texture_vulkan_init(struct TextureCommon* texture_common, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, void* pixels) {
   struct TextureSettings texture_settings = texture_common->texture_settings;
 
-  uint32_t layer_count = texture_common->layer_count > 0 ? texture_common->layer_count : 1;
+  u32 layer_count = texture_common->layer_count > 0 ? texture_common->layer_count : 1;
 
   // build packed pixel buffer if custom mip chain
   void* upload_pixels = pixels;
-  uint8_t mip_count = 1;
+  u8 mip_count = 1;
 
   // Keep custom mip loading only for normal 2D textures for now.
   if (layer_count == 1 && texture_common->texture_settings.mip_type == MIP_CUSTOM) {
     mip_count = texture_common->texture_settings.mip_count;
     if (mip_count < 1) mip_count = 1;
 
-    uint32_t bytes_per_channel_local = (texture_common->bit_depth == 16) ? 2 : 1;
+    u32 bytes_per_channel_local = (texture_common->bit_depth == 16) ? 2 : 1;
 
     VkDeviceSize total = 0;
-    for (uint32_t level = 0; level < mip_count; level++) {
-      uint32_t w = texture_common->width >> level;
+    for (u32 level = 0; level < mip_count; level++) {
+      u32 w = texture_common->width >> level;
       if (!w) w = 1;
-      uint32_t h = texture_common->height >> level;
+      u32 h = texture_common->height >> level;
       if (!h) h = 1;
       total += (VkDeviceSize)w * (VkDeviceSize)h * (VkDeviceSize)texture_common->channels * (VkDeviceSize)bytes_per_channel_local;
     }
 
-    uint8_t* combined = (uint8_t*)malloc((size_t)total);
+    u8* combined = (u8*)malloc((size_t)total);
     if (!combined) {
       log_message(LOG_SEVERITY_ERROR, "Failed to alloc combined mip buffer\n");
       return 1;
@@ -36,7 +36,7 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
     memcpy(combined + off, pixels, (size_t)sz0);
     off += sz0;
 
-    for (uint8_t level = 1; level < mip_count; level++) {
+    for (u8 level = 1; level < mip_count; level++) {
       char* mip_path = texture_common_build_mip_path(texture_common->path, level);
       if (!mip_path) {
         free(combined);
@@ -44,8 +44,8 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
         return 1;
       }
 
-      uint32_t wl = 0, hl = 0, chl = 0;
-      uint8_t bitl = 0, ctl = 0;
+      u32 wl = 0, hl = 0, chl = 0;
+      u8 bitl = 0, ctl = 0;
       void* pixelsL = png_loader_read_png(mip_path, api_common->asset_directory, &wl, &hl, &chl, &bitl, &ctl);
       free(mip_path);
 
@@ -63,9 +63,9 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
         return 1;
       }
 
-      uint32_t exp_w = texture_common->width >> level;
+      u32 exp_w = texture_common->width >> level;
       if (!exp_w) exp_w = 1;
-      uint32_t exp_h = texture_common->height >> level;
+      u32 exp_h = texture_common->height >> level;
       if (!exp_h) exp_h = 1;
       if (wl != exp_w || hl != exp_h) {
         free(pixelsL);
@@ -111,8 +111,8 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
 #pragma clang diagnostic pop
   }
 
-  uint8_t bytes_per_channel = 1;
-  uint8_t channels = 4;
+  u8 bytes_per_channel = 1;
+  u8 channels = 4;
   VkFormat format = VK_FORMAT_UNDEFINED;
   switch (texture_settings.format_type) {
     case FORMAT_R8_UNORM: {
@@ -159,10 +159,10 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
 #pragma clang diagnostic pop
   }
 
-  uint32_t mip_levels = 1;
+  u32 mip_levels = 1;
   if (layer_count == 1) {
     if (texture_settings.mip_type == MIP_GENERATE)
-      mip_levels = (uint32_t)(floor(log2(MAX(texture_common->width, texture_common->height)))) + 1;
+      mip_levels = (u32)(floor(log2(MAX(texture_common->width, texture_common->height)))) + 1;
     else if (texture_settings.mip_type == MIP_CUSTOM)
       mip_levels = texture_settings.mip_count;
   }
@@ -171,9 +171,9 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
   if (layer_count > 1) {
     image_size = (VkDeviceSize)texture_common->width * (VkDeviceSize)texture_common->height * (VkDeviceSize)channels * (VkDeviceSize)bytes_per_channel * (VkDeviceSize)layer_count;
   } else if (texture_settings.mip_type == MIP_CUSTOM) {
-    for (uint32_t level = 0; level < mip_levels; level++) {
-      uint32_t w = texture_common->width >> level;
-      uint32_t h = texture_common->height >> level;
+    for (u32 level = 0; level < mip_levels; level++) {
+      u32 w = texture_common->width >> level;
+      u32 h = texture_common->height >> level;
 
       if (w == 0) w = 1;
       if (h == 0) h = 1;
@@ -187,7 +187,7 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
   VkBuffer staging_buffer = {0};
   VkDeviceMemory staging_buffer_memory = {0};
 
-  uint8_t buffer_result = vulkan_graphics_utils_create_buffer(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging_buffer, &staging_buffer_memory);
+  u8 buffer_result = vulkan_graphics_utils_create_buffer(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging_buffer, &staging_buffer_memory);
 
   if (buffer_result != VULKAN_API_SUCCESS || staging_buffer == VK_NULL_HANDLE || staging_buffer_memory == VK_NULL_HANDLE) {
     log_message(LOG_SEVERITY_ERROR, "Failed to create staging buffer (image_size=%llu, width=%u, height=%u, layers=%u, channels=%u, bytes_per_channel=%u)\n", (unsigned long long)image_size, texture_common->width, texture_common->height, layer_count, channels, bytes_per_channel);
@@ -224,7 +224,7 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
     VkDeviceSize frame_size = (VkDeviceSize)texture_common->width * (VkDeviceSize)texture_common->height * (VkDeviceSize)channels * (VkDeviceSize)bytes_per_channel;
     VkCommandBuffer cmd = vulkan_graphics_utils_begin_single_time_commands(api_common->vulkan_api.device, api_common->vulkan_api.command_pool);
 
-    for (uint32_t layer = 0; layer < layer_count; layer++) {
+    for (u32 layer = 0; layer < layer_count; layer++) {
       VkBufferImageCopy region = {0};
       region.bufferOffset = frame_size * layer;
       region.bufferRowLength = 0;
@@ -251,9 +251,9 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
 
     VkDeviceSize offset = 0;
 
-    for (uint32_t level = 0; level < mip_levels; level++) {
-      uint32_t w = texture_common->width >> level;
-      uint32_t h = texture_common->height >> level;
+    for (u32 level = 0; level < mip_levels; level++) {
+      u32 w = texture_common->width >> level;
+      u32 h = texture_common->height >> level;
 
       if (w == 0) w = 1;
       if (h == 0) h = 1;
@@ -296,7 +296,7 @@ uint8_t texture_vulkan_init(struct TextureCommon* texture_common, struct Texture
   VkFilter mag_filter = VK_FILTER_NEAREST;
   VkSamplerMipmapMode mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
   VkBool32 anisotropy_enable_vulkan = VK_FALSE;
-  float max_anisotropy = 1.0f;
+  r32 max_anisotropy = 1.0f;
 
   switch (texture_settings.filter_type) {
     case FILTER_NEAREST: {

@@ -9,7 +9,7 @@
 
 #ifdef VULKAN_API_SUPPORTED
 struct TextureManagerVulkan {
-  uint_fast8_t placeholder;
+  u8 placeholder;
 };
 #endif
 

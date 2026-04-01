@@ -6,15 +6,15 @@
 
 int main() {
   // Open the output file
-  FILE *f = fopen("sin_table.h", "w");
+  FILE* f = fopen("sin_table.h", "w");
 
   // Print the preprocessor define to the output file
   fprintf(f, "#define %s {", TABLE_NAME);
 
   // Generate the table
   for (int i = 0; i < TABLE_SIZE; i++) {
-    double x = (M_PI * i) / (TABLE_SIZE / 2);
-    double y = sin(x);
+    r64 x = (M_PI * i) / (TABLE_SIZE / 2);
+    r64 y = sin(x);
     fprintf(f, "%ff, ", y);
   }
 

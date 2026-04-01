@@ -11,30 +11,30 @@ struct Queue {
   void** items;
 };
 
-static inline void queue_init(struct Queue* queue, size_t capacity) {
+global inline void queue_init(struct Queue* queue, size_t capacity) {
   queue->capacity = capacity;
   queue->size = queue->front = 0;
   queue->back = capacity - 1;
   queue->items = (void**)malloc(sizeof(void*) * capacity);
 }
 
-static inline void queue_delete(struct Queue* queue) {
+global inline void queue_delete(struct Queue* queue) {
   free(queue->items);
 }
 
-static inline size_t queue_size(struct Queue* queue) {
+global inline size_t queue_size(struct Queue* queue) {
   return queue->size;
 }
 
-static inline int queue_empty(struct Queue* queue) {
+global inline int queue_empty(struct Queue* queue) {
   return queue->size == 0;
 }
 
-static inline int queue_full(struct Queue* queue) {
+global inline int queue_full(struct Queue* queue) {
   return queue->size == queue->capacity;
 }
 
-static inline void queue_push(struct Queue* queue, void* item) {
+global inline void queue_push(struct Queue* queue, void* item) {
   if (queue->size == queue->capacity)
     return;
 
@@ -43,7 +43,7 @@ static inline void queue_push(struct Queue* queue, void* item) {
   queue->size++;
 }
 
-static inline void* queue_pop(struct Queue* queue) {
+global inline void* queue_pop(struct Queue* queue) {
   if (queue_empty(queue))
     return NULL;
 
@@ -54,21 +54,21 @@ static inline void* queue_pop(struct Queue* queue) {
   return item_data;
 }
 
-static inline void* queue_front(struct Queue* queue) {
+global inline void* queue_front(struct Queue* queue) {
   if (queue_empty(queue))
     return NULL;
 
   return queue->items[queue->front];
 }
 
-static inline void* queue_back(struct Queue* queue) {
+global inline void* queue_back(struct Queue* queue) {
   if (queue_empty(queue))
     return NULL;
 
   return queue->items[queue->back];
 }
 
-static inline void queue_clear(struct Queue* queue) {
+global inline void queue_clear(struct Queue* queue) {
   queue->size = queue->front = 0;
   queue->back = queue->capacity - 1;
 }

@@ -1,12 +1,12 @@
 #include "mana/graphics/render/gbuffer/gbufferdirectx12.h"
 
 // NOTE: This function is used for DirectX 12 error handling init
-static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
+internal u8 gbuffer_directx_12_init_wrapper(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   ID3D12Device* device = api_common->directx_12_api.device;
   HRESULT hr;
 
-  uint32_t gbuffer_width = swap_chain_common->swap_chain_extent.width * swap_chain_common->supersample_scale;
-  uint32_t gbuffer_height = swap_chain_common->swap_chain_extent.height * swap_chain_common->supersample_scale;
+  u32 gbuffer_width = swap_chain_common->swap_chain_extent.width * swap_chain_common->supersample_scale;
+  u32 gbuffer_height = swap_chain_common->swap_chain_extent.height * swap_chain_common->supersample_scale;
 
   DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
@@ -26,8 +26,8 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon* gbuffe
 
   gbuffer_common->gbuffer_directx12.viewport.TopLeftX = 0.0f;
   gbuffer_common->gbuffer_directx12.viewport.TopLeftY = 0.0f;
-  gbuffer_common->gbuffer_directx12.viewport.Width = (float)gbuffer_width;
-  gbuffer_common->gbuffer_directx12.viewport.Height = (float)gbuffer_height;
+  gbuffer_common->gbuffer_directx12.viewport.Width = (r32)gbuffer_width;
+  gbuffer_common->gbuffer_directx12.viewport.Height = (r32)gbuffer_height;
   gbuffer_common->gbuffer_directx12.viewport.MinDepth = 0.0f;  // typically 0.0f
   gbuffer_common->gbuffer_directx12.viewport.MaxDepth = 1.0f;  // typically 1.0f
 
@@ -296,7 +296,7 @@ static uint_fast8_t gbuffer_directx_12_init_wrapper(struct GBufferCommon* gbuffe
   return 0;
 }
 
-uint_fast8_t gbuffer_directx_12_init(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
+u8 gbuffer_directx_12_init(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   if (gbuffer_directx_12_init_wrapper(gbuffer_common, api_common, swap_chain_common, msaa_samples)) {
     directx_12_graphics_utils_poll_debug_messages(&(api_common->directx_12_api));
     return 1;
@@ -367,14 +367,14 @@ void gbuffer_directx_12_delete(struct GBufferCommon* gbuffer_common, struct APIC
   }
 }
 
-uint_fast8_t gbuffer_directx_12_resize(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
+u8 gbuffer_directx_12_resize(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   gbuffer_directx_12_delete(gbuffer_common, api_common, msaa_samples);
   gbuffer_directx_12_init(gbuffer_common, api_common, swap_chain_common, msaa_samples);
 
   return 0;
 }
 
-uint_fast8_t gbuffer_directx_12_start(struct GBufferCommon* gbuffer_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
+u8 gbuffer_directx_12_start(struct GBufferCommon* gbuffer_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   // Reset command allocator and then the command list
   gbuffer_common->gbuffer_directx12.command_allocator->lpVtbl->Reset(gbuffer_common->gbuffer_directx12.command_allocator);
   gbuffer_common->gbuffer_directx12.command_list->lpVtbl->Reset(gbuffer_common->gbuffer_directx12.command_list, gbuffer_common->gbuffer_directx12.command_allocator, NULL);
@@ -442,7 +442,7 @@ uint_fast8_t gbuffer_directx_12_start(struct GBufferCommon* gbuffer_common, stru
   return 0;
 }
 
-uint_fast8_t gbuffer_directx_12_stop(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, const uint_fast32_t msaa_samples) {
+u8 gbuffer_directx_12_stop(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, const uint_fast32_t msaa_samples) {
   // Possibly set barriers or any other synchronization primitives required for DirectX12. This is a common step but specifics can vary based on the exact workflow.
   D3D12_RESOURCE_BARRIER barriers[5];
   memset(barriers, 0, sizeof(barriers));

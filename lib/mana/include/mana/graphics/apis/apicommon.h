@@ -75,8 +75,8 @@ struct DirectX12API {
 
 #ifdef VULKAN_API_SUPPORTED
 struct QueueFamilyIndices {
-  uint32_t graphics_family;
-  uint32_t present_family;
+  u32 graphics_family;
+  u32 present_family;
 };
 
 struct VulkanAPI {
@@ -103,9 +103,9 @@ struct APICommon {
 
   enum API_TYPE api_type;
 
-  bool inverted_y;
+  b8 inverted_y;
   // Note: Padding for array alignment
-  uint8_t _pad0[3];
+  u8 _pad0[3];
 
   char asset_directory[MAX_LENGTH_OF_PATH];
 };

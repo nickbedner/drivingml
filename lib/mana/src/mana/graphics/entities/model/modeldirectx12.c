@@ -27,7 +27,7 @@ void model_directx_12_clone_init(struct ModelCommon* model_common, struct APICom
 void model_directx_12_clone_delete(struct ModelCommon* model_common, struct APICommon* api_common) {
 }
 
-void model_directx_12_render(struct ModelCommon* model_common, struct GBuffer* gbuffer, double delta_time) {
+void model_directx_12_render(struct ModelCommon* model_common, struct GBuffer* gbuffer, r64 delta_time) {
   if (model_common->animated)
     animator_update(model_common->animator, delta_time);
 

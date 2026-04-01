@@ -8,8 +8,8 @@
 #define SWAP_CHAIN_UPDATE_FRAMERBUFFER 1
 
 struct SwapchainExtent {
-  uint32_t width;
-  uint32_t height;
+  u32 width;
+  u32 height;
 };
 
 #ifdef VULKAN_API_SUPPORTED
@@ -46,7 +46,7 @@ struct SwapChainVulkan {
   VkDescriptorSet descriptor_set[POST_PROCESS_PING_PONG];
 
   VkFormat swap_chain_image_format;
-  uint32_t swap_chain_image_count;
+  u32 swap_chain_image_count;
 };
 #endif
 
@@ -98,8 +98,8 @@ struct SwapChainCommon {
   };
 
   // Smaller fields last
-  uint32_t image_index;
-  uint_fast8_t descriptors;
-  uint_fast8_t supersample_scale;
-  bool vsync;
+  u32 image_index;
+  u8 descriptors;
+  u8 supersample_scale;
+  b8 vsync;
 };

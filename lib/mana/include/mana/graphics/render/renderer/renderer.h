@@ -9,19 +9,19 @@
 #endif
 
 struct RendererFunc {
-  uint8_t (*renderer_init)(struct APICommon *, struct Surface *, struct SwapChain *, struct GBuffer *, struct PostProcess *, struct RendererSettings *);
-  void (*renderer_delete)(struct APICommon *, struct Surface *, struct SwapChain *, struct GBuffer *, struct PostProcess *, struct RendererSettings *);
-  void (*renderer_wait_for_device)(struct APICommon *);
+  u8 (*renderer_init)(struct APICommon*, struct Surface*, struct SwapChain*, struct GBuffer*, struct PostProcess*, struct RendererSettings*);
+  void (*renderer_delete)(struct APICommon*, struct Surface*, struct SwapChain*, struct GBuffer*, struct PostProcess*, struct RendererSettings*);
+  void (*renderer_wait_for_device)(struct APICommon*);
 };
 
 #ifdef VULKAN_API_SUPPORTED
-static const struct RendererFunc VULKAN_RENDERER = {vulkan_renderer_init, vulkan_renderer_delete, vulkan_renderer_wait_for_device};
+global const struct RendererFunc VULKAN_RENDERER = {vulkan_renderer_init, vulkan_renderer_delete, vulkan_renderer_wait_for_device};
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-static const struct RendererFunc DIRECTX_12_RENDERER = {directx_12_renderer_init, directx_12_renderer_delete, directx_12_renderer_wait_for_device};
+global const struct RendererFunc DIRECTX_12_RENDERER = {directx_12_renderer_init, directx_12_renderer_delete, directx_12_renderer_wait_for_device};
 #endif
 #ifdef METAL_API
-static const struct Renderer METAL_RENDERER = {NULL, NULL};
+global const struct Renderer METAL_RENDERER = {NULL, NULL};
 #endif
 
 struct Renderer {
@@ -29,6 +29,6 @@ struct Renderer {
   struct RendererSettings renderer_settings;
 };
 
-uint8_t renderer_init(struct Renderer *renderer, struct APICommon *api_common, struct Surface *surface, struct SwapChain *swap_chain, struct GBuffer *gbuffer, struct PostProcess *post_process);
-void renderer_delete(struct Renderer *renderer, struct APICommon *api_common, struct Surface *surface, struct SwapChain *swap_chain, struct GBuffer *gbuffer, struct PostProcess *post_process);
-void renderer_wait_for_device(struct Renderer *renderer, struct APICommon *api_common);
+u8 renderer_init(struct Renderer* renderer, struct APICommon* api_common, struct Surface* surface, struct SwapChain* swap_chain, struct GBuffer* gbuffer, struct PostProcess* post_process);
+void renderer_delete(struct Renderer* renderer, struct APICommon* api_common, struct Surface* surface, struct SwapChain* swap_chain, struct GBuffer* gbuffer, struct PostProcess* post_process);
+void renderer_wait_for_device(struct Renderer* renderer, struct APICommon* api_common);

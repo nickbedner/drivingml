@@ -11,31 +11,31 @@
 #define DEFAULT_PERLIN_POSITION_Y 0.0
 #define DEFAULT_PERLIN_POSITION_Z 0.0
 #define DEFAULT_PERLIN_STEP 1.0 / 256.0
-#define DEFAULT_PERLIN_PARALLEL false
+#define DEFAULT_PERLIN_PARALLEL FALSE
 #define DEFAULT_PERLIN_QUALITY QUALITY_STANDARD
 
 struct PerlinNoise {
-  float frequency;
-  float lacunarity;
-  float persistence;
+  r32 frequency;
+  r32 lacunarity;
+  r32 persistence;
   unsigned char octave_count;
   int seed;
-  float position[3];
-  float step;
-  bool parallel;
-  float *(*perlin_func)(struct PerlinNoise *, size_t, size_t, size_t);
+  r32 position[3];
+  r32 step;
+  b8 parallel;
+  r32* (*perlin_func)(struct PerlinNoise*, size_t, size_t, size_t);
   enum NoiseQuality noise_quality;
 };
 
-static inline float perlin_noise_eval(struct PerlinNoise *perlin_noise, float x_pos, float y_pos, float z_pos);
-static inline float *perlin_noise_eval_3d_fallback(struct PerlinNoise *perlin_noise, size_t x_size, size_t y_size, size_t z_size);
-static inline float *perlin_noise_eval_3d_sse2(struct PerlinNoise *perlin_noise, size_t x_size, size_t y_size, size_t z_size);
-static inline float *perlin_noise_eval_3d_sse4_1(struct PerlinNoise *perlin_noise, size_t x_size, size_t y_size, size_t z_size);
-static inline float *perlin_noise_eval_3d_avx(struct PerlinNoise *perlin_noise, size_t x_size, size_t y_size, size_t z_size);
-static inline float *perlin_noise_eval_3d_avx2(struct PerlinNoise *perlin_noise, size_t x_size, size_t y_size, size_t z_size);
-static inline float *perlin_noise_eval_3d_avx512(struct PerlinNoise *perlin_noise, size_t x_size, size_t y_size, size_t z_size);
+global inline r32 perlin_noise_eval(struct PerlinNoise* perlin_noise, r32 x_pos, r32 y_pos, r32 z_pos);
+global inline r32* perlin_noise_eval_3d_fallback(struct PerlinNoise* perlin_noise, size_t x_size, size_t y_size, size_t z_size);
+global inline r32* perlin_noise_eval_3d_sse2(struct PerlinNoise* perlin_noise, size_t x_size, size_t y_size, size_t z_size);
+global inline r32* perlin_noise_eval_3d_sse4_1(struct PerlinNoise* perlin_noise, size_t x_size, size_t y_size, size_t z_size);
+global inline r32* perlin_noise_eval_3d_avx(struct PerlinNoise* perlin_noise, size_t x_size, size_t y_size, size_t z_size);
+global inline r32* perlin_noise_eval_3d_avx2(struct PerlinNoise* perlin_noise, size_t x_size, size_t y_size, size_t z_size);
+global inline r32* perlin_noise_eval_3d_avx512(struct PerlinNoise* perlin_noise, size_t x_size, size_t y_size, size_t z_size);
 
-static inline void perlin_noise_init(struct PerlinNoise *perlin_noise) {
+global inline void perlin_noise_init(struct PerlinNoise* perlin_noise) {
   perlin_noise->frequency = DEFAULT_PERLIN_FREQUENCY;
   perlin_noise->lacunarity = DEFAULT_PERLIN_LACUNARITY;
   perlin_noise->persistence = DEFAULT_PERLIN_PERSISTENCE;
@@ -49,17 +49,17 @@ static inline void perlin_noise_init(struct PerlinNoise *perlin_noise) {
   perlin_noise->parallel = DEFAULT_PERLIN_PARALLEL;
 }
 
-static inline float perlin_noise_eval(struct PerlinNoise *perlin_noise, float x_pos, float y_pos, float z_pos) {
-  float x = perlin_noise->position[0] * perlin_noise->frequency;
-  float y = perlin_noise->position[1] * perlin_noise->frequency;
-  float z = perlin_noise->position[2] * perlin_noise->frequency;
+global inline r32 perlin_noise_eval(struct PerlinNoise* perlin_noise, r32 x_pos, r32 y_pos, r32 z_pos) {
+  r32 x = perlin_noise->position[0] * perlin_noise->frequency;
+  r32 y = perlin_noise->position[1] * perlin_noise->frequency;
+  r32 z = perlin_noise->position[2] * perlin_noise->frequency;
 
-  float value = 0.0;
-  float cur_persistence = 1.0;
+  r32 value = 0.0;
+  r32 cur_persistence = 1.0;
 
-  for (uint_fast8_t cur_octave = 0; cur_octave < perlin_noise->octave_count; cur_octave++) {
+  for (u8 cur_octave = 0; cur_octave < perlin_noise->octave_count; cur_octave++) {
     int cur_seed = (perlin_noise->seed + cur_octave) & 0xffffffff;
-    float signal = gradient_coherent_noise_3d(x, y, z, cur_seed);
+    r32 signal = gradient_coherent_noise_3d(x, y, z, cur_seed);
     value += signal * cur_persistence;
 
     x *= perlin_noise->lacunarity;
@@ -72,30 +72,30 @@ static inline float perlin_noise_eval(struct PerlinNoise *perlin_noise, float x_
   return value;
 }
 
-static inline float *perlin_noise_eval_3d_fallback(struct PerlinNoise *perlin_noise, size_t x_size, size_t y_size, size_t z_size) {
+global inline r32* perlin_noise_eval_3d_fallback(struct PerlinNoise* perlin_noise, size_t x_size, size_t y_size, size_t z_size) {
 #ifdef CUSTOM_ALLOCATOR
-  float *noise_set = malloc(sizeof(float) * x_size * y_size * z_size);
+  r32* noise_set = malloc(sizeof(r32) * x_size * y_size * z_size);
 #else
-  float *noise_set = noise_allocate(sizeof(float), sizeof(float) * x_size * y_size * z_size);
+  r32* noise_set = noise_allocate(sizeof(r32), sizeof(r32) * x_size * y_size * z_size);
 #endif
   // #pragma omp parallel for collapse(3) if (perlin_noise->parallel)
   for (int z_dim = 0; z_dim < z_size; z_dim++) {
     for (int y_dim = 0; y_dim < y_size; y_dim++) {
       for (int x_dim = 0; x_dim < x_size; x_dim++) {
-        float x = (perlin_noise->position[0] * perlin_noise->frequency) + (x_dim * perlin_noise->step);
-        float y = (perlin_noise->position[1] * perlin_noise->frequency) + (y_dim * perlin_noise->step);
-        float z = (perlin_noise->position[2] * perlin_noise->frequency) + (z_dim * perlin_noise->step);
+        r32 x = (perlin_noise->position[0] * perlin_noise->frequency) + (x_dim * perlin_noise->step);
+        r32 y = (perlin_noise->position[1] * perlin_noise->frequency) + (y_dim * perlin_noise->step);
+        r32 z = (perlin_noise->position[2] * perlin_noise->frequency) + (z_dim * perlin_noise->step);
 
-        float value = 0.0;
-        float cur_persistence = 1.0;
+        r32 value = 0.0;
+        r32 cur_persistence = 1.0;
 
         for (int cur_octave = 0; cur_octave < perlin_noise->octave_count; cur_octave++) {
-          float nx = make_int_32_range(x);
-          float ny = make_int_32_range(y);
-          float nz = make_int_32_range(z);
+          r32 nx = make_int_32_range(x);
+          r32 ny = make_int_32_range(y);
+          r32 nz = make_int_32_range(z);
 
           int cur_seed = (perlin_noise->seed + cur_octave) & 0xffffffff;
-          float signal = gradient_coherent_noise_3d(nx, ny, nz, cur_seed, perlin_noise->noise_quality);
+          r32 signal = gradient_coherent_noise_3d(nx, ny, nz, cur_seed, perlin_noise->noise_quality);
           value += signal * cur_persistence;
 
           x *= perlin_noise->lacunarity;
@@ -114,23 +114,23 @@ static inline float *perlin_noise_eval_3d_fallback(struct PerlinNoise *perlin_no
 
 #ifdef __arm64__
 #else
-static inline float *perlin_noise_eval_3d_sse2(struct PerlinNoise *perlin_noise, size_t x_size, size_t y_size, size_t z_size) {
-  float *noise_set = noise_allocate(sizeof(__m128), sizeof(float) * x_size * y_size * z_size);
+global inline r32* perlin_noise_eval_3d_sse2(struct PerlinNoise* perlin_noise, size_t x_size, size_t y_size, size_t z_size) {
+  r32* noise_set = noise_allocate(sizeof(__m128), sizeof(r32) * x_size * y_size * z_size);
   // #pragma omp parallel for collapse(3) if (perlin_noise->parallel)
   for (int z_dim = 0; z_dim < z_size; z_dim++) {
     for (int y_dim = 0; y_dim < y_size; y_dim++) {
       for (int x_dim = 0; x_dim < x_size; x_dim += 4) {
         __m128 x_vec = _mm_mul_ps(_mm_add_ps(_mm_set1_ps(perlin_noise->position[0]), _mm_mul_ps(_mm_set_ps(x_dim + 3.0, x_dim + 2.0, x_dim + 1.0, x_dim), _mm_set1_ps(perlin_noise->step))), _mm_set1_ps(perlin_noise->frequency));
-        float y = (perlin_noise->position[1] + (y_dim * perlin_noise->step)) * perlin_noise->frequency;
-        float z = (perlin_noise->position[2] + (z_dim * perlin_noise->step)) * perlin_noise->frequency;
+        r32 y = (perlin_noise->position[1] + (y_dim * perlin_noise->step)) * perlin_noise->frequency;
+        r32 z = (perlin_noise->position[2] + (z_dim * perlin_noise->step)) * perlin_noise->frequency;
 
         __m128 value = _mm_set1_ps(0.0);
-        float cur_persistence = 1.0;
+        r32 cur_persistence = 1.0;
 
         for (int cur_octave = 0; cur_octave < perlin_noise->octave_count; cur_octave++) {
           __m128 nx = make_int_32_range_sse2(x_vec);
-          float ny = make_int_32_range(y);
-          float nz = make_int_32_range(z);
+          r32 ny = make_int_32_range(y);
+          r32 nz = make_int_32_range(z);
 
           int cur_seed = (perlin_noise->seed + cur_octave) & 0xffffffff;
           __m128 signal = gradient_coherent_noise_3d_sse2(nx, ny, nz, cur_seed, perlin_noise->noise_quality);
@@ -150,23 +150,23 @@ static inline float *perlin_noise_eval_3d_sse2(struct PerlinNoise *perlin_noise,
   return noise_set;
 }
 
-static inline float *perlin_noise_eval_3d_sse4_1(struct PerlinNoise *perlin_noise, size_t x_size, size_t y_size, size_t z_size) {
-  float *noise_set = noise_allocate(sizeof(__m128), sizeof(float) * x_size * y_size * z_size);
+global inline r32* perlin_noise_eval_3d_sse4_1(struct PerlinNoise* perlin_noise, size_t x_size, size_t y_size, size_t z_size) {
+  r32* noise_set = noise_allocate(sizeof(__m128), sizeof(r32) * x_size * y_size * z_size);
   // #pragma omp parallel for collapse(3) if (perlin_noise->parallel)
   for (int z_dim = 0; z_dim < z_size; z_dim++) {
     for (int y_dim = 0; y_dim < y_size; y_dim++) {
       for (int x_dim = 0; x_dim < x_size; x_dim += 4) {
         __m128 x_vec = _mm_mul_ps(_mm_add_ps(_mm_set1_ps(perlin_noise->position[0]), _mm_mul_ps(_mm_set_ps(x_dim + 3.0, x_dim + 2.0, x_dim + 1.0, x_dim), _mm_set1_ps(perlin_noise->step))), _mm_set1_ps(perlin_noise->frequency));
-        float y = (perlin_noise->position[1] + (y_dim * perlin_noise->step)) * perlin_noise->frequency;
-        float z = (perlin_noise->position[2] + (z_dim * perlin_noise->step)) * perlin_noise->frequency;
+        r32 y = (perlin_noise->position[1] + (y_dim * perlin_noise->step)) * perlin_noise->frequency;
+        r32 z = (perlin_noise->position[2] + (z_dim * perlin_noise->step)) * perlin_noise->frequency;
 
         __m128 value = _mm_set1_ps(0.0);
-        float cur_persistence = 1.0;
+        r32 cur_persistence = 1.0;
 
         for (int cur_octave = 0; cur_octave < perlin_noise->octave_count; cur_octave++) {
           __m128 nx = make_int_32_range_sse2(x_vec);
-          float ny = make_int_32_range(y);
-          float nz = make_int_32_range(z);
+          r32 ny = make_int_32_range(y);
+          r32 nz = make_int_32_range(z);
 
           int cur_seed = (perlin_noise->seed + cur_octave) & 0xffffffff;
           __m128 signal = gradient_coherent_noise_3d_sse4_1(nx, ny, nz, cur_seed, perlin_noise->noise_quality);
@@ -186,23 +186,23 @@ static inline float *perlin_noise_eval_3d_sse4_1(struct PerlinNoise *perlin_nois
   return noise_set;
 }
 
-static inline float *perlin_noise_eval_3d_avx(struct PerlinNoise *perlin_noise, size_t x_size, size_t y_size, size_t z_size) {
-  float *noise_set = noise_allocate(sizeof(__m256), sizeof(float) * x_size * y_size * z_size);
+global inline r32* perlin_noise_eval_3d_avx(struct PerlinNoise* perlin_noise, size_t x_size, size_t y_size, size_t z_size) {
+  r32* noise_set = noise_allocate(sizeof(__m256), sizeof(r32) * x_size * y_size * z_size);
   // #pragma omp parallel for collapse(3) if (perlin_noise->parallel)
   for (int z_dim = 0; z_dim < z_size; z_dim++) {
     for (int y_dim = 0; y_dim < y_size; y_dim++) {
       for (int x_dim = 0; x_dim < x_size; x_dim += 8) {
         __m256 x_vec = _mm256_mul_ps(_mm256_add_ps(_mm256_set1_ps(perlin_noise->position[0]), _mm256_mul_ps(_mm256_set_ps(x_dim + 7.0, x_dim + 6.0, x_dim + 5.0, x_dim + 4.0, x_dim + 3.0, x_dim + 2.0, x_dim + 1.0, x_dim), _mm256_set1_ps(perlin_noise->step))), _mm256_set1_ps(perlin_noise->frequency));
-        float y = (perlin_noise->position[1] + (y_dim * perlin_noise->step)) * perlin_noise->frequency;
-        float z = (perlin_noise->position[2] + (z_dim * perlin_noise->step)) * perlin_noise->frequency;
+        r32 y = (perlin_noise->position[1] + (y_dim * perlin_noise->step)) * perlin_noise->frequency;
+        r32 z = (perlin_noise->position[2] + (z_dim * perlin_noise->step)) * perlin_noise->frequency;
 
         __m256 value = _mm256_set1_ps(0.0);
-        float cur_persistence = 1.0;
+        r32 cur_persistence = 1.0;
 
         for (int cur_octave = 0; cur_octave < perlin_noise->octave_count; cur_octave++) {
           __m256 nx = make_int_32_range_avx(x_vec);
-          float ny = make_int_32_range(y);
-          float nz = make_int_32_range(z);
+          r32 ny = make_int_32_range(y);
+          r32 nz = make_int_32_range(z);
 
           int cur_seed = (perlin_noise->seed + cur_octave) & 0xffffffff;
           __m256 signal = gradient_coherent_noise_3d_avx(nx, ny, nz, cur_seed, perlin_noise->noise_quality);
@@ -222,23 +222,23 @@ static inline float *perlin_noise_eval_3d_avx(struct PerlinNoise *perlin_noise, 
   return noise_set;
 }
 
-static inline float *perlin_noise_eval_3d_avx2(struct PerlinNoise *perlin_noise, size_t x_size, size_t y_size, size_t z_size) {
-  float *noise_set = noise_allocate(sizeof(__m256), sizeof(float) * x_size * y_size * z_size);
+global inline r32* perlin_noise_eval_3d_avx2(struct PerlinNoise* perlin_noise, size_t x_size, size_t y_size, size_t z_size) {
+  r32* noise_set = noise_allocate(sizeof(__m256), sizeof(r32) * x_size * y_size * z_size);
   // #pragma omp parallel for collapse(3) if (perlin_noise->parallel)
   for (int z_dim = 0; z_dim < z_size; z_dim++) {
     for (int y_dim = 0; y_dim < y_size; y_dim++) {
       for (int x_dim = 0; x_dim < x_size; x_dim += 8) {
         __m256 x_vec = _mm256_mul_ps(_mm256_add_ps(_mm256_set1_ps(perlin_noise->position[0]), _mm256_mul_ps(_mm256_set_ps(x_dim + 7.0, x_dim + 6.0, x_dim + 5.0, x_dim + 4.0, x_dim + 3.0, x_dim + 2.0, x_dim + 1.0, x_dim), _mm256_set1_ps(perlin_noise->step))), _mm256_set1_ps(perlin_noise->frequency));
-        float y = (perlin_noise->position[1] + (y_dim * perlin_noise->step)) * perlin_noise->frequency;
-        float z = (perlin_noise->position[2] + (z_dim * perlin_noise->step)) * perlin_noise->frequency;
+        r32 y = (perlin_noise->position[1] + (y_dim * perlin_noise->step)) * perlin_noise->frequency;
+        r32 z = (perlin_noise->position[2] + (z_dim * perlin_noise->step)) * perlin_noise->frequency;
 
         __m256 value = _mm256_set1_ps(0.0);
-        float cur_persistence = 1.0;
+        r32 cur_persistence = 1.0;
 
         for (int cur_octave = 0; cur_octave < perlin_noise->octave_count; cur_octave++) {
           __m256 nx = make_int_32_range_avx(x_vec);
-          float ny = make_int_32_range(y);
-          float nz = make_int_32_range(z);
+          r32 ny = make_int_32_range(y);
+          r32 nz = make_int_32_range(z);
 
           int cur_seed = (perlin_noise->seed + cur_octave) & 0xffffffff;
           __m256 signal = gradient_coherent_noise_3d_avx2(nx, ny, nz, cur_seed, perlin_noise->noise_quality);

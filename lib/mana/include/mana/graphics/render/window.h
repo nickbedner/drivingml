@@ -16,14 +16,14 @@ struct Window {
   struct Surface surface;
   struct InputManager input_manager;
 
-  float delta_time;
+  r32 delta_time;
 
-  bool framebuffer_resized;
-  bool should_resize;
-  bool new_window;
-  bool minimized;
-  bool should_close;
-  bool vsync;
+  b8 framebuffer_resized;
+  b8 should_resize;
+  b8 new_window;
+  b8 minimized;
+  b8 should_close;
+  b8 vsync;
 };
 
 enum {
@@ -32,7 +32,7 @@ enum {
   WINDOW_LAST_ERROR
 };
 
-uint_fast8_t window_init(struct Window* window, struct APICommon* api_common, char* title, struct RendererSettings* renderer_settings);
+u8 window_init(struct Window* window, struct APICommon* api_common, char* title, struct RendererSettings* renderer_settings);
 void window_delete(struct Window* window);
 void window_prepare_frame(struct Window* window);
 void window_end_frame(struct Window* window);

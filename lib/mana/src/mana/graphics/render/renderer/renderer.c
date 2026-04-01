@@ -1,6 +1,6 @@
 #include "mana/graphics/render/renderer/renderer.h"
 
-uint8_t renderer_init(struct Renderer* renderer, struct APICommon* api_common, struct Surface* surface, struct SwapChain* swap_chain, struct GBuffer* gbuffer, struct PostProcess* post_process) {
+u8 renderer_init(struct Renderer* renderer, struct APICommon* api_common, struct Surface* surface, struct SwapChain* swap_chain, struct GBuffer* gbuffer, struct PostProcess* post_process) {
 #ifdef VULKAN_API_SUPPORTED
   if (api_common->api_type == API_VULKAN)
     renderer->renderer_func = VULKAN_RENDERER;

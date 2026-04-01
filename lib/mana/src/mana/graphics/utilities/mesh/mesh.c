@@ -1,6 +1,6 @@
 #include "mana/graphics/utilities/mesh/mesh.h"
 
-uint_fast8_t mesh_init(struct Mesh* mesh, enum MESH_TYPE mesh_type, struct APICommon* api_common) {
+u8 mesh_init(struct Mesh* mesh, enum MESH_TYPE mesh_type, struct APICommon* api_common) {
 #ifdef VULKAN_API_SUPPORTED
   if (api_common->api_type == API_VULKAN)
     mesh->mesh_func = MESH_VULKAN;
@@ -10,7 +10,7 @@ uint_fast8_t mesh_init(struct Mesh* mesh, enum MESH_TYPE mesh_type, struct APICo
     mesh->mesh_func = MESH_DIRECTX12;
 #endif
 
-  uint32_t mesh_memory_size = 0;
+  u32 mesh_memory_size = 0;
   switch (mesh_type) {
     case MESH_TYPE_SPRITE: {
       mesh_memory_size = sizeof(struct VertexSprite);
@@ -59,7 +59,7 @@ uint_fast8_t mesh_init(struct Mesh* mesh, enum MESH_TYPE mesh_type, struct APICo
   vector_init(mesh->mesh_common.vertices, mesh_memory_size);
 
   mesh->mesh_common.indices = (struct Vector*)calloc(1, sizeof(struct Vector));
-  vector_init(mesh->mesh_common.indices, sizeof(uint32_t));
+  vector_init(mesh->mesh_common.indices, sizeof(u32));
 
   mesh->mesh_func.mesh_init(&(mesh->mesh_common), mesh_type, api_common);
 
@@ -76,8 +76,8 @@ void mesh_delete(struct Mesh* mesh, struct APICommon* api_common) {
   free(mesh->mesh_common.indices);
 }
 
-uint32_t mesh_get_memory_size(enum MESH_TYPE mesh_type) {
-  uint32_t mesh_memory_size = 0;
+u32 mesh_get_memory_size(enum MESH_TYPE mesh_type) {
+  u32 mesh_memory_size = 0;
   switch (mesh_type) {
     case MESH_TYPE_SPRITE: {
       return mesh_memory_size = sizeof(struct VertexSprite);
@@ -133,7 +133,7 @@ void mesh_assign_vertex(struct Mesh* mesh, void* vertex) {
   vector_push_back(mesh->mesh_common.vertices, vertex);
 }
 
-void mesh_assign_indice(struct Mesh* mesh, uint32_t indice) {
+void mesh_assign_indice(struct Mesh* mesh, u32 indice) {
   vector_push_back(mesh->mesh_common.indices, &indice);
 }
 

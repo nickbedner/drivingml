@@ -14,8 +14,8 @@ struct ResolveShader {
   // 2 is resolve 3x
   // 3 is resolve 4x
   struct Shader shader[4];
-  void *extra_data;
+  void* extra_data;
 };
 
-uint_fast8_t resolve_shader_init(struct ResolveShader *resolve_shader, struct APICommon *apu_api, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, uint_fast8_t num_textures, uint_fast8_t descriptors, enum MESH_TYPE mesh_type);
-void resolve_shader_delete(struct ResolveShader *resolve_shader, struct APICommon *apu_api);
+u8 resolve_shader_init(struct ResolveShader* resolve_shader, struct APICommon* apu_api, u32 width, u32 height, u8 supersample_scale, u8 num_textures, u8 descriptors, enum MESH_TYPE mesh_type);
+void resolve_shader_delete(struct ResolveShader* resolve_shader, struct APICommon* apu_api);

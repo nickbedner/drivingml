@@ -1,11 +1,11 @@
 #include "mana/graphics/render/window.h"
 
-static LRESULT CALLBACK window_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param);
+internal LRESULT CALLBACK window_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param);
 
 #ifdef _WIN64
-static uint8_t window_pc_window(struct Window* window, uint_fast32_t width, uint_fast32_t height) {
-  window->new_window = true;
-  window->minimized = false;
+internal u8 window_pc_window(struct Window* window, uint_fast32_t width, uint_fast32_t height) {
+  window->new_window = TRUE;
+  window->minimized = FALSE;
   window->surface.hinstance = GetModuleHandle(NULL);
   MultiByteToWideChar(CP_UTF8, 0, window->title, -1, window->surface.class_name, 256);
 
@@ -54,13 +54,13 @@ static uint8_t window_pc_window(struct Window* window, uint_fast32_t width, uint
 
   ShowWindow(window->surface.hwnd, SW_SHOW);
   UpdateWindow(window->surface.hwnd);
-  window->new_window = false;
+  window->new_window = FALSE;
 
   return WINDOW_SUCCESS;
 }
 #endif
 
-static LRESULT CALLBACK window_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param) {
+internal LRESULT CALLBACK window_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param) {
   LONG_PTR value = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
   struct Window* window = (struct Window*)value;
 
@@ -68,12 +68,12 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARA
   switch (u_msg) {
     case WM_SIZE: {
       // Note: Hack to stop recreating swap chain on window creation
-      window->framebuffer_resized = (window->new_window) ? false : true;
-      window->minimized = (w_param == SIZE_MINIMIZED) ? true : false;
+      window->framebuffer_resized = (window->new_window) ? FALSE : TRUE;
+      window->minimized = (w_param == SIZE_MINIMIZED) ? TRUE : FALSE;
       break;
     }
     case WM_CLOSE: {
-      window->should_close = true;
+      window->should_close = TRUE;
       break;
     }
     case WM_DESTROY: {
@@ -87,19 +87,19 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARA
       keyboard_mouse_controller_move->mouse_x_pos = GET_X_LPARAM(l_param);
       keyboard_mouse_controller_move->mouse_y_pos = GET_Y_LPARAM(l_param);
 
-      if (keyboard_mouse_controller_move->show_cursor == false)
+      if (keyboard_mouse_controller_move->show_cursor == FALSE)
         SetCursor(NULL);
       else
         SetCursor(LoadCursorW(NULL, IDC_ARROW));
 
-      if (keyboard_mouse_controller_move->lock_cursor == true) {
+      if (keyboard_mouse_controller_move->lock_cursor == TRUE) {
         POINT current_cursor_pos;
         GetCursorPos(&current_cursor_pos);
 
         vec2 center = input_manager_move_cursor_to_center(&(window->input_manager), &window->surface);
 
-        keyboard_mouse_controller_move->mouse_x_pos_diff = (double)(current_cursor_pos.x - (LONG)center.x);
-        keyboard_mouse_controller_move->mouse_y_pos_diff = (double)(current_cursor_pos.y - (LONG)center.y);
+        keyboard_mouse_controller_move->mouse_x_pos_diff = (r64)(current_cursor_pos.x - (LONG)center.x);
+        keyboard_mouse_controller_move->mouse_y_pos_diff = (r64)(current_cursor_pos.y - (LONG)center.y);
       } else {
         keyboard_mouse_controller_move->mouse_x_pos_diff = keyboard_mouse_controller_move->mouse_x_pos - keyboard_mouse_controller_move->mouse_x_pos_prev;
         keyboard_mouse_controller_move->mouse_y_pos_diff = keyboard_mouse_controller_move->mouse_y_pos - keyboard_mouse_controller_move->mouse_y_pos_prev;
@@ -124,7 +124,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARA
   return result;
 }
 
-uint_fast8_t window_init(struct Window* window, struct APICommon* api_common, char* title, struct RendererSettings* renderer_settings) {
+u8 window_init(struct Window* window, struct APICommon* api_common, char* title, struct RendererSettings* renderer_settings) {
   window->title = title;
   window->api_common = api_common;
   window->renderer.renderer_settings.width = renderer_settings->width;
@@ -187,9 +187,9 @@ void window_prepare_frame(struct Window* window) {
 
 void window_end_frame(struct Window* window) {
   if (!window->minimized) {
-    uint_fast8_t result = window->swap_chain->swap_chain_func.swap_chain_end_frame(&(window->swap_chain->swap_chain_common), &(window->post_process->post_process_common), window->api_common);
+    u8 result = window->swap_chain->swap_chain_func.swap_chain_end_frame(&(window->swap_chain->swap_chain_common), &(window->post_process->post_process_common), window->api_common);
     if (result == SWAP_CHAIN_UPDATE_FRAMERBUFFER || window->framebuffer_resized) {
-      window->framebuffer_resized = false;
+      window->framebuffer_resized = FALSE;
       RECT rect;
       if (GetClientRect(window->surface.hwnd, &rect)) {
         window->renderer.renderer_settings.width = (uint_fast32_t)(rect.right - rect.left);
@@ -197,7 +197,7 @@ void window_end_frame(struct Window* window) {
       }
       if (!IsIconic(window->surface.hwnd)) {
         window_recreate_swap_chain(window);
-        window->should_resize = true;
+        window->should_resize = TRUE;
       }
     } else if (result != VK_SUCCESS)
       fprintf(stderr, "failed to present swap chain image!\n");

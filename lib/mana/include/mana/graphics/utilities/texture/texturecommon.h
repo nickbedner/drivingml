@@ -40,10 +40,10 @@ struct TextureSettings {
   enum FormatType format_type;
   enum MipType mip_type;
 
-  float max_anisotropy;
+  r32 max_anisotropy;
 
-  uint8_t mip_count;
-  uint8_t premultiplied_alpha;
+  u8 mip_count;
+  u8 premultiplied_alpha;
 };
 
 #ifdef VULKAN_API_SUPPORTED
@@ -90,18 +90,18 @@ struct TextureCommon {
   struct TextureManagerCommon* texture_manager_common;
   struct TextureSettings texture_settings;
 
-  uint32_t width;
-  uint32_t height;
-  uint32_t channels;
-  uint32_t layer_count;
-  uint32_t mip_levels;
+  u32 width;
+  u32 height;
+  u32 channels;
+  u32 layer_count;
+  u32 mip_levels;
   enum TextureDimension dimension;
-  bool is_array;
+  b8 is_array;
 
-  uint8_t bit_depth;
+  u8 bit_depth;
 };
 
-static inline char* texture_common_build_mip_path(const char* base_path, uint8_t level) {
+internal inline char* texture_common_build_mip_path(const char* base_path, u8 level) {
   // base_path is something like: "/textures/waterm1.png"
 
   char* out = _strdup(base_path);

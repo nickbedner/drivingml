@@ -14,12 +14,12 @@ struct SwapChainSupportDetails {
   struct VkSurfaceCapabilitiesKHR capabilities;
 };
 
-uint_fast8_t swap_chain_vulkan_init(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, uint_fast32_t width, uint_fast32_t height, bool vsync, void* extra_data);
+u8 swap_chain_vulkan_init(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, uint_fast32_t width, uint_fast32_t height, b8 vsync, void* extra_data);
 void swap_chain_vulkan_delete(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common);
-uint_fast8_t swap_chain_vulkan_resize(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common);
+u8 swap_chain_vulkan_resize(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common);
 void swap_chain_vulkan_prepare_delete(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common);
-uint_fast8_t swap_chain_vulkan_blit_init(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, struct PostProcessCommon* post_process_common);
-uint_fast8_t swap_chain_vulkan_blit_update(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, struct PostProcessCommon* post_process_common);
-uint_fast8_t swap_chain_vulkan_blit_render(struct SwapChainCommon* swap_chain_common, struct PostProcessCommon* post_process_common, uint_fast8_t swap_chain_num);
-bool swap_chain_vulkan_wait_for_fences(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, size_t frame);
-uint_fast8_t swap_chain_vulkan_end_frame(struct SwapChainCommon* swap_chain_common, struct PostProcessCommon* post_process_common, struct APICommon* api_common);
+u8 swap_chain_vulkan_blit_init(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, struct PostProcessCommon* post_process_common);
+u8 swap_chain_vulkan_blit_update(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, struct PostProcessCommon* post_process_common);
+u8 swap_chain_vulkan_blit_render(struct SwapChainCommon* swap_chain_common, struct PostProcessCommon* post_process_common, u8 swap_chain_num);
+b8 swap_chain_vulkan_wait_for_fences(struct SwapChainCommon* swap_chain_common, struct APICommon* api_common, size_t frame);
+u8 swap_chain_vulkan_end_frame(struct SwapChainCommon* swap_chain_common, struct PostProcessCommon* post_process_common, struct APICommon* api_common);

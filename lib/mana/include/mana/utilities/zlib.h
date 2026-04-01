@@ -13,15 +13,15 @@
 
 typedef struct
 {
-  uint16_t fast[1 << ZFAST_BITS];
-  uint16_t firstcode[16];
+  u16 fast[1 << ZFAST_BITS];
+  u16 firstcode[16];
   int maxcode[17];
-  uint16_t firstsymbol[16];
-  uint8_t size[ZNSYMS];
-  uint16_t value[ZNSYMS];
+  u16 firstsymbol[16];
+  u8 size[ZNSYMS];
+  u16 value[ZNSYMS];
 } zhuffman;
 
-inline static int32_t bitreverse16(int32_t n) {
+inline global i32 bitreverse16(i32 n) {
   n = ((n & 0xAAAA) >> 1) | ((n & 0x5555) << 1);
   n = ((n & 0xCCCC) >> 2) | ((n & 0x3333) << 2);
   n = ((n & 0xF0F0) >> 4) | ((n & 0x0F0F) << 4);
@@ -29,13 +29,13 @@ inline static int32_t bitreverse16(int32_t n) {
   return n;
 }
 
-inline static int32_t bit_reverse(int32_t v, int32_t bits) {
+inline global i32 bit_reverse(i32 v, i32 bits) {
   return bitreverse16(v) >> (16 - bits);
 }
 
-static int32_t zbuild_huffman(zhuffman* z, const uint8_t* sizelist, int32_t num) {
-  int32_t i, k = 0;
-  int32_t code, next_code[16], sizes[17];
+global i32 zbuild_huffman(zhuffman* z, const u8* sizelist, i32 num) {
+  i32 i, k = 0;
+  i32 code, next_code[16], sizes[17];
 
   // DEFLATE spec for generating codes
   memset(sizes, 0, sizeof(sizes));
@@ -49,8 +49,8 @@ static int32_t zbuild_huffman(zhuffman* z, const uint8_t* sizelist, int32_t num)
   code = 0;
   for (i = 1; i < 16; ++i) {
     next_code[i] = code;
-    z->firstcode[i] = (uint16_t)code;
-    z->firstsymbol[i] = (uint16_t)k;
+    z->firstcode[i] = (u16)code;
+    z->firstsymbol[i] = (u16)k;
     code = (code + sizes[i]);
     if (sizes[i])
       if (code - 1 >= (1 << i))
@@ -61,14 +61,14 @@ static int32_t zbuild_huffman(zhuffman* z, const uint8_t* sizelist, int32_t num)
   }
   z->maxcode[16] = 0x10000;  // sentinel
   for (i = 0; i < num; ++i) {
-    int32_t s = sizelist[i];
+    i32 s = sizelist[i];
     if (s) {
-      int32_t c = next_code[s] - z->firstcode[s] + z->firstsymbol[s];
-      uint16_t fastv = (uint16_t)((s << 9) | i);
-      z->size[c] = (uint8_t)s;
-      z->value[c] = (uint16_t)i;
+      i32 c = next_code[s] - z->firstcode[s] + z->firstsymbol[s];
+      u16 fastv = (u16)((s << 9) | i);
+      z->size[c] = (u8)s;
+      z->value[c] = (u16)i;
       if (s <= ZFAST_BITS) {
-        int32_t j = bit_reverse(next_code[s], s);
+        i32 j = bit_reverse(next_code[s], s);
         while (j < (1 << ZFAST_BITS)) {
           z->fast[j] = fastv;
           j += (1 << s);
@@ -82,27 +82,27 @@ static int32_t zbuild_huffman(zhuffman* z, const uint8_t* sizelist, int32_t num)
 
 typedef struct
 {
-  uint8_t *zbuffer, *zbuffer_end;
-  int32_t num_bits;
-  uint32_t code_buffer;
+  u8 *zbuffer, *zbuffer_end;
+  i32 num_bits;
+  u32 code_buffer;
 
-  int8_t* zout;
-  int8_t* zout_start;
-  int8_t* zout_end;
-  int32_t z_expandable;
+  i8* zout;
+  i8* zout_start;
+  i8* zout_end;
+  i32 z_expandable;
 
   zhuffman z_length, z_distance;
 } zbuf;
 
-inline static int32_t zeof(zbuf* z) {
+inline global i32 zeof(zbuf* z) {
   return (z->zbuffer >= z->zbuffer_end);
 }
 
-inline static uint8_t zget8(zbuf* z) {
+inline global u8 zget8(zbuf* z) {
   return zeof(z) ? 0 : *z->zbuffer++;
 }
 
-static void fill_bits(zbuf* z) {
+global void fill_bits(zbuf* z) {
   do {
     if (z->code_buffer >= (1U << z->num_bits)) {
       z->zbuffer = z->zbuffer_end; /* treat this as EOF so we fail. */
@@ -113,8 +113,8 @@ static void fill_bits(zbuf* z) {
   } while (z->num_bits <= 24);
 }
 
-inline static uint32_t zreceive(zbuf* z, int32_t n) {
-  uint32_t k;
+inline global u32 zreceive(zbuf* z, i32 n) {
+  u32 k;
   if (z->num_bits < n)
     fill_bits(z);
   k = z->code_buffer & ((1 << n) - 1);
@@ -123,11 +123,11 @@ inline static uint32_t zreceive(zbuf* z, int32_t n) {
   return k;
 }
 
-static int32_t zhuffman_decode_slowpath(zbuf* a, zhuffman* z) {
-  int32_t b, s, k;
+global i32 zhuffman_decode_slowpath(zbuf* a, zhuffman* z) {
+  i32 b, s, k;
   // not resolved by fast table, so compute it the slow way
   // use jpeg approach, which requires MSbits at top
-  k = bit_reverse((int32_t)a->code_buffer, 16);
+  k = bit_reverse((i32)a->code_buffer, 16);
   for (s = ZFAST_BITS + 1;; ++s)
     if (k < z->maxcode[s])
       break;
@@ -144,8 +144,8 @@ static int32_t zhuffman_decode_slowpath(zbuf* a, zhuffman* z) {
   return z->value[b];
 }
 
-inline static int32_t zhuffman_decode(zbuf* a, zhuffman* z) {
-  int32_t b, s;
+inline global i32 zhuffman_decode(zbuf* a, zhuffman* z) {
+  i32 b, s;
   if (a->num_bits < 16) {
     if (zeof(a)) {
       return -1; /* report error for unexpected end of data. */
@@ -162,10 +162,10 @@ inline static int32_t zhuffman_decode(zbuf* a, zhuffman* z) {
   return zhuffman_decode_slowpath(a, z);
 }
 
-static int32_t zexpand(zbuf* z, int8_t* zout, int32_t n)  // need to make room for n bytes
+global i32 zexpand(zbuf* z, i8* zout, i32 n)  // need to make room for n bytes
 {
-  int8_t* q;
-  uint32_t cur, limit, old_limit;
+  i8* q;
+  u32 cur, limit, old_limit;
   z->zout = zout;
   if (!z->z_expandable) {
     log_message(LOG_SEVERITY_ERROR, "Output buffer limit: Corrupt PNG");
@@ -179,7 +179,7 @@ static int32_t zexpand(zbuf* z, int8_t* zout, int32_t n)  // need to make room f
     return 1;
   }
 
-  while (cur + (uint32_t)n > limit) {
+  while (cur + (u32)n > limit) {
     if (limit > UINT_MAX / 2) {
       log_message(LOG_SEVERITY_ERROR, "Out of memory");
       return 1;
@@ -187,7 +187,7 @@ static int32_t zexpand(zbuf* z, int8_t* zout, int32_t n)  // need to make room f
 
     limit *= 2;
   }
-  q = (int8_t*)realloc(z->zout_start, limit);
+  q = (i8*)realloc(z->zout_start, limit);
   if (q == NULL) {
     log_message(LOG_SEVERITY_ERROR, "Out of memory");
     return 1;
@@ -200,16 +200,16 @@ static int32_t zexpand(zbuf* z, int8_t* zout, int32_t n)  // need to make room f
   return 1;
 }
 
-static const int zlength_base[31] = {3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, 0, 0};
-static const int zlength_extra[31] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0, 0, 0};
-static const int zdist_base[32] = {1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577, 0, 0};
-static const int zdist_extra[32] = {0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13};
+global const int zlength_base[31] = {3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, 0, 0};
+global const int zlength_extra[31] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0, 0, 0};
+global const int zdist_base[32] = {1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577, 0, 0};
+global const int zdist_extra[32] = {0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13};
 
-static int32_t parse_huffman_block(zbuf* a) {
-  int8_t* zout = a->zout;
+global i32 parse_huffman_block(zbuf* a) {
+  i8* zout = a->zout;
 
-  while (true) {
-    int32_t z = zhuffman_decode(a, &a->z_length);
+  while (TRUE) {
+    i32 z = zhuffman_decode(a, &a->z_length);
 
     if (z < 256) {
       if (z < 0) {
@@ -224,8 +224,8 @@ static int32_t parse_huffman_block(zbuf* a) {
 
       *zout++ = (char)z;
     } else {
-      uint8_t* p;
-      int32_t len, dist;
+      u8* p;
+      i32 len, dist;
 
       if (z == 256) {
         a->zout = zout;
@@ -259,19 +259,19 @@ static int32_t parse_huffman_block(zbuf* a) {
         zout = a->zout;
       }
 
-      p = (uint8_t*)(zout - dist);
+      p = (u8*)(zout - dist);
 
       if (dist == 1) {  // run of one byte; common in images.
-        uint8_t v = *p;
+        u8 v = *p;
         if (len) {
           do
-            *zout++ = (int8_t)v;
+            *zout++ = (i8)v;
           while (--len);
         }
       } else {
         if (len) {
           do
-            *zout++ = (int8_t)(*p++);
+            *zout++ = (i8)(*p++);
           while (--len);
         }
       }
@@ -279,45 +279,45 @@ static int32_t parse_huffman_block(zbuf* a) {
   }
 }
 
-static int compute_huffman_codes(zbuf* a) {
-  static const uint8_t length_dezigzag[19] = {16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
+global int compute_huffman_codes(zbuf* a) {
+  global const u8 length_dezigzag[19] = {16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
   zhuffman z_codelength;
-  uint8_t lencodes[286 + 32 + 137];  // padding for maximum single op
-  uint8_t codelength_sizes[19];
-  int32_t i, n;
+  u8 lencodes[286 + 32 + 137];  // padding for maximum single op
+  u8 codelength_sizes[19];
+  i32 i, n;
 
-  int32_t hlit = (int32_t)zreceive(a, 5) + 257;
-  int32_t hdist = (int32_t)zreceive(a, 5) + 1;
-  int32_t hclen = (int32_t)zreceive(a, 4) + 4;
-  int32_t ntot = hlit + hdist;
+  i32 hlit = (i32)zreceive(a, 5) + 257;
+  i32 hdist = (i32)zreceive(a, 5) + 1;
+  i32 hclen = (i32)zreceive(a, 4) + 4;
+  i32 ntot = hlit + hdist;
 
   memset(codelength_sizes, 0, sizeof(codelength_sizes));
   for (i = 0; i < hclen; ++i) {
-    int32_t s = (int32_t)zreceive(a, 3);
-    codelength_sizes[length_dezigzag[i]] = (uint8_t)s;
+    i32 s = (i32)zreceive(a, 3);
+    codelength_sizes[length_dezigzag[i]] = (u8)s;
   }
   if (!zbuild_huffman(&z_codelength, codelength_sizes, 19))
     return 0;
 
   n = 0;
   while (n < ntot) {
-    int32_t c = zhuffman_decode(a, &z_codelength);
+    i32 c = zhuffman_decode(a, &z_codelength);
     if (c < 0 || c >= 19)
       return 1;  // err("bad codelengths", "Corrupt PNG");
 
     if (c < 16)
-      lencodes[n++] = (uint8_t)c;
+      lencodes[n++] = (u8)c;
     else {
-      uint8_t fill = 0;
+      u8 fill = 0;
       if (c == 16) {
-        c = (int32_t)zreceive(a, 2) + 3;
+        c = (i32)zreceive(a, 2) + 3;
         if (n == 0)
           return 1;  // err("bad codelengths", "Corrupt PNG");
         fill = lencodes[n - 1];
       } else if (c == 17)
-        c = (int32_t)zreceive(a, 3) + 3;
+        c = (i32)zreceive(a, 3) + 3;
       else if (c == 18)
-        c = (int32_t)zreceive(a, 7) + 11;
+        c = (i32)zreceive(a, 7) + 11;
       else
         return 1;  // err("bad codelengths", "Corrupt PNG");
 
@@ -337,15 +337,15 @@ static int compute_huffman_codes(zbuf* a) {
   return 1;
 }
 
-static int parse_uncompressed_block(zbuf* a) {
-  uint8_t header[4];
+global int parse_uncompressed_block(zbuf* a) {
+  u8 header[4];
   int len, nlen, k;
   if (a->num_bits & 7)
     zreceive(a, a->num_bits & 7);  // discard
   // drain the bit-packed data into header
   k = 0;
   while (a->num_bits > 0) {
-    header[k++] = (uint8_t)(a->code_buffer & 255);  // suppress MSVC run-time check
+    header[k++] = (u8)(a->code_buffer & 255);  // suppress MSVC run-time check
     a->code_buffer >>= 8;
     a->num_bits -= 8;
   }
@@ -369,7 +369,7 @@ static int parse_uncompressed_block(zbuf* a) {
   return 1;
 }
 
-static int parse_zlib_header(zbuf* a) {
+global int parse_zlib_header(zbuf* a) {
   int cmf = zget8(a);
   int cm = cmf & 15;
   /* int cinfo = cmf >> 4; */
@@ -386,27 +386,27 @@ static int parse_zlib_header(zbuf* a) {
   return 1;
 }
 
-static const uint8_t zdefault_length[ZNSYMS] = {8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-                                                8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-                                                8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-                                                8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-                                                8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-                                                9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-                                                9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-                                                9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-                                                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8};
-static const uint8_t zdefault_distance[32] = {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5};
+global const u8 zdefault_length[ZNSYMS] = {8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+                                           8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+                                           8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+                                           8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+                                           8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+                                           9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+                                           9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+                                           9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+                                           7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8};
+global const u8 zdefault_distance[32] = {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5};
 
-static int parse_zlib(zbuf* a, int32_t parse_header) {
-  int32_t final, type;
+global int parse_zlib(zbuf* a, i32 parse_header) {
+  i32 final, type;
   if (parse_header)
     if (!parse_zlib_header(a))
       return 0;
   a->num_bits = 0;
   a->code_buffer = 0;
   do {
-    final = (int32_t)zreceive(a, 1);
-    type = (int32_t)zreceive(a, 2);
+    final = (i32)zreceive(a, 1);
+    type = (i32)zreceive(a, 2);
     if (type == 0) {
       if (!parse_uncompressed_block(a))
         return 0;
@@ -430,7 +430,7 @@ static int parse_zlib(zbuf* a, int32_t parse_header) {
   return 1;
 }
 
-static int32_t do_zlib(zbuf* a, int8_t* obuf, size_t olen, int32_t exp, int32_t parse_header) {
+global i32 do_zlib(zbuf* a, i8* obuf, size_t olen, i32 exp, i32 parse_header) {
   a->zout_start = obuf;
   a->zout = obuf;
   a->zout_end = obuf + olen;

@@ -27,8 +27,8 @@ struct ModelCache {
   VkDescriptorSet* model_static_descriptor_set;
 };
 
-void model_cache_init(struct ModelCache* model_cache, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, struct GBufferCommon* gbuffer_common, uint_fast8_t msaa_samples, uint_fast32_t descriptors);
+void model_cache_init(struct ModelCache* model_cache, struct APICommon* api_common, u32 width, u32 height, u8 supersample_scale, struct GBufferCommon* gbuffer_common, u8 msaa_samples, uint_fast32_t descriptors);
 void model_cache_delete(struct ModelCache* model_cache, struct APICommon* api_common);
 // void model_cache_add(struct ModelCache *model_cache, struct APICommon *api_common, size_t n_models, ...);
-void model_cache_add(struct ModelCache* model_cache, struct APICommon* api_common, struct ModelSettings* model_settings, size_t num, bool animated);
+void model_cache_add(struct ModelCache* model_cache, struct APICommon* api_common, struct ModelSettings* model_settings, size_t num, b8 animated);
 struct Model* model_cache_get(struct ModelCache* model_cache, struct APICommon* api_common, char* model_name);

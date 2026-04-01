@@ -1,13 +1,13 @@
 #include "mana/graphics/render/renderer/rendererdirectx12.h"
 
-uint8_t directx_12_renderer_init(struct APICommon *api_common, struct Surface *surface, struct SwapChain *swap_chain, struct GBuffer *gbuffer, struct PostProcess *post_process, struct RendererSettings *renderer_settings) {
+u8 directx_12_renderer_init(struct APICommon* api_common, struct Surface* surface, struct SwapChain* swap_chain, struct GBuffer* gbuffer, struct PostProcess* post_process, struct RendererSettings* renderer_settings) {
   return 0;
 }
 
-void directx_12_renderer_delete(struct APICommon *api_common, struct Surface *surface, struct SwapChain *swap_chain, struct GBuffer *gbuffer, struct PostProcess *post_process, struct RendererSettings *renderer_settings) {
+void directx_12_renderer_delete(struct APICommon* api_common, struct Surface* surface, struct SwapChain* swap_chain, struct GBuffer* gbuffer, struct PostProcess* post_process, struct RendererSettings* renderer_settings) {
 }
 
-void directx_12_renderer_wait_for_device(struct APICommon *api_common) {
+void directx_12_renderer_wait_for_device(struct APICommon* api_common) {
   // Increment the fence value.
   api_common->directx_12_api.fence_value++;
 

@@ -13,25 +13,25 @@ struct SinglyList {
   struct SinglyListNode* head;
 };
 
-static inline void singly_list_init(struct SinglyList* singly_list) {
+global inline void singly_list_init(struct SinglyList* singly_list) {
   singly_list->size = 0;
   singly_list->head = NULL;
 }
 
-static inline void singly_list_delete(struct SinglyList* singly_list) {
+global inline void singly_list_delete(struct SinglyList* singly_list) {
   if (singly_list->head != NULL)
     free(singly_list->head);
 }
 
-static inline size_t singly_list_size(struct SinglyList* singly_list) {
+global inline size_t singly_list_size(struct SinglyList* singly_list) {
   return singly_list->size;
 }
 
-static inline int singly_list_empty(struct SinglyList* singly_list) {
+global inline int singly_list_empty(struct SinglyList* singly_list) {
   return singly_list->size == 0;
 }
 
-static inline void singly_list_add(struct SinglyList* singly_list, void* item) {
+global inline void singly_list_add(struct SinglyList* singly_list, void* item) {
   struct SinglyListNode* new_node = malloc(sizeof(struct SinglyListNode));
   new_node->data = item;
 
@@ -48,7 +48,7 @@ static inline void singly_list_add(struct SinglyList* singly_list, void* item) {
   singly_list->size++;
 }
 
-static inline void singly_list_remove(struct SinglyList* singly_list, void* item) {
+global inline void singly_list_remove(struct SinglyList* singly_list, void* item) {
   if (singly_list_empty(singly_list))
     return;
 
@@ -61,7 +61,7 @@ static inline void singly_list_remove(struct SinglyList* singly_list, void* item
   singly_list->size--;
 }
 
-static inline void singly_list_remove_index(struct SinglyList* singly_list, size_t index) {
+global inline void singly_list_remove_index(struct SinglyList* singly_list, size_t index) {
   if (singly_list_empty(singly_list))
     return;
 
@@ -80,7 +80,7 @@ static inline void singly_list_remove_index(struct SinglyList* singly_list, size
   singly_list->size--;
 }
 
-static inline void* singly_list_get(struct SinglyList* singly_list) {
+global inline void* singly_list_get(struct SinglyList* singly_list) {
   if (singly_list_empty(singly_list))
     return NULL;
 
@@ -95,15 +95,15 @@ static inline void* singly_list_get(struct SinglyList* singly_list) {
   return node_data;
 }
 
-static inline void* singly_list_front(struct SinglyList* singly_list) {
+global inline void* singly_list_front(struct SinglyList* singly_list) {
   return singly_list->head->data;
 }
 
-static inline void* singly_list_back(struct SinglyList* singly_list) {
+global inline void* singly_list_back(struct SinglyList* singly_list) {
   return singly_list->tail->data;
 }
 
-static inline void singly_list_clear(struct SinglyList* singly_list) {
+global inline void singly_list_clear(struct SinglyList* singly_list) {
   struct SinglyListNode* temp_node = NULL;
   while (!singly_list_empty(singly_list)) {
     temp_node = singly_list->head->next;
@@ -115,7 +115,7 @@ static inline void singly_list_clear(struct SinglyList* singly_list) {
   singly_list->head = singly_list->tail = NULL;
 }
 
-static inline void singly_list_clear_free(struct SinglyList* singly_list) {
+global inline void singly_list_clear_free(struct SinglyList* singly_list) {
   struct SinglyListNode* temp_node = NULL;
   while (!singly_list_empty(singly_list)) {
     temp_node = singly_list->head->next;

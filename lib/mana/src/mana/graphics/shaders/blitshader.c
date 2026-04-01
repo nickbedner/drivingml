@@ -1,17 +1,17 @@
 #include "mana/graphics/shaders/blitshader.h"
 
-uint_fast8_t blit_shader_init(struct BlitShader *blit_shader, struct APICommon *api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, uint_fast8_t num_textures, uint_fast8_t descriptors, enum MESH_TYPE mesh_type) {
-  struct ShaderSettings *shader_settings = &(blit_shader->shader.shader_common.shader_settings);
+u8 blit_shader_init(struct BlitShader* blit_shader, struct APICommon* api_common, u32 width, u32 height, u8 supersample_scale, u8 num_textures, u8 descriptors, enum MESH_TYPE mesh_type) {
+  struct ShaderSettings* shader_settings = &(blit_shader->shader.shader_common.shader_settings);
   shader_settings->vertex_shader = "screenspace";
   shader_settings->fragment_shader = "blit";
   shader_settings->front_face = SHADER_FRONT_FACE_COUNTER_CLOCKWISE;
   shader_settings->cull_mode = SHADER_CULL_MODE_NONE;
-  shader_settings->depth_test = false;
-  shader_settings->supersampled = false;
+  shader_settings->depth_test = FALSE;
+  shader_settings->supersampled = FALSE;
   shader_settings->num_msaa_samples = 1;
   shader_settings->color_attachments = 1;
   shader_settings->vertex_attributes = 0;  // Note: Vertices are setup in the vertex shader
-  shader_settings->blend = false;
+  shader_settings->blend = FALSE;
   shader_settings->mesh_type = mesh_type;
   shader_settings->mesh_memory_size = mesh_get_memory_size(shader_settings->mesh_type);
   shader_settings->uniforms_constants = 1;
@@ -28,6 +28,6 @@ uint_fast8_t blit_shader_init(struct BlitShader *blit_shader, struct APICommon *
   return 0;
 }
 
-void blit_shader_delete(struct BlitShader *blit_shader, struct APICommon *api_common) {
+void blit_shader_delete(struct BlitShader* blit_shader, struct APICommon* api_common) {
   shader_delete(&(blit_shader->shader), api_common);
 }

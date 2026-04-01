@@ -16,7 +16,7 @@
 #include "drivingml/core/ac_model.h"
 #include "drivingml/core/player.h"
 
-#define EVAL_MODE true
+#define EVAL_MODE TRUE
 
 #define MAX_MARKERS 32
 #define MAX_NPCS 4
@@ -24,11 +24,11 @@
 
 struct NPC {
   struct ACModel model;
-  float speed;
+  r32 speed;
   vec3 position;
-  float heading;
-  float last_action[2];
-  float prev_y;
+  r32 heading;
+  r32 last_action[2];
+  r32 prev_y;
   int current_marker;
   struct Sprite* sprite;
 };
@@ -65,8 +65,8 @@ struct Game {
 
   vec3 starting_pos;
 
-  float previous_reward;
-  float starting_heading;
+  r32 previous_reward;
+  r32 starting_heading;
 
   int start_timer;
   int timer;
@@ -80,5 +80,5 @@ struct Game {
 
 void game_init(struct Game* game, struct Mana* mana, struct Window* window);
 void game_delete(struct Game* game, struct Mana* mana);
-void game_update(struct Game* game, struct Mana* mana, double delta_time);
-void game_render(struct Game* game, struct Mana* mana, double delta_time);
+void game_update(struct Game* game, struct Mana* mana, r64 delta_time);
+void game_render(struct Game* game, struct Mana* mana, r64 delta_time);

@@ -1,16 +1,16 @@
 #include "mana/graphics/shaders/resolveshader.h"
 
-uint_fast8_t resolve_shader_init(struct ResolveShader* resolve_shader, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, uint_fast8_t num_textures, uint_fast8_t descriptors, enum MESH_TYPE mesh_type) {
+u8 resolve_shader_init(struct ResolveShader* resolve_shader, struct APICommon* api_common, u32 width, u32 height, u8 supersample_scale, u8 num_textures, u8 descriptors, enum MESH_TYPE mesh_type) {
   struct ShaderSettings common_settings;
   common_settings.vertex_shader = "screenspace";
   common_settings.front_face = SHADER_FRONT_FACE_COUNTER_CLOCKWISE;
   common_settings.cull_mode = SHADER_CULL_MODE_NONE;
-  common_settings.depth_test = false;
-  common_settings.supersampled = false;
+  common_settings.depth_test = FALSE;
+  common_settings.supersampled = FALSE;
   common_settings.num_msaa_samples = 1;
   common_settings.color_attachments = 1;
   common_settings.vertex_attributes = 0;  // Note: Vertices are setup in the vertex shader
-  common_settings.blend = false;
+  common_settings.blend = FALSE;
   common_settings.mesh_type = mesh_type;
   common_settings.mesh_memory_size = mesh_get_memory_size(common_settings.mesh_type);
   common_settings.uniforms_constants = 1;
@@ -46,6 +46,6 @@ uint_fast8_t resolve_shader_init(struct ResolveShader* resolve_shader, struct AP
 }
 
 void resolve_shader_delete(struct ResolveShader* resolve_shader, struct APICommon* api_common) {
-  for (uint_fast8_t shader_num = 0; shader_num < 4; shader_num++)
+  for (u8 shader_num = 0; shader_num < 4; shader_num++)
     shader_delete(&(resolve_shader->shader[shader_num]), api_common);
 }

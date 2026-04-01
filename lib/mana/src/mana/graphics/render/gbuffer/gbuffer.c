@@ -2,7 +2,7 @@
 
 // TODO: Implement sample shading
 // https://vulkan-tutorial.com/Multisampling
-uint_fast8_t gbuffer_init(struct GBuffer* gbuffer, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
+u8 gbuffer_init(struct GBuffer* gbuffer, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
 #ifdef VULKAN_API_SUPPORTED
   if (api_common->api_type == API_VULKAN)
     gbuffer->gbuffer_func = VULKAN_GBUFFER;
@@ -24,18 +24,18 @@ void gbuffer_delete(struct GBuffer* gbuffer, struct APICommon* api_common, const
   gbuffer->gbuffer_func.gbuffer_delete(&(gbuffer->gbuffer_common), api_common, msaa_samples);
 }
 
-uint_fast8_t gbuffer_resize(struct GBuffer* gbuffer, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
+u8 gbuffer_resize(struct GBuffer* gbuffer, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   gbuffer->gbuffer_func.gbuffer_resize(&(gbuffer->gbuffer_common), api_common, swap_chain_common, msaa_samples);
 
   return 0;
 }
-uint_fast8_t gbuffer_start(struct GBuffer* gbuffer, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
+u8 gbuffer_start(struct GBuffer* gbuffer, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   gbuffer->gbuffer_func.gbuffer_start(&(gbuffer->gbuffer_common), swap_chain_common, msaa_samples);
 
   return 0;
 }
 
-uint_fast8_t gbuffer_stop(struct GBuffer* gbuffer, struct APICommon* api_common, const uint_fast32_t msaa_samples) {
+u8 gbuffer_stop(struct GBuffer* gbuffer, struct APICommon* api_common, const uint_fast32_t msaa_samples) {
   gbuffer->gbuffer_func.gbuffer_stop(&(gbuffer->gbuffer_common), api_common, msaa_samples);
 
   return 0;

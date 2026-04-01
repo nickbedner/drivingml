@@ -1,6 +1,6 @@
 #include "mana/graphics/entities/sprite/sprite.h"
 
-uint_fast8_t sprite_init(struct Sprite* sprite, struct APICommon* api_common, struct Shader* shader, struct Texture* texture, size_t num) {
+u8 sprite_init(struct Sprite* sprite, struct APICommon* api_common, struct Shader* shader, struct Texture* texture, size_t num) {
 #ifdef VULKAN_API_SUPPORTED
   if (api_common->api_type == API_VULKAN)
     sprite->sprite_func = VULKAN_SPRITE;
@@ -20,11 +20,11 @@ uint_fast8_t sprite_init(struct Sprite* sprite, struct APICommon* api_common, st
   sprite->sprite_common.scale = VEC3_ONE;
   sprite->sprite_common.rotation = QUAT_DEFAULT;
 
-  float tex_norm_width = (float)(texture->texture_common.width) / 100.0f;
-  float tex_norm_height = (float)(texture->texture_common.height) / 100.0f;
+  r32 tex_norm_width = (r32)(texture->texture_common.width) / 100.0f;
+  r32 tex_norm_height = (r32)(texture->texture_common.height) / 100.0f;
 
-  float tex_norm_width_half = tex_norm_width / 2.0f;
-  float tex_norm_height_half = tex_norm_height / 2.0f;
+  r32 tex_norm_width_half = tex_norm_width / 2.0f;
+  r32 tex_norm_height_half = tex_norm_height / 2.0f;
 
   sprite->sprite_common.width = tex_norm_width;
   sprite->sprite_common.height = tex_norm_height;

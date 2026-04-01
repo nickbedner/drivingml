@@ -11,7 +11,7 @@ void animator_do_animation(struct Animator* animator, struct Animation* animatio
   animator->current_animation = animation;
 }
 
-void animator_update(struct Animator* animator, double delta_time) {
+void animator_update(struct Animator* animator, r64 delta_time) {
   if (animator->current_animation == NULL)
     return;
   animator_increase_animation_time(animator, delta_time);
@@ -22,8 +22,8 @@ void animator_update(struct Animator* animator, double delta_time) {
   free(current_pose);
 }
 
-void animator_increase_animation_time(struct Animator* animator, double delta_time) {
-  animator->animation_time += (float)delta_time / 2.0f;
+void animator_increase_animation_time(struct Animator* animator, r64 delta_time) {
+  animator->animation_time += (r32)delta_time / 2.0f;
   if (animator->animation_time > animator->current_animation->length)
     animator->animation_time = fmodf(animator->animation_time, animator->current_animation->length);
 }
@@ -31,7 +31,7 @@ void animator_increase_animation_time(struct Animator* animator, double delta_ti
 struct Map* animator_calculate_current_animation_pose(struct Animator* animator) {
   struct KeyFrame *previous_frame = NULL, *next_frame = NULL;
   animator_get_previous_and_next_frames(animator, &previous_frame, &next_frame);
-  float progression = animator_calculate_progression(animator, previous_frame, next_frame);
+  r32 progression = animator_calculate_progression(animator, previous_frame, next_frame);
   return animator_interpolate_poses(previous_frame, next_frame, progression);
 }
 
@@ -60,13 +60,13 @@ void animator_get_previous_and_next_frames(struct Animator* animator, struct Key
   }
 }
 
-float animator_calculate_progression(struct Animator* animator, struct KeyFrame* previous_frame, struct KeyFrame* next_frame) {
-  float total_time = next_frame->time_step - previous_frame->time_step;
-  float current_time = animator->animation_time - previous_frame->time_step;
+r32 animator_calculate_progression(struct Animator* animator, struct KeyFrame* previous_frame, struct KeyFrame* next_frame) {
+  r32 total_time = next_frame->time_step - previous_frame->time_step;
+  r32 current_time = animator->animation_time - previous_frame->time_step;
   return current_time / total_time;
 }
 
-struct Map* animator_interpolate_poses(struct KeyFrame* previous_frame, struct KeyFrame* next_frame, float progression) {
+struct Map* animator_interpolate_poses(struct KeyFrame* previous_frame, struct KeyFrame* next_frame, r32 progression) {
   struct Map* current_pose = (struct Map*)malloc(sizeof(struct Map));
   map_init(current_pose, sizeof(mat4));
 

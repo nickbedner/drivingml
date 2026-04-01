@@ -19,6 +19,6 @@ enum DRIVINGML_STATUS {
   DRIVINGML_LAST_ERROR
 };
 
-uint_fast8_t drivingml_init(struct DrivingML* drivingml);
+u8 drivingml_init(struct DrivingML* drivingml);
 void drivingml_delete(struct DrivingML* drivingml);
 void drivingml_start(struct DrivingML* drivingml);

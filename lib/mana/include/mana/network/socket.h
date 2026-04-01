@@ -34,7 +34,7 @@ struct ZealSocket {
 };
 #endif
 
-static inline int socket_init(struct ZealSocket *zeal_socket) {
+internal inline int socket_init(struct ZealSocket* zeal_socket) {
 #ifdef PLATFORM_WIN32
   WSADATA wsa;
   SOCKET s;
@@ -62,7 +62,7 @@ static inline int socket_init(struct ZealSocket *zeal_socket) {
   server.sin_port = htons(2757);
 
   // Connect to remote server
-  if (connect(s, (struct sockaddr *)&server, sizeof(server)) < 0) {
+  if (connect(s, (struct sockaddr*)&server, sizeof(server)) < 0) {
     puts("connect error");
     return 1;
   }
@@ -92,7 +92,7 @@ static inline int socket_init(struct ZealSocket *zeal_socket) {
   return 0;
 }
 
-static inline int socket_delete(struct ZealSocket *zeal_socket) {
+internal inline int socket_delete(struct ZealSocket* zeal_socket) {
 #ifdef PLATFORM_WIN32
   closesocket(zeal_socket->udp_socket_h);
   WSACleanup();
@@ -101,7 +101,7 @@ static inline int socket_delete(struct ZealSocket *zeal_socket) {
   return 0;
 }
 
-static inline int socket_recieve(struct ZealSocket *zeal_socket, char *buf) {
+internal inline int socket_recieve(struct ZealSocket* zeal_socket, char* buf) {
 #ifdef PLATFORM_WIN32
 
 #else
@@ -109,7 +109,7 @@ static inline int socket_recieve(struct ZealSocket *zeal_socket, char *buf) {
   return 0;
 }
 
-static inline int socket_send(struct ZealSocket *zeal_socket, char *buf) {
+internal inline int socket_send(struct ZealSocket* zeal_socket, char* buf) {
 #ifdef PLATFORM_WIN32
 
 #else

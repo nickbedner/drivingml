@@ -2,7 +2,7 @@
 
 #include <mana/math/advmath.h>
 
-static const ivec3 CornerDeltas[8] = {
+global const ivec3 CornerDeltas[8] = {
     {{{0, 0, 0}}},
     {{{1, 0, 0}}},
     {{{1, 0, 1}}},
@@ -13,7 +13,7 @@ static const ivec3 CornerDeltas[8] = {
     {{{1, 1, 1}}},
     {{{0, 1, 1}}}};
 
-static const ivec3 TCornerDeltas[8] = {
+global const ivec3 TCornerDeltas[8] = {
     {{{0, 0, 0}}},
     {{{0, 0, 1}}},
     {{{0, 1, 0}}},
@@ -24,7 +24,7 @@ static const ivec3 TCornerDeltas[8] = {
     {{{1, 1, 0}}},
     {{{1, 1, 1}}}};
 
-static const int EdgePairs[12][3] = {
+global const int EdgePairs[12][3] = {
     {0, 1, 0},
     {1, 2, 2},
     {3, 2, 0},
@@ -40,7 +40,7 @@ static const int EdgePairs[12][3] = {
     {2, 6, 1},
     {3, 7, 1}};
 
-static const int TEdgePairs[12][3] = {
+global const int TEdgePairs[12][3] = {
     {0, 4, 0},
     {1, 5, 0},
     {2, 6, 0},
@@ -54,7 +54,7 @@ static const int TEdgePairs[12][3] = {
     {4, 5, 2},
     {6, 7, 2}};
 
-static const int CellProcEdgeMask[6][5] = {
+global const int CellProcEdgeMask[6][5] = {
     {0, 3, 4, 7, 0},
     {1, 2, 5, 6, 0},
     {0, 3, 1, 2, 1},
@@ -62,7 +62,7 @@ static const int CellProcEdgeMask[6][5] = {
     {0, 4, 1, 5, 2},
     {3, 7, 2, 6, 2}};
 
-static const int TCellProcEdgeMask[6][5] = {
+global const int TCellProcEdgeMask[6][5] = {
     {0, 1, 2, 3, 0},
     {4, 5, 6, 7, 0},
     {0, 4, 1, 5, 1},
@@ -70,7 +70,7 @@ static const int TCellProcEdgeMask[6][5] = {
     {0, 2, 4, 6, 2},
     {1, 3, 5, 7, 2}};
 
-static const int FaceProcFaceMask[3][4][3] = {
+global const int FaceProcFaceMask[3][4][3] = {
     {{1, 0, 0},
      {2, 3, 0},
      {5, 4, 0},
@@ -84,7 +84,7 @@ static const int FaceProcFaceMask[3][4][3] = {
      {2, 1, 2},
      {6, 5, 2}}};
 
-static const int TFaceProcFaceMask[3][4][3] = {
+global const int TFaceProcFaceMask[3][4][3] = {
     {{4, 0, 0},
      {5, 1, 0},
      {6, 2, 0},
@@ -98,7 +98,7 @@ static const int TFaceProcFaceMask[3][4][3] = {
      {5, 4, 2},
      {7, 6, 2}}};
 
-static const int FaceProcEdgeMask[3][4][6] = {
+global const int FaceProcEdgeMask[3][4][6] = {
     {{1, 1, 0, 2, 3, 1},
      {1, 5, 4, 6, 7, 1},
      {0, 1, 5, 0, 4, 2},
@@ -112,7 +112,7 @@ static const int FaceProcEdgeMask[3][4][6] = {
      {0, 3, 2, 0, 1, 1},
      {0, 7, 6, 4, 5, 1}}};
 
-static const int TFaceProcEdgeMask[3][4][6] = {
+global const int TFaceProcEdgeMask[3][4][6] = {
     {{1, 4, 0, 5, 1, 1},
      {1, 6, 2, 7, 3, 1},
      {0, 4, 6, 0, 2, 2},
@@ -126,7 +126,7 @@ static const int TFaceProcEdgeMask[3][4][6] = {
      {0, 1, 5, 0, 4, 1},
      {0, 3, 7, 2, 6, 1}}};
 
-static const int EdgeProcEdgeMask[3][2][5] = {
+global const int EdgeProcEdgeMask[3][2][5] = {
     {{7, 4, 3, 0, 0},
      {6, 5, 2, 1, 0}},
     {{2, 3, 1, 0, 1},
@@ -134,7 +134,7 @@ static const int EdgeProcEdgeMask[3][2][5] = {
     {{5, 1, 4, 0, 2},
      {6, 2, 7, 3, 2}}};
 
-static const int TEdgeProcEdgeMask[3][2][5] = {
+global const int TEdgeProcEdgeMask[3][2][5] = {
     {{3, 2, 1, 0, 0},
      {7, 6, 5, 4, 0}},
     {{5, 1, 4, 0, 1},
@@ -143,17 +143,17 @@ static const int TEdgeProcEdgeMask[3][2][5] = {
      {7, 5, 3, 1, 2}},
 };
 
-static const int ProcessEdgeMask[3][4] = {
+global const int ProcessEdgeMask[3][4] = {
     {3, 2, 1, 0},
     {7, 5, 6, 4},
     {11, 10, 9, 8}};
 
-static const int TProcessEdgeMask[3][4] = {
+global const int TProcessEdgeMask[3][4] = {
     {3, 2, 1, 0},
     {7, 5, 6, 4},
     {11, 10, 9, 8}};
 
-static const int ExternalEdges[8][3] = {
+global const int ExternalEdges[8][3] = {
     {0, 3, 8},
     {2, 3, 11},
     {4, 7, 8},
@@ -163,7 +163,7 @@ static const int ExternalEdges[8][3] = {
     {4, 5, 9},
     {5, 6, 10}};
 
-static const int TExternalEdges[8][3] = {
+global const int TExternalEdges[8][3] = {
     {0, 8, 4},
     {1, 8, 5},
     {2, 9, 4},
@@ -173,7 +173,7 @@ static const int TExternalEdges[8][3] = {
     {2, 11, 6},
     {11, 3, 7}};
 
-static const int TInternalEdges[8][9] = {
+global const int TInternalEdges[8][9] = {
     {1, 2, 3, 5, 6, 7, 9, 10, 11},
     {0, 2, 3, 4, 6, 7, 9, 10, 11},
     {0, 1, 3, 5, 6, 7, 8, 10, 11},
@@ -183,7 +183,7 @@ static const int TInternalEdges[8][9] = {
     {0, 1, 3, 4, 5, 7, 8, 9, 10},
     {0, 1, 2, 4, 5, 6, 8, 9, 10}};
 
-static const int TFaces[6][4] = {
+global const int TFaces[6][4] = {
     {0, 6, 2, 4},
     {1, 7, 3, 5},
     {0, 10, 1, 8},
@@ -191,7 +191,7 @@ static const int TFaces[6][4] = {
     {4, 8, 5, 9},
     {6, 10, 7, 11}};
 
-static const int TransformedEdgesTable[256][16] = {
+global const int TransformedEdgesTable[256][16] = {
     {-2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     {0, 4, 8, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     {8, 5, 1, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -451,7 +451,7 @@ static const int TransformedEdgesTable[256][16] = {
 
 };
 
-static const int EdgesTable[256][16] = {
+global const int EdgesTable[256][16] = {
     {-2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     {0, 8, 3, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     {0, 1, 9, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -709,7 +709,7 @@ static const int EdgesTable[256][16] = {
     {0, 3, 8, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     {-2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}};
 
-static const int TransformedVerticesNumberTable[256] = {
+global const int TransformedVerticesNumberTable[256] = {
     0, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1,
     1, 1, 2, 1, 2, 1, 3, 1, 2, 2, 2, 1, 2, 1, 2, 1,
     1, 2, 1, 1, 2, 2, 2, 1, 2, 3, 1, 1, 2, 2, 1, 1,
@@ -727,7 +727,7 @@ static const int TransformedVerticesNumberTable[256] = {
     1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0};
 
-static const int VerticesNumberTable[256] = {
+global const int VerticesNumberTable[256] = {
     0, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1,
     1, 1, 2, 1, 2, 2, 2, 1, 2, 1, 3, 1, 2, 1, 2, 1,
     1, 2, 1, 1, 2, 3, 1, 1, 2, 2, 2, 1, 2, 2, 1, 1,

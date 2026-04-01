@@ -1,6 +1,6 @@
 #include "mana/graphics/shaders/modelstaticshader.h"
 
-uint_fast8_t model_static_shader_init(struct ModelStaticShader* model_static_shader, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, struct GBufferCommon* gbuffer_common, bool depth_test, bool depth_write, const uint_fast32_t msaa_samples, uint_fast32_t descriptors) {
+u8 model_static_shader_init(struct ModelStaticShader* model_static_shader, struct APICommon* api_common, u32 width, u32 height, u8 supersample_scale, struct GBufferCommon* gbuffer_common, b8 depth_test, b8 depth_write, const uint_fast32_t msaa_samples, uint_fast32_t descriptors) {
   struct ShaderSettings* shader_settings = &(model_static_shader->shader.shader_common.shader_settings);
   shader_settings->vertex_shader = "modelstatic";
   shader_settings->fragment_shader = "model";
@@ -8,11 +8,11 @@ uint_fast8_t model_static_shader_init(struct ModelStaticShader* model_static_sha
   shader_settings->cull_mode = SHADER_CULL_MODE_NONE;
   shader_settings->depth_test = depth_test;
   shader_settings->depth_write = depth_write;
-  shader_settings->supersampled = false;
+  shader_settings->supersampled = FALSE;
   shader_settings->num_msaa_samples = msaa_samples;
   shader_settings->color_attachments = MODEL_STATIC_SHADER_COLOR_ATTACHEMENTS;
   shader_settings->vertex_attributes = MODEL_STATIC_SHADER_VERTEX_ATTRIBUTES;
-  shader_settings->blend = false;
+  shader_settings->blend = FALSE;
   shader_settings->mesh_type = MESH_TYPE_MODEL_STATIC;
   shader_settings->mesh_memory_size = mesh_get_memory_size(shader_settings->mesh_type);
   shader_settings->uniforms_constants = 2;

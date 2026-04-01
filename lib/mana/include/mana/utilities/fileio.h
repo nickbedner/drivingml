@@ -4,7 +4,7 @@
 
 // NOTE: Will only read binary file
 // TODO: Pack this in a struct or something
-static inline char* read_file(const char* filename) {
+global inline char* read_file(const char* filename) {
   char* data = NULL;
   FILE* fp;
   const int result = fopen_s(&fp, filename, "rb");
@@ -14,7 +14,7 @@ static inline char* read_file(const char* filename) {
   }
 
   fseek(fp, 0, SEEK_END);
-  int64_t size = ftell(fp);
+  i64 size = ftell(fp);
   rewind(fp);
 
   // NOTE: Could not reach end of file
@@ -36,8 +36,8 @@ static inline char* read_file(const char* filename) {
   return data;
 }
 
-static inline uint32_t* read_shader_file(const char* filename, uint_fast64_t* file_length) {
-  uint32_t* data = NULL;
+global inline u32* read_shader_file(const char* filename, uint_fast64_t* file_length) {
+  u32* data = NULL;
   FILE* fp;
 
 #ifdef _WIN32
@@ -63,9 +63,9 @@ static inline uint32_t* read_shader_file(const char* filename, uint_fast64_t* fi
   *file_length = (uint_fast64_t)size;
 
 #ifdef _WIN32
-  data = (uint32_t*)_aligned_malloc((size_t)size, sizeof(uint32_t));
+  data = (u32*)_aligned_malloc((size_t)size, sizeof(u32));
 #else
-  data = (uint32_t*)aligned_alloc(sizeof(uint32_t), (size_t)size);
+  data = (u32*)aligned_alloc(sizeof(u32), (size_t)size);
 #endif
 
   if (!data) {
@@ -87,7 +87,7 @@ static inline uint32_t* read_shader_file(const char* filename, uint_fast64_t* fi
   return data;
 }
 
-static inline void close_shader_file(uint32_t* data) {
+global inline void close_shader_file(u32* data) {
 #ifdef _WIN64
   _aligned_free(data);
 #else

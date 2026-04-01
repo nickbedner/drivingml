@@ -4,16 +4,16 @@ void vertex_skin_data_init(struct VertexSkinData* vertex_skin_data) {
   vertex_skin_data->joint_ids = (struct Vector*)malloc(sizeof(struct Vector));
   vertex_skin_data->weights = (struct Vector*)malloc(sizeof(struct Vector));
 
-  vector_init(vertex_skin_data->joint_ids, sizeof(int32_t));
-  vector_init(vertex_skin_data->weights, sizeof(float));
+  vector_init(vertex_skin_data->joint_ids, sizeof(i32));
+  vector_init(vertex_skin_data->weights, sizeof(r32));
 }
 
 void vertex_skin_data_delete(struct VertexSkinData* vertex_skin_data) {
 }
 
-void vertex_skin_data_add_joint_effect(struct VertexSkinData* vertex_skin_data, int32_t joint_id, float weight) {
+void vertex_skin_data_add_joint_effect(struct VertexSkinData* vertex_skin_data, i32 joint_id, r32 weight) {
   for (size_t weight_num = 0; weight_num < vector_size(vertex_skin_data->weights); weight_num++) {
-    if (weight > *(float*)vector_get(vertex_skin_data->weights, weight_num)) {
+    if (weight > *(r32*)vector_get(vertex_skin_data->weights, weight_num)) {
       vector_insert(vertex_skin_data->joint_ids, weight_num, &joint_id);
       vector_insert(vertex_skin_data->weights, weight_num, &weight);
       return;
@@ -23,50 +23,50 @@ void vertex_skin_data_add_joint_effect(struct VertexSkinData* vertex_skin_data, 
   vector_push_back(vertex_skin_data->weights, &weight);
 }
 
-void vertex_skin_data_limit_joint_number(struct VertexSkinData* vertex_skin_data, const int32_t max) {
+void vertex_skin_data_limit_joint_number(struct VertexSkinData* vertex_skin_data, const i32 max) {
   if (vector_size(vertex_skin_data->joint_ids) > (size_t)max) {
     // TODO: This value should probably be defined
-    // float top_weights[max];
-    float* top_weights = (float*)calloc((size_t)max, sizeof(float));
-    float total = vertex_skin_data_save_top_weights(vertex_skin_data, top_weights, max);
+    // r32 top_weights[max];
+    r32* top_weights = (r32*)calloc((size_t)max, sizeof(r32));
+    r32 total = vertex_skin_data_save_top_weights(vertex_skin_data, top_weights, max);
     vertex_skin_data_refill_weight_list(vertex_skin_data, top_weights, max, total);
     vertex_skin_data_remove_excess_joint_ids(vertex_skin_data, max);
   } else if (vector_size(vertex_skin_data->joint_ids) < (size_t)max)
     vertex_skin_data_fill_empty_weights(vertex_skin_data, max);
 }
 
-void vertex_skin_data_fill_empty_weights(struct VertexSkinData* vertex_skin_data, int32_t max) {
-  int32_t zero_int = 0;
-  float zero_float = 0.0f;
+void vertex_skin_data_fill_empty_weights(struct VertexSkinData* vertex_skin_data, i32 max) {
+  i32 zero_int = 0;
+  r32 zero_float = 0.0f;
   while (vector_size(vertex_skin_data->joint_ids) < (size_t)max) {
     vector_push_back(vertex_skin_data->joint_ids, &zero_int);
     vector_push_back(vertex_skin_data->weights, &zero_float);
   }
 }
 
-float vertex_skin_data_save_top_weights(struct VertexSkinData* vertex_skin_data, float* top_weights, int32_t max) {
-  float total = 0.0f;
+r32 vertex_skin_data_save_top_weights(struct VertexSkinData* vertex_skin_data, r32* top_weights, i32 max) {
+  r32 total = 0.0f;
   for (size_t top_weight_num = 0; top_weight_num < (size_t)max; top_weight_num++) {
-    top_weights[top_weight_num] = *(float*)vector_get(vertex_skin_data->weights, top_weight_num);
+    top_weights[top_weight_num] = *(r32*)vector_get(vertex_skin_data->weights, top_weight_num);
     total += top_weights[top_weight_num];
   }
   return total;
 }
 
-void vertex_skin_data_refill_weight_list(struct VertexSkinData* vertex_skin_data, float* top_weights, int32_t max, float total) {
+void vertex_skin_data_refill_weight_list(struct VertexSkinData* vertex_skin_data, r32* top_weights, i32 max, r32 total) {
   vector_clear(vertex_skin_data->weights);
   for (size_t top_weight_num = 0; top_weight_num < (size_t)max; top_weight_num++) {
-    float new_weight = min(top_weights[top_weight_num] / total, 1.0f);
+    r32 new_weight = min(top_weights[top_weight_num] / total, 1.0f);
     vector_push_back(vertex_skin_data->weights, &new_weight);
   }
 }
 
-void vertex_skin_data_remove_excess_joint_ids(struct VertexSkinData* vertex_skin_data, int32_t max) {
+void vertex_skin_data_remove_excess_joint_ids(struct VertexSkinData* vertex_skin_data, i32 max) {
   while (vector_size(vertex_skin_data->joint_ids) > (size_t)max)
     vector_remove(vertex_skin_data->joint_ids, vector_size(vertex_skin_data->joint_ids) - 1);
 }
 
-struct SkinningData* skin_loader_extract_skin_data(struct XmlNode* skinning_data, int32_t max_weights) {
+struct SkinningData* skin_loader_extract_skin_data(struct XmlNode* skinning_data, i32 max_weights) {
   skinning_data = xml_node_get_child(xml_node_get_child(skinning_data, "controller"), "skin");
   struct Vector* joints_list = skin_loader_load_joints_list(skinning_data);
   struct Vector* weights = skin_loader_load_weights(skinning_data);
@@ -109,11 +109,11 @@ struct Vector* skin_loader_load_weights(struct XmlNode* skinning_data) {
 
   char* raw_data = _strdup(xml_node_get_data(weights_node));
   struct Vector* weights = (struct Vector*)malloc(sizeof(struct Vector));
-  vector_init(weights, sizeof(float));
+  vector_init(weights, sizeof(r32));
   char* next_token = NULL;
   char* raw_part = strtok_s(raw_data, " ", &next_token);
   while (raw_part != NULL) {
-    float parsed_weight = (float)atof(raw_part);
+    r32 parsed_weight = (r32)atof(raw_part);
     vector_push_back(weights, &parsed_weight);
     raw_part = strtok_s(NULL, " ", &next_token);
   }
@@ -124,11 +124,11 @@ struct Vector* skin_loader_load_weights(struct XmlNode* skinning_data) {
 struct Vector* skin_loader_get_effective_joints_counts(struct XmlNode* weights_data_node) {
   char* raw_data = _strdup(xml_node_get_data(xml_node_get_child(weights_data_node, "vcount")));
   struct Vector* counts = (struct Vector*)malloc(sizeof(struct Vector));
-  vector_init(counts, sizeof(int32_t));
+  vector_init(counts, sizeof(i32));
   char* next_token = NULL;
   char* raw_part = strtok_s(raw_data, " ", &next_token);
   while (raw_part != NULL) {
-    int32_t parsed_count = atoi(raw_part);
+    i32 parsed_count = atoi(raw_part);
     vector_push_back(counts, &parsed_count);
     raw_part = strtok_s(NULL, " ", &next_token);
   }
@@ -136,7 +136,7 @@ struct Vector* skin_loader_get_effective_joints_counts(struct XmlNode* weights_d
   return counts;
 }
 
-struct Vector* skin_loader_get_skin_data(int32_t max_weights, struct XmlNode* weights_data_node, struct Vector* counts, struct Vector* weights) {
+struct Vector* skin_loader_get_skin_data(i32 max_weights, struct XmlNode* weights_data_node, struct Vector* counts, struct Vector* weights) {
   char* raw_data = _strdup(xml_node_get_data(xml_node_get_child(weights_data_node, "v")));
   struct Vector* skinning_data = (struct Vector*)malloc(sizeof(struct Vector));
   vector_init(skinning_data, sizeof(struct VertexSkinData));
@@ -145,13 +145,13 @@ struct Vector* skin_loader_get_skin_data(int32_t max_weights, struct XmlNode* we
   for (size_t count = 0; count < vector_size(counts); count++) {
     struct VertexSkinData skin_data = {0};
     vertex_skin_data_init(&skin_data);
-    for (size_t loop_num = 0; loop_num < (size_t)(*(int32_t*)vector_get(counts, count)); loop_num++) {
-      int32_t joint_id = atoi(raw_part);
+    for (size_t loop_num = 0; loop_num < (size_t)(*(i32*)vector_get(counts, count)); loop_num++) {
+      i32 joint_id = atoi(raw_part);
       raw_part = strtok_s(NULL, " ", &next_token);
-      int32_t weight_id = atoi(raw_part);
+      i32 weight_id = atoi(raw_part);
       raw_part = strtok_s(NULL, " ", &next_token);
       // printf("Count: %d\n", parsed_count);
-      vertex_skin_data_add_joint_effect(&skin_data, joint_id, *(float*)vector_get(weights, (size_t)weight_id));
+      vertex_skin_data_add_joint_effect(&skin_data, joint_id, *(r32*)vector_get(weights, (size_t)weight_id));
     }
     vertex_skin_data_limit_joint_number(&skin_data, max_weights);
     vector_push_back(skinning_data, &skin_data);

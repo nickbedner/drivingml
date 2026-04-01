@@ -1,6 +1,6 @@
 #include "mana/graphics/utilities/spritemanager/spritemanager.h"
 
-void sprite_manager_init(struct SpriteManager* sprite_manager, struct TextureManager* texture_manager, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, struct GBufferCommon* gbuffer_common, uint_fast8_t msaa_samples, uint_fast32_t descriptors) {
+void sprite_manager_init(struct SpriteManager* sprite_manager, struct TextureManager* texture_manager, struct APICommon* api_common, u32 width, u32 height, u8 supersample_scale, struct GBufferCommon* gbuffer_common, u8 msaa_samples, uint_fast32_t descriptors) {
 #ifdef VULKAN_API_SUPPORTED
   if (api_common->api_type == API_VULKAN)
     sprite_manager->sprite_manager_func = VULKAN_SPRITE_MANAGER;
@@ -10,7 +10,7 @@ void sprite_manager_init(struct SpriteManager* sprite_manager, struct TextureMan
     sprite_manager->sprite_manager_func = DIRECTX_12_SPRITE_MANAGER;
 #endif
 
-  sprite_shader_init(&(sprite_manager->sprite_manager_common.sprite_shader), api_common, width, height, supersample_scale, gbuffer_common, true, false, msaa_samples, descriptors);
+  sprite_shader_init(&(sprite_manager->sprite_manager_common.sprite_shader), api_common, width, height, supersample_scale, gbuffer_common, TRUE, FALSE, msaa_samples, descriptors);
 
   array_list_init(&(sprite_manager->sprite_manager_common.sprites));
 
@@ -34,7 +34,7 @@ void sprite_manager_delete(struct SpriteManager* sprite_manager, struct APICommo
   sprite_manager->sprite_manager_func.sprite_manager_delete_sprite(&(sprite_manager->sprite_manager_common), api_common);
 }
 
-void sprite_manager_resize(struct SpriteManager* sprite_manager, struct APICommon* api_common, uint_fast32_t width, uint_fast32_t height, uint_fast8_t supersample_scale) {
+void sprite_manager_resize(struct SpriteManager* sprite_manager, struct APICommon* api_common, uint_fast32_t width, uint_fast32_t height, u8 supersample_scale) {
   shader_resize(&(sprite_manager->sprite_manager_common.sprite_shader.shader), api_common, width, height, supersample_scale);
 }
 
@@ -63,20 +63,20 @@ void sprite_manager_update_uniforms(struct SpriteManager* sprite_manager, struct
     sprite_update_uniforms((struct Sprite*)array_list_get(&(sprite_manager->sprite_manager_common.sprites), entity_num), api_common, gbuffer_common);
 }
 
-static inline double sprite_depth(const struct Sprite* sprite, vec4d sort_key) {
+internal inline r64 sprite_depth(const struct Sprite* sprite, vec4d sort_key) {
   vec3d p = vec3_to_vec3d(sprite->sprite_common.position);
   return p.x * sort_key.x + p.y * sort_key.y + p.z * sort_key.z + sort_key.w;
 }
 
-static void sprite_insertion_sort(struct Sprite** sprites, size_t count, vec4d sort_key) {
+internal void sprite_insertion_sort(struct Sprite** sprites, size_t count, vec4d sort_key) {
   for (size_t i = 1; i < count; i++) {
     struct Sprite* key = sprites[i];
-    double key_depth = sprite_depth(key, sort_key);
+    r64 key_depth = sprite_depth(key, sort_key);
 
     size_t j = i;
 
     while (j > 0) {
-      double prev_depth = sprite_depth(sprites[j - 1], sort_key);
+      r64 prev_depth = sprite_depth(sprites[j - 1], sort_key);
 
       /* Back -> Front(larger depth first) */
       if (prev_depth < key_depth) {
@@ -100,5 +100,5 @@ void sprite_manager_render(struct SpriteManager* sprite_manager, struct GBufferC
     sprite_render(ordered_sprites[i], gbuffer_common);
 }
 
-void sprite_manager_update(struct SpriteManager* sprite_manager, double delta_time) {
+void sprite_manager_update(struct SpriteManager* sprite_manager, r64 delta_time) {
 }

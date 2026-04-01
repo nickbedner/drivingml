@@ -1,6 +1,6 @@
 #include "mana/graphics/apis/apidirectx12.h"
 
-static void api_directx_12_get_hardware_adapter(IDXGIFactory4* pFactory, IDXGIAdapter1** ppAdapter, bool requestHighPerformanceAdapter) {
+internal void api_directx_12_get_hardware_adapter(IDXGIFactory4* pFactory, IDXGIAdapter1** ppAdapter, b8 requestHighPerformanceAdapter) {
   *ppAdapter = NULL;
   IDXGIAdapter1* adapter = NULL;
   IDXGIFactory6* factory6 = NULL;
@@ -45,7 +45,7 @@ static void api_directx_12_get_hardware_adapter(IDXGIFactory4* pFactory, IDXGIAd
   *ppAdapter = adapter;
 }
 
-static uint_fast8_t api_directx_12_init_wrapper(struct APICommon* api_common) {
+internal u8 api_directx_12_init_wrapper(struct APICommon* api_common) {
   struct DirectX12API* directx_12_api = &(api_common->directx_12_api);
 
   UINT dxgi_factory_flags = 0;
@@ -66,7 +66,7 @@ static uint_fast8_t api_directx_12_init_wrapper(struct APICommon* api_common) {
   }
 
   IDXGIAdapter1* hardware_adapter;
-  api_directx_12_get_hardware_adapter(directx_12_api->factory, &hardware_adapter, true);
+  api_directx_12_get_hardware_adapter(directx_12_api->factory, &hardware_adapter, TRUE);
 
   if (FAILED(D3D12CreateDevice((IUnknown*)hardware_adapter, D3D_FEATURE_LEVEL_12_0, &IID_ID3D12Device, (void**)&(directx_12_api->device))))
     return DIRECTX_12_API_CREATE_DEVICE_ERROR;
@@ -105,8 +105,8 @@ static uint_fast8_t api_directx_12_init_wrapper(struct APICommon* api_common) {
   return DIRECTX_12_API_SUCCESS;
 }
 
-uint_fast8_t api_directx_12_init(struct APICommon* api_common) {
-  const uint_fast8_t api_directx_12_error = api_directx_12_init_wrapper(api_common);
+u8 api_directx_12_init(struct APICommon* api_common) {
+  const u8 api_directx_12_error = api_directx_12_init_wrapper(api_common);
   switch (api_directx_12_error) {
     case (DIRECTX_12_API_SUCCESS): {
       break;
@@ -182,7 +182,7 @@ void directx_12_graphics_utils_poll_debug_messages(struct DirectX12API* directx_
 #endif
 }
 
-uint_fast8_t directx_12_graphics_utils_setup_vertex_buffer(struct DirectX12API* directx_12_api, struct Vector* vertices, ID3D12Resource** vertex_buffer) {
+u8 directx_12_graphics_utils_setup_vertex_buffer(struct DirectX12API* directx_12_api, struct Vector* vertices, ID3D12Resource** vertex_buffer) {
   UINT64 vertex_buffer_size = vertices->memory_size * vertices->size;
 
   ID3D12Resource* vertex_staging_buffer;
@@ -276,7 +276,7 @@ uint_fast8_t directx_12_graphics_utils_setup_vertex_buffer(struct DirectX12API* 
   return 0;
 }
 
-uint_fast8_t directx_12_graphics_utils_setup_index_buffer(struct DirectX12API* directx_12_api, struct Vector* indices, ID3D12Resource** index_buffer) {
+u8 directx_12_graphics_utils_setup_index_buffer(struct DirectX12API* directx_12_api, struct Vector* indices, ID3D12Resource** index_buffer) {
   UINT64 index_buffer_size = indices->memory_size * indices->size;
 
   ID3D12Resource* index_staging_buffer;
@@ -368,7 +368,7 @@ uint_fast8_t directx_12_graphics_utils_setup_index_buffer(struct DirectX12API* d
   return 0;
 }
 
-uint_fast8_t directx_12_graphics_utils_setup_constant_buffer(struct DirectX12API* directx_12_api, UINT64 buffer_size, ID3D12Resource** constant_buffer) {
+u8 directx_12_graphics_utils_setup_constant_buffer(struct DirectX12API* directx_12_api, UINT64 buffer_size, ID3D12Resource** constant_buffer) {
   // Define heap properties for UPLOAD. Constant buffers typically reside in UPLOAD heap for efficiency.
   D3D12_HEAP_PROPERTIES upload_heap_properties;
   upload_heap_properties.Type = D3D12_HEAP_TYPE_UPLOAD;

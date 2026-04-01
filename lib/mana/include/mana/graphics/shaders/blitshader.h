@@ -10,8 +10,8 @@ struct BlitUniformBufferObject {
 
 struct BlitShader {
   struct Shader shader;
-  void *extra_data;
+  void* extra_data;
 };
 
-uint_fast8_t blit_shader_init(struct BlitShader *blit_effect, struct APICommon *apu_api, uint32_t width, uint32_t height, uint_fast8_t supersample_scale, uint_fast8_t num_textures, uint_fast8_t descriptors, enum MESH_TYPE mesh_type);
-void blit_shader_delete(struct BlitShader *blit_effect, struct APICommon *apu_api);
+u8 blit_shader_init(struct BlitShader* blit_effect, struct APICommon* apu_api, u32 width, u32 height, u8 supersample_scale, u8 num_textures, u8 descriptors, enum MESH_TYPE mesh_type);
+void blit_shader_delete(struct BlitShader* blit_effect, struct APICommon* apu_api);

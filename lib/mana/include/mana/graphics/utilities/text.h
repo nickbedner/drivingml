@@ -26,8 +26,8 @@ typedef struct {
   int iy0, iy1;
 } ex_metrics_t;
 
-static inline uint32_t ex_utf8(const char *c) {
-  uint32_t val = 0;
+internal inline u32 ex_utf8(const char *c) {
+  u32 val = 0;
 
   if ((c[0] & 0xF8) == 0xF0) {
     val |= (c[3] & 0x3F);
@@ -48,8 +48,8 @@ static inline uint32_t ex_utf8(const char *c) {
 }
 
 typedef struct {
-  double dist;
-  double d;
+  r64 dist;
+  r64 d;
 } signed_distance_t;
 
 typedef struct {
@@ -69,15 +69,15 @@ typedef enum {
   WHITE = 7
 } edge_color_t;
 
-static inline double median(double a, double b, double c) {
+internal inline r64 median(r64 a, r64 b, r64 c) {
   return MAX(MIN(a, b), MIN(MAX(a, b), c));
 }
 
-static inline int nonzero_sign(double n) {
+internal inline int nonzero_sign(r64 n) {
   return 2 * (n > 0) - 1;
 }
 
-static inline int solve_quadratic(double x[2], double a, double b, double c) {
+internal inline int solve_quadratic(r64 x[2], r64 a, r64 b, r64 c) {
   if (fabs(a) < 1e-14) {
     if (fabs(b) < 1e-14) {
       if (c == 0)
@@ -88,7 +88,7 @@ static inline int solve_quadratic(double x[2], double a, double b, double c) {
     return 1;
   }
 
-  double dscr = b * b - 4 * a * c;
+  r64 dscr = b * b - 4 * a * c;
   if (dscr > 0) {
     dscr = sqrt(dscr);
     x[0] = (-b + dscr) / (2 * a);
@@ -102,15 +102,15 @@ static inline int solve_quadratic(double x[2], double a, double b, double c) {
   }
 }
 
-static inline int solve_cubic_normed(double *x, double a, double b, double c) {
-  double a2 = a * a;
-  double q = (a2 - 3 * b) / 9;
-  double r = (a * (2 * a2 - 9 * b) + 27 * c) / 54;
-  double r2 = r * r;
-  double q3 = q * q * q;
-  double A, B;
+internal inline int solve_cubic_normed(r64 *x, r64 a, r64 b, r64 c) {
+  r64 a2 = a * a;
+  r64 q = (a2 - 3 * b) / 9;
+  r64 r = (a * (2 * a2 - 9 * b) + 27 * c) / 54;
+  r64 r2 = r * r;
+  r64 q3 = q * q * q;
+  r64 A, B;
   if (r2 < q3) {
-    double t = r / sqrt(q3);
+    r64 t = r / sqrt(q3);
     if (t < -1) t = -1;
     if (t > 1) t = 1;
     t = acos(t);
@@ -134,16 +134,16 @@ static inline int solve_cubic_normed(double *x, double a, double b, double c) {
   }
 }
 
-static inline int solve_cubic(double x[3], double a, double b, double c, double d) {
+internal inline int solve_cubic(r64 x[3], r64 a, r64 b, r64 c, r64 d) {
   if (fabs(a) < 1e-14)
     return solve_quadratic(x, b, c, d);
 
   return solve_cubic_normed(x, b / a, c / a, d / a);
 }
 
-static inline vec2 getortho(vec2 const v, int polarity, int allow_zero) {
+internal inline vec2 getortho(vec2 const v, int polarity, int allow_zero) {
   vec2 r;
-  double len = vec2_len(v);
+  r64 len = vec2_len(v);
 
   if (len == 0) {
     if (polarity) {
@@ -167,13 +167,13 @@ static inline vec2 getortho(vec2 const v, int polarity, int allow_zero) {
   return r;
 }
 
-static inline int pixel_clash(const vec3 a, const vec3 b, double threshold) {
+internal inline int pixel_clash(const vec3 a, const vec3 b, r64 threshold) {
   int aIn = (a.data[0] > .5f) + (a.data[1] > .5f) + (a.data[2] > .5f) >= 2;
   int bIn = (b.data[0] > .5f) + (b.data[1] > .5f) + (b.data[2] > .5f) >= 2;
   if (aIn != bIn) return 0;
   if ((a.data[0] > .5f && a.data[1] > .5f && a.data[2] > .5f) || (a.data[0] < .5f && a.data[1] < .5f && a.data[2] < .5f) || (b.data[0] > .5f && b.data[1] > .5f && b.data[2] > .5f) || (b.data[0] < .5f && b.data[1] < .5f && b.data[2] < .5f))
     return 0;
-  float aa, ab, ba, bb, ac, bc;
+  r32 aa, ab, ba, bb, ac, bc;
   if ((a.data[0] > .5f) != (b.data[0] > .5f) && (a.data[0] < .5f) != (b.data[0] < .5f)) {
     aa = a.data[0], ba = b.data[0];
     if ((a.data[1] > .5f) != (b.data[1] > .5f) && (a.data[1] < .5f) != (b.data[1] < .5f)) {
@@ -194,15 +194,15 @@ static inline int pixel_clash(const vec3 a, const vec3 b, double threshold) {
   return (fabsf(aa - ba) >= threshold) && (fabsf(ab - bb) >= threshold) && fabsf(ac - .5f) >= fabsf(bc - .5f);
 }
 
-static inline vec2 linear_direction(edge_segment_t *e, double param) {
+internal inline vec2 linear_direction(edge_segment_t *e, r64 param) {
   return (vec2){.data[0] = e->p[1].data[0] - e->p[0].data[0], .data[1] = e->p[1].data[1] - e->p[0].data[1]};
 }
 
-static inline vec2 quadratic_direction(edge_segment_t *e, double param) {
+internal inline vec2 quadratic_direction(edge_segment_t *e, r64 param) {
   return vec2_mix(vec2_sub(e->p[1], e->p[0]), vec2_sub(e->p[2], e->p[1]), param);
 }
 
-static inline vec2 cubic_direction(edge_segment_t *e, double param) {
+internal inline vec2 cubic_direction(edge_segment_t *e, r64 param) {
   vec2 r;
   vec2 a, b, c, d, t;
   a = vec2_sub(e->p[1], e->p[0]);
@@ -230,7 +230,7 @@ static inline vec2 cubic_direction(edge_segment_t *e, double param) {
   return r;
 }
 
-static inline vec2 direction(edge_segment_t *e, double param) {
+internal inline vec2 direction(edge_segment_t *e, r64 param) {
   switch (e->type) {
     case STBTT_vline: {
       return linear_direction(e, param);
@@ -245,18 +245,18 @@ static inline vec2 direction(edge_segment_t *e, double param) {
   return VEC2_ZERO;
 }
 
-static inline vec2 linear_point(edge_segment_t *e, double param) {
+internal inline vec2 linear_point(edge_segment_t *e, r64 param) {
   return vec2_mix(e->p[0], e->p[1], param);
 }
 
-static inline vec2 quadratic_point(edge_segment_t *e, double param) {
+internal inline vec2 quadratic_point(edge_segment_t *e, r64 param) {
   vec2 a, b;
   a = vec2_mix(e->p[0], e->p[1], param);
   b = vec2_mix(e->p[1], e->p[2], param);
   return vec2_mix(a, b, param);
 }
 
-static inline vec2 cubic_point(edge_segment_t *e, double param) {
+internal inline vec2 cubic_point(edge_segment_t *e, r64 param) {
   vec2 p12, a, b, c, d;
   p12 = vec2_mix(e->p[1], e->p[2], param);
 
@@ -269,7 +269,7 @@ static inline vec2 cubic_point(edge_segment_t *e, double param) {
   return vec2_mix(b, d, param);
 }
 
-static inline vec2 point(edge_segment_t *e, double param) {
+internal inline vec2 point(edge_segment_t *e, r64 param) {
   switch (e->type) {
     case STBTT_vline: {
       return linear_point(e, param);
@@ -285,46 +285,46 @@ static inline vec2 point(edge_segment_t *e, double param) {
 }
 
 // linear edge signed distance
-static inline signed_distance_t linear_dist(edge_segment_t *e, vec2 origin, double *param) {
+internal inline signed_distance_t linear_dist(edge_segment_t *e, vec2 origin, r64 *param) {
   vec2 aq, ab, eq;
   aq = vec2_sub(origin, e->p[0]);
   ab = vec2_sub(e->p[1], e->p[0]);
   *param = vec2_mul_inner(aq, ab) / vec2_mul_inner(ab, ab);
   eq = vec2_sub(e->p[*param > 0.5], origin);
 
-  double endpoint_distance = vec2_len(eq);
+  r64 endpoint_distance = vec2_len(eq);
   if (*param > 0 && *param < 1) {
     vec2 ab_ortho;
     ab_ortho = getortho(ab, 0, 0);
-    double ortho_dist = vec2_mul_inner(ab_ortho, aq);
+    r64 ortho_dist = vec2_mul_inner(ab_ortho, aq);
     if (fabs(ortho_dist) < endpoint_distance)
       return (signed_distance_t){ortho_dist, 0};
   }
 
   ab = vec2_norm(ab);
   eq = vec2_norm(eq);
-  double dist = nonzero_sign(vec2_cross(aq, ab)) * endpoint_distance;
-  double d = fabs(vec2_mul_inner(ab, eq));
+  r64 dist = nonzero_sign(vec2_cross(aq, ab)) * endpoint_distance;
+  r64 d = fabs(vec2_mul_inner(ab, eq));
   return (signed_distance_t){dist, d};
 }
 
 // quadratic edge signed distance
-static inline signed_distance_t quadratic_dist(edge_segment_t *e, vec2 origin, double *param) {
+internal inline signed_distance_t quadratic_dist(edge_segment_t *e, vec2 origin, r64 *param) {
   vec2 qa, ab, br;
   qa = vec2_sub(e->p[0], origin);
   ab = vec2_sub(e->p[1], e->p[0]);
   br.data[0] = e->p[0].data[0] + e->p[2].data[0] - e->p[1].data[0] - e->p[1].data[0];
   br.data[1] = e->p[0].data[1] + e->p[2].data[1] - e->p[1].data[1] - e->p[1].data[1];
 
-  double a = vec2_mul_inner(br, br);
-  double b = 3 * vec2_mul_inner(ab, br);
-  double c = 2 * vec2_mul_inner(ab, ab) + vec2_mul_inner(qa, br);
-  double d = vec2_mul_inner(qa, ab);
-  double t[3];
+  r64 a = vec2_mul_inner(br, br);
+  r64 b = 3 * vec2_mul_inner(ab, br);
+  r64 c = 2 * vec2_mul_inner(ab, ab) + vec2_mul_inner(qa, br);
+  r64 d = vec2_mul_inner(qa, ab);
+  r64 t[3];
   int solutions = solve_cubic(t, a, b, c, d);
 
   // distance from a
-  double min_distance = nonzero_sign(vec2_cross(ab, qa)) * vec2_len(qa);
+  r64 min_distance = nonzero_sign(vec2_cross(ab, qa)) * vec2_len(qa);
   *param = -vec2_mul_inner(qa, ab) / vec2_mul_inner(ab, ab);
   {
     vec2 a, b;
@@ -332,7 +332,7 @@ static inline signed_distance_t quadratic_dist(edge_segment_t *e, vec2 origin, d
     b = vec2_sub(e->p[2], origin);
 
     // distance from b
-    double distance = nonzero_sign(vec2_cross(a, b)) * vec2_len(b);
+    r64 distance = nonzero_sign(vec2_cross(a, b)) * vec2_len(b);
     if (fabs(distance) < fabs(min_distance)) {
       min_distance = distance;
 
@@ -351,7 +351,7 @@ static inline signed_distance_t quadratic_dist(edge_segment_t *e, vec2 origin, d
 
       a = vec2_sub(e->p[2], e->p[0]);
       b = vec2_sub(end_point, origin);
-      double distance = nonzero_sign(vec2_cross(a, b)) * vec2_len(b);
+      r64 distance = nonzero_sign(vec2_cross(a, b)) * vec2_len(b);
       if (fabs(distance) <= fabs(min_distance)) {
         min_distance = distance;
         *param = t[i];
@@ -377,7 +377,7 @@ static inline signed_distance_t quadratic_dist(edge_segment_t *e, vec2 origin, d
 }
 
 // cubic edge signed distance
-static inline signed_distance_t cubic_dist(edge_segment_t *e, vec2 origin, double *param) {
+internal inline signed_distance_t cubic_dist(edge_segment_t *e, vec2 origin, r64 *param) {
   vec2 qa, ab, br, as;
   qa = vec2_sub(e->p[0], origin);
   ab = vec2_sub(e->p[1], e->p[0]);
@@ -390,7 +390,7 @@ static inline signed_distance_t cubic_dist(edge_segment_t *e, vec2 origin, doubl
   ep_dir = direction(e, 0);
 
   // distance from a
-  double min_distance = nonzero_sign(vec2_cross(ep_dir, qa)) * vec2_len(qa);
+  r64 min_distance = nonzero_sign(vec2_cross(ep_dir, qa)) * vec2_len(qa);
   *param = -vec2_mul_inner(qa, ep_dir) / vec2_mul_inner(ep_dir, ep_dir);
   {
     vec2 a;
@@ -398,7 +398,7 @@ static inline signed_distance_t cubic_dist(edge_segment_t *e, vec2 origin, doubl
 
     ep_dir = direction(e, 1);
     // distance from b
-    double distance = nonzero_sign(vec2_cross(ep_dir, a)) * vec2_len(a);
+    r64 distance = nonzero_sign(vec2_cross(ep_dir, a)) * vec2_len(a);
     if (fabs(distance) < fabs(min_distance)) {
       min_distance = distance;
 
@@ -410,14 +410,14 @@ static inline signed_distance_t cubic_dist(edge_segment_t *e, vec2 origin, doubl
 
   const int search_starts = 4;
   for (int i = 0; i <= search_starts; ++i) {
-    double t = (double)i / search_starts;
+    r64 t = (r64)i / search_starts;
     for (int step = 0;; ++step) {
       vec2 qpt;
       qpt = point(e, t);
       qpt = vec2_sub(qpt, origin);
       vec2 d;
       d = direction(e, t);
-      double distance = nonzero_sign(vec2_cross(d, qpt)) * vec2_len(qpt);
+      r64 distance = nonzero_sign(vec2_cross(d, qpt)) * vec2_len(qpt);
       if (fabs(distance) < fabs(min_distance)) {
         min_distance = distance;
         *param = t;
@@ -456,7 +456,7 @@ static inline signed_distance_t cubic_dist(edge_segment_t *e, vec2 origin, doubl
     return (signed_distance_t){min_distance, fabs(vec2_mul_inner(d1, a))};
 }
 
-static inline void dist_to_pseudo(signed_distance_t *distance, vec2 origin, double param, edge_segment_t *e) {
+internal inline void dist_to_pseudo(signed_distance_t *distance, vec2 origin, r64 param, edge_segment_t *e) {
   if (param < 0) {
     vec2 dir, p;
     dir = direction(e, 0);
@@ -464,9 +464,9 @@ static inline void dist_to_pseudo(signed_distance_t *distance, vec2 origin, doub
     vec2 aq = (vec2){.data[0] = origin.data[0], .data[1] = origin.data[1]};
     p = point(e, 0);
     aq = vec2_sub(origin, p);
-    double ts = vec2_mul_inner(aq, dir);
+    r64 ts = vec2_mul_inner(aq, dir);
     if (ts < 0) {
-      double pseudo_dist = vec2_cross(aq, dir);
+      r64 pseudo_dist = vec2_cross(aq, dir);
       if (fabs(pseudo_dist) <= fabs(distance->dist)) {
         distance->dist = pseudo_dist;
         distance->d = 0;
@@ -479,9 +479,9 @@ static inline void dist_to_pseudo(signed_distance_t *distance, vec2 origin, doub
     vec2 bq = (vec2){.data[0] = origin.data[0], .data[1] = origin.data[1]};
     p = point(e, 1);
     bq = vec2_sub(origin, p);
-    double ts = vec2_mul_inner(bq, dir);
+    r64 ts = vec2_mul_inner(bq, dir);
     if (ts > 0) {
-      double pseudo_dist = vec2_cross(bq, dir);
+      r64 pseudo_dist = vec2_cross(bq, dir);
       if (fabs(pseudo_dist) <= fabs(distance->dist)) {
         distance->dist = pseudo_dist;
         distance->d = 0;
@@ -490,15 +490,15 @@ static inline void dist_to_pseudo(signed_distance_t *distance, vec2 origin, doub
   }
 }
 
-static inline int signed_compare(signed_distance_t a, signed_distance_t b) {
+internal inline int signed_compare(signed_distance_t a, signed_distance_t b) {
   return fabs(a.dist) < fabs(b.dist) || (fabs(a.dist) == fabs(b.dist) && a.d < b.d);
 }
 
-static inline int is_corner(vec2 a, vec2 b, double threshold) {
+internal inline int is_corner(vec2 a, vec2 b, r64 threshold) {
   return vec2_mul_inner(a, b) <= 0 || fabs(vec2_cross(a, b)) > threshold;
 }
 
-static inline void switch_color(edge_color_t *color, unsigned long long *seed, edge_color_t banned) {
+internal inline void switch_color(edge_color_t *color, unsigned long long *seed, edge_color_t banned) {
   edge_color_t combined = *color & banned;
   if (combined == RED || combined == GREEN || combined == BLUE) {
     *color = (edge_color_t)(combined ^ WHITE);
@@ -506,7 +506,7 @@ static inline void switch_color(edge_color_t *color, unsigned long long *seed, e
   }
 
   if (*color == BLACK || *color == WHITE) {
-    static const edge_color_t start[3] = {CYAN, MAGENTA, YELLOW};
+    internal const edge_color_t start[3] = {CYAN, MAGENTA, YELLOW};
     *color = start[*seed & 3];
     *seed /= 3;
     return;
@@ -517,7 +517,7 @@ static inline void switch_color(edge_color_t *color, unsigned long long *seed, e
   *seed >>= 1;
 }
 
-static inline void linear_split(edge_segment_t *e, edge_segment_t *p1, edge_segment_t *p2, edge_segment_t *p3) {
+internal inline void linear_split(edge_segment_t *e, edge_segment_t *p1, edge_segment_t *p2, edge_segment_t *p3) {
   vec2 p;
 
   p = point(e, 1 / 3.0);
@@ -538,7 +538,7 @@ static inline void linear_split(edge_segment_t *e, edge_segment_t *p1, edge_segm
   p3->color = e->color;
 }
 
-static inline void quadratic_split(edge_segment_t *e, edge_segment_t *p1, edge_segment_t *p2, edge_segment_t *p3) {
+internal inline void quadratic_split(edge_segment_t *e, edge_segment_t *p1, edge_segment_t *p2, edge_segment_t *p3) {
   vec2 p, a, b;
 
   memcpy(&p1->p[0], &e->p[0], sizeof(vec2));
@@ -566,7 +566,7 @@ static inline void quadratic_split(edge_segment_t *e, edge_segment_t *p1, edge_s
   p3->color = e->color;
 }
 
-static inline void cubic_split(edge_segment_t *e, edge_segment_t *p1, edge_segment_t *p2, edge_segment_t *p3) {
+internal inline void cubic_split(edge_segment_t *e, edge_segment_t *p1, edge_segment_t *p2, edge_segment_t *p3) {
   vec2 p, a, b, c, d;
 
   memcpy(&p1->p[0], &e->p[0], sizeof(vec2));  // p1 0
@@ -624,7 +624,7 @@ static inline void cubic_split(edge_segment_t *e, edge_segment_t *p1, edge_segme
   memcpy(&p3->p[3], &e->p[3], sizeof(vec2));  // p3 3
 }
 
-static inline void edge_split(edge_segment_t *e, edge_segment_t *p1, edge_segment_t *p2, edge_segment_t *p3) {
+internal inline void edge_split(edge_segment_t *e, edge_segment_t *p1, edge_segment_t *p2, edge_segment_t *p3) {
   switch (e->type) {
     case STBTT_vline: {
       linear_split(e, p1, p2, p3);
@@ -641,26 +641,26 @@ static inline void edge_split(edge_segment_t *e, edge_segment_t *p1, edge_segmen
   }
 }
 
-static inline double shoelace(const vec2 a, const vec2 b) {
+internal inline r64 shoelace(const vec2 a, const vec2 b) {
   return (b.data[0] - a.data[0]) * (a.data[1] + b.data[1]);
 }
 
-static inline int ex_msdf_glyph_mem(stbtt_fontinfo *font, uint32_t c, size_t w, size_t h, float *bitmap, ex_metrics_t *metrics, int autofit) {
+internal inline int ex_msdf_glyph_mem(stbtt_fontinfo *font, u32 c, size_t w, size_t h, r32 *bitmap, ex_metrics_t *metrics, int autofit) {
   // Funit to pixel scale
-  float scale = stbtt_ScaleForMappingEmToPixels(font, h);
+  r32 scale = stbtt_ScaleForMappingEmToPixels(font, h);
 
   // get glyph bounding box (scaled later)
   int ix0, iy0, ix1, iy1;
-  float xoff = .5, yoff = .5;
+  r32 xoff = .5, yoff = .5;
   stbtt_GetGlyphBox(font, stbtt_FindGlyphIndex(font, c), &ix0, &iy0, &ix1, &iy1);
 
   if (autofit) {
     // calculate new height
-    float newh = h + (h - (iy1 - iy0) * scale) - 4;
+    r32 newh = h + (h - (iy1 - iy0) * scale) - 4;
 
     // calculate new scale
     // see 'stbtt_ScaleForMappingEmToPixels' in stb_truetype.h
-    uint8_t *p = font->data + font->head + 18;
+    u8 *p = font->data + font->head + 18;
     int unitsPerEm = p[0] * 256 + p[1];
     scale = newh / unitsPerEm;
 
@@ -725,7 +725,7 @@ static inline int ex_msdf_glyph_mem(stbtt_fontinfo *font, uint32_t c, size_t w, 
   typedef struct {
     signed_distance_t min_distance;
     edge_segment_t *near_edge;
-    double near_param;
+    r64 near_param;
   } edge_point_t;
 
   typedef struct {
@@ -736,7 +736,7 @@ static inline int ex_msdf_glyph_mem(stbtt_fontinfo *font, uint32_t c, size_t w, 
   // process verts into series of contour-specific edge lists
   vec2 initial = VEC2_ZERO;  // fix this?
   contour_t *contour_data = malloc(sizeof(contour_t) * contour_count);
-  double cscale = 64.0;
+  r64 cscale = 64.0;
   for (int i = 0; i < contour_count; i++) {
     size_t count = contours[i].end - contours[i].start;
     contour_data[i].edges = malloc(sizeof(edge_segment_t) * count);
@@ -804,8 +804,8 @@ static inline int ex_msdf_glyph_mem(stbtt_fontinfo *font, uint32_t c, size_t w, 
 
   // calculate edge-colors
   unsigned long long seed = 0;
-  double anglethreshold = 3.0;
-  double crossthreshold = sin(anglethreshold);
+  r64 anglethreshold = 3.0;
+  r64 crossthreshold = sin(anglethreshold);
   size_t corner_count = 0;
   for (int i = 0; i < contour_count; ++i)
     for (int j = 0; j < contour_data[i].edge_count; ++j)
@@ -909,7 +909,7 @@ static inline int ex_msdf_glyph_mem(stbtt_fontinfo *font, uint32_t c, size_t w, 
       continue;
     }
 
-    double total = 0;
+    r64 total = 0;
 
     if (edge_count == 1) {
       vec2 a, b, c;
@@ -944,8 +944,8 @@ static inline int ex_msdf_glyph_mem(stbtt_fontinfo *font, uint32_t c, size_t w, 
   }
 
   typedef struct {
-    double r, g, b;
-    double med;
+    r64 r, g, b;
+    r64 med;
   } multi_distance_t;
 
   multi_distance_t *contour_sd;
@@ -961,9 +961,9 @@ static inline int ex_msdf_glyph_mem(stbtt_fontinfo *font, uint32_t c, size_t w, 
       sr.near_param = sg.near_param = sb.near_param = 0;
       sr.min_distance.dist = sg.min_distance.dist = sb.min_distance.dist = INF;
       sr.min_distance.d = sg.min_distance.d = sb.min_distance.d = 1;
-      double d = fabs(INF);
-      double neg_dist = -INF;
-      double pos_dist = INF;
+      r64 d = fabs(INF);
+      r64 neg_dist = -INF;
+      r64 pos_dist = INF;
       int winding = 0;
 
       for (int j = 0; j < contour_count; ++j) {
@@ -975,7 +975,7 @@ static inline int ex_msdf_glyph_mem(stbtt_fontinfo *font, uint32_t c, size_t w, 
 
         for (int k = 0; k < contour_data[j].edge_count; ++k) {
           edge_segment_t *e = &contour_data[j].edges[k];
-          double param;
+          r64 param;
           signed_distance_t distance;
           distance.dist = INF;
           distance.d = 1;
@@ -1020,7 +1020,7 @@ static inline int ex_msdf_glyph_mem(stbtt_fontinfo *font, uint32_t c, size_t w, 
         if (signed_compare(b.min_distance, sb.min_distance))
           sb = b;
 
-        double med_min_dist = fabs(median(r.min_distance.dist, g.min_distance.dist, b.min_distance.dist));
+        r64 med_min_dist = fabs(median(r.min_distance.dist, g.min_distance.dist, b.min_distance.dist));
 
         if (med_min_dist < d) {
           d = med_min_dist;
@@ -1080,9 +1080,9 @@ static inline int ex_msdf_glyph_mem(stbtt_fontinfo *font, uint32_t c, size_t w, 
       }
 
       size_t index = 3 * ((row * w) + x);
-      bitmap[index] = (float)msd.r / RANGE + .5;      // r
-      bitmap[index + 1] = (float)msd.g / RANGE + .5;  // g
-      bitmap[index + 2] = (float)msd.b / RANGE + .5;  // b
+      bitmap[index] = (r32)msd.r / RANGE + .5;      // r
+      bitmap[index + 1] = (r32)msd.g / RANGE + .5;  // g
+      bitmap[index + 2] = (r32)msd.b / RANGE + .5;  // b
     }
   }
   for (int i = 0; i < contour_count; i++)
@@ -1100,8 +1100,8 @@ static inline int ex_msdf_glyph_mem(stbtt_fontinfo *font, uint32_t c, size_t w, 
   clashes_t *clashes = malloc(sizeof(clashes_t) * w * h);
   size_t cindex = 0;
 
-  double tx = EDGE_THRESHOLD / (scale * RANGE);
-  double ty = EDGE_THRESHOLD / (scale * RANGE);
+  r64 tx = EDGE_THRESHOLD / (scale * RANGE);
+  r64 ty = EDGE_THRESHOLD / (scale * RANGE);
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
       if ((x > 0 && pixel_clash(P(x, y, w, bitmap), P(MAX(x - 1, 0), y, w, bitmap), tx)) || (x < w - 1 && pixel_clash(P(x, y, w, bitmap), P(MIN(x + 1, w - 1), y, w, bitmap), tx)) || (y > 0 && pixel_clash(P(x, y, w, bitmap), P(x, MAX(y - 1, 0), w, bitmap), ty)) || (y < h - 1 && pixel_clash(P(x, y, w, bitmap), P(x, MIN(y + 1, h - 1), w, bitmap), ty))) {
@@ -1113,7 +1113,7 @@ static inline int ex_msdf_glyph_mem(stbtt_fontinfo *font, uint32_t c, size_t w, 
 
   for (int i = 0; i < cindex; i++) {
     size_t index = 3 * ((clashes[i].y * w) + clashes[i].x);
-    float med = median(bitmap[index], bitmap[index + 1], bitmap[index + 2]);
+    r32 med = median(bitmap[index], bitmap[index + 1], bitmap[index + 2]);
     bitmap[index + 0] = med;
     bitmap[index + 1] = med;
     bitmap[index + 2] = med;
@@ -1123,9 +1123,9 @@ static inline int ex_msdf_glyph_mem(stbtt_fontinfo *font, uint32_t c, size_t w, 
   return 1;
 }
 
-static inline float *ex_msdf_glyph(stbtt_fontinfo *font, uint32_t c, size_t w, size_t h, ex_metrics_t *metrics, int autofit) {
-  float *bitmap = malloc(sizeof(float) * 3 * w * h);
-  memset(bitmap, 0.0f, sizeof(float) * 3 * w * h);
+internal inline r32 *ex_msdf_glyph(stbtt_fontinfo *font, u32 c, size_t w, size_t h, ex_metrics_t *metrics, int autofit) {
+  r32 *bitmap = malloc(sizeof(r32) * 3 * w * h);
+  memset(bitmap, 0.0f, sizeof(r32) * 3 * w * h);
   if (ex_msdf_glyph_mem(font, c, w, h, bitmap, metrics, autofit) != 1) {
     free(bitmap);
     return NULL;

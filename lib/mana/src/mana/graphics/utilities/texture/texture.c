@@ -1,7 +1,7 @@
 #include "mana/graphics/utilities/texture/texture.h"
 
 // TODO: This needs to have missing file error check
-uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, struct TextureSettings texture_settings, const char* path, size_t texture_index, bool is_sprite) {
+u8 texture_init(struct Texture* texture, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, struct TextureSettings texture_settings, const char* path, size_t texture_index, b8 is_sprite) {
   struct TextureCommon* texture_common = &(texture->texture_common);
   texture_common->texture_settings = texture_settings;
   texture_common->layer_count = 1;
@@ -22,8 +22,8 @@ uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* textu
   texture_common->id = texture_index;
   texture_common->dimension = TEXTURE_DIMENSION_2D;
 
-  uint32_t w0 = 0, h0 = 0, ch0 = 0;
-  uint8_t bit0 = 0, ct0 = 0;
+  u32 w0 = 0, h0 = 0, ch0 = 0;
+  u8 bit0 = 0, ct0 = 0;
 
   void* pixels0 = png_loader_read_png(texture_common->path, api_common->asset_directory, &w0, &h0, &ch0, &bit0, &ct0);
 
@@ -58,17 +58,17 @@ uint8_t texture_init(struct Texture* texture, struct TextureManagerCommon* textu
   if (api_common->api_type == API_VULKAN) texture->texture_func = VULKAN_TEXTURE;
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-  if (api_common->api_type == API_DIRECTX_12) texture->texture_func = directx_12_TEXTURE;
+  if (api_common->api_type == API_DIRECTX_12) texture->texture_func = DIRECTX_12_TEXTURE;
 #endif
 
-  uint8_t result = texture->texture_func.texture_init(&(texture->texture_common), texture_common->texture_manager_common, api_common, pixels0);
+  u8 result = texture->texture_func.texture_init(&(texture->texture_common), texture_common->texture_manager_common, api_common, pixels0);
 
   free(pixels0);
 
   return result;
 }
 
-uint8_t texture_array_init(struct Texture* texture, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, struct TextureSettings texture_settings, const char* const* paths, uint32_t layer_count, size_t texture_index) {
+u8 texture_array_init(struct Texture* texture, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, struct TextureSettings texture_settings, const char* const* paths, u32 layer_count, size_t texture_index) {
   if (!texture || !paths || layer_count == 0) {
     log_message(LOG_SEVERITY_WARNING, "texture_array_init got invalid args\n");
     return 1;
@@ -80,7 +80,7 @@ uint8_t texture_array_init(struct Texture* texture, struct TextureManagerCommon*
   texture_common->texture_settings = texture_settings;
   texture_common->texture_manager_common = texture_manager_common;
   texture_common->id = texture_index;
-  texture_common->is_array = true;
+  texture_common->is_array = TRUE;
 
   // For now store the first path as the texture path/name/type source.
   texture_common->path = _strdup(paths[0]);
@@ -119,8 +119,8 @@ uint8_t texture_array_init(struct Texture* texture, struct TextureManagerCommon*
   texture_common->mip_levels = 1;
   texture_common->dimension = TEXTURE_DIMENSION_2D_ARRAY;
 
-  uint32_t w0 = 0, h0 = 0, ch0 = 0;
-  uint8_t bit0 = 0, ct0 = 0;
+  u32 w0 = 0, h0 = 0, ch0 = 0;
+  u8 bit0 = 0, ct0 = 0;
 
   void* pixels0 = png_loader_read_png(paths[0], api_common->asset_directory, &w0, &h0, &ch0, &bit0, &ct0);
   if (!pixels0) {
@@ -159,7 +159,7 @@ uint8_t texture_array_init(struct Texture* texture, struct TextureManagerCommon*
   size_t frame_size = (size_t)w0 * (size_t)h0 * (size_t)ch0 * bytes_per_channel;
   size_t total_size = frame_size * (size_t)layer_count;
 
-  uint8_t* combined_pixels = (uint8_t*)malloc(total_size);
+  u8* combined_pixels = (u8*)malloc(total_size);
   if (!combined_pixels) {
     log_message(LOG_SEVERITY_ERROR, "Failed to alloc texture array upload buffer\n");
     free(pixels0);
@@ -172,9 +172,9 @@ uint8_t texture_array_init(struct Texture* texture, struct TextureManagerCommon*
   memcpy(combined_pixels, pixels0, frame_size);
   free(pixels0);
 
-  for (uint32_t layer = 1; layer < layer_count; layer++) {
-    uint32_t w = 0, h = 0, ch = 0;
-    uint8_t bit = 0, ct = 0;
+  for (u32 layer = 1; layer < layer_count; layer++) {
+    u32 w = 0, h = 0, ch = 0;
+    u8 bit = 0, ct = 0;
 
     void* pixels = png_loader_read_png(paths[layer], api_common->asset_directory, &w, &h, &ch, &bit, &ct);
     if (!pixels) {
@@ -208,10 +208,10 @@ uint8_t texture_array_init(struct Texture* texture, struct TextureManagerCommon*
   if (api_common->api_type == API_VULKAN) texture->texture_func = VULKAN_TEXTURE;
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-  if (api_common->api_type == API_DIRECTX_12) texture->texture_func = directx_12_TEXTURE;
+  if (api_common->api_type == API_DIRECTX_12) texture->texture_func = DIRECTX_12_TEXTURE;
 #endif
 
-  uint8_t result = texture->texture_func.texture_init(&(texture->texture_common), texture_common->texture_manager_common, api_common, combined_pixels);
+  u8 result = texture->texture_func.texture_init(&(texture->texture_common), texture_common->texture_manager_common, api_common, combined_pixels);
 
   free(combined_pixels);
 

@@ -41,7 +41,7 @@ enum SHADER_RENDER_TARGET_FORMAT {
 
 struct ShaderAttributeSettings {
   enum SHADER_STAGE shader_stage;
-  uint32_t shader_position;
+  u32 shader_position;
 };
 
 struct ShaderSettings {
@@ -53,27 +53,27 @@ struct ShaderSettings {
   struct ShaderAttributeSettings texture_sample_state[SHADER_ATTACHMENT_LIMIT];
   enum SHADER_RENDER_TARGET_FORMAT render_target_format[SHADER_ATTACHMENT_LIMIT];
 
-  uint32_t descriptors;
-  uint32_t mesh_memory_size;
-  uint32_t num_msaa_samples;
+  u32 descriptors;
+  u32 mesh_memory_size;
+  u32 num_msaa_samples;
 
   enum SHADER_FRONT_FACE front_face;
   enum SHADER_CULL_MODE cull_mode;
   enum MESH_TYPE mesh_type;
 
-  uint8_t color_attachments;
-  uint8_t vertex_attributes;
-  uint8_t uniforms_constants;
-  uint8_t texture_samples;
-  uint8_t render_targets;
+  u8 color_attachments;
+  u8 vertex_attributes;
+  u8 uniforms_constants;
+  u8 texture_samples;
+  u8 render_targets;
 
-  bool depth_test;
-  bool depth_write;
-  bool supersampled;
-  bool blend;
+  b8 depth_test;
+  b8 depth_write;
+  b8 supersampled;
+  b8 blend;
 
   // Note: Padding for 4 byte boundary
-  uint8_t _pad0[3];
+  u8 _pad0[3];
 };
 
 struct ShaderSettingsCompute {

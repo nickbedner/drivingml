@@ -19,25 +19,25 @@
 #endif
 
 struct ControllerFunc {
-  uint_fast8_t (*controller_init)(struct ControllerCommon *);
-  void (*controller_delete)(struct ControllerCommon *);
-  void (*controller_process_input)(struct ControllerCommon *);
+  u8 (*controller_init)(struct ControllerCommon*);
+  void (*controller_delete)(struct ControllerCommon*);
+  void (*controller_process_input)(struct ControllerCommon*);
 };
 
 #ifdef KEYBOARD_MOUSE_CONTROLLER_SUPPORTED
-static const struct ControllerFunc KEYBOARD_MOUSE_CONTROLLER = {keyboard_mouse_controller_init, keyboard_mouse_controller_delete, keyboard_mouse_controller_process_input};
+global const struct ControllerFunc KEYBOARD_MOUSE_CONTROLLER = {keyboard_mouse_controller_init, keyboard_mouse_controller_delete, keyboard_mouse_controller_process_input};
 #endif
 #ifdef XBOX_CONTROLLER_SUPPORTED
-static const struct ControllerFunc XBOX_CONTROLLER = {xbox_controller_init, xbox_controller_delete, xbox_controller_process_input};
+global const struct ControllerFunc XBOX_CONTROLLER = {xbox_controller_init, xbox_controller_delete, xbox_controller_process_input};
 #endif
 #ifdef PLAYSATION_CONTROLLER_SUPPORTED
-static const struct ControllerFunc PLAYSTATION_CONTROLLER = {playstation_controller_init, playstation_controller_delete, playstation_controller_process_input};
+global const struct ControllerFunc PLAYSTATION_CONTROLLER = {playstation_controller_init, playstation_controller_delete, playstation_controller_process_input};
 #endif
 #ifdef GAMECUBE_CONTROLLER_SUPPORTED
-static const struct ControllerFunc GAMECUBE_CONTROLLER = {gamecube_controller_init, gamecube_controller_delete, gamecube_controller_process_input};
+global const struct ControllerFunc GAMECUBE_CONTROLLER = {gamecube_controller_init, gamecube_controller_delete, gamecube_controller_process_input};
 #endif
 #ifdef JOYSTICK_CONTROLLER_SUPPORTED
-static const struct ControllerFunc JOYSTICK_CONTROLLER = {joystick_controller_init, joystick_controller_delete, joystick_controller_process_input};
+global const struct ControllerFunc JOYSTICK_CONTROLLER = {joystick_controller_init, joystick_controller_delete, joystick_controller_process_input};
 #endif
 
 struct Controller {
@@ -45,6 +45,6 @@ struct Controller {
   struct ControllerCommon controller_common;
 };
 
-uint_fast8_t controller_init(struct Controller *controller);
-void controller_delete(struct Controller *controller);
-void controller_process_input(struct Controller *controller);
+u8 controller_init(struct Controller* controller);
+void controller_delete(struct Controller* controller);
+void controller_process_input(struct Controller* controller);

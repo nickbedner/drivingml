@@ -1,6 +1,6 @@
 #include "drivingml/core/player.h"
 
-void player_init(struct Player* player, uint_fast8_t player_num, uint_fast32_t window_height) {
+void player_init(struct Player* player, u8 player_num, uint_fast32_t window_height) {
   player->player_num = player_num;
   player_controller_init(&player->player_controller);
 
@@ -20,7 +20,7 @@ void player_delete(struct Player* player) {
   player_controller_delete(&player->player_controller);
 }
 
-void player_update(struct Player* player, struct ControllerAction* controller_action_list, uint_fast8_t controller_action_list_size) {
+void player_update(struct Player* player, struct ControllerAction* controller_action_list, u8 controller_action_list_size) {
   player_controller_process_input(&player->player_controller, controller_action_list, controller_action_list_size);
 
   // player->camera.fly_pos = player->player_controller.pos;

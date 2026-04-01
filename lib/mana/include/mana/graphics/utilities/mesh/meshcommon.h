@@ -69,7 +69,7 @@ struct VertexGrass {
 //   VkDeviceMemory index_buffer_memory;
 // };
 
-static inline void mesh_get_attribute_descriptions(enum MESH_TYPE mesh_type, VkVertexInputAttributeDescription* attribute_descriptions) {
+internal inline void mesh_get_attribute_descriptions(enum MESH_TYPE mesh_type, VkVertexInputAttributeDescription* attribute_descriptions) {
   switch (mesh_type) {
     case (MESH_TYPE_SPRITE): {
       attribute_descriptions[0].binding = 0;
@@ -215,8 +215,8 @@ static inline void mesh_get_attribute_descriptions(enum MESH_TYPE mesh_type, VkV
 //   //D3D12_INDEX_BUFFER_VIEW index_buffer_view;
 // };
 
-static inline uint32_t mesh_get_input_layout(enum MESH_TYPE mesh_type, D3D12_INPUT_ELEMENT_DESC* inputElementDescs) {
-  uint32_t num_attributes = 0;  // This will be used to determine how many attributes were added for the mesh type.
+internal inline u32 mesh_get_input_layout(enum MESH_TYPE mesh_type, D3D12_INPUT_ELEMENT_DESC* inputElementDescs) {
+  u32 num_attributes = 0;  // This will be used to determine how many attributes were added for the mesh type.
 
   switch (mesh_type) {
     case (MESH_TYPE_SPRITE): {
@@ -280,7 +280,7 @@ static inline uint32_t mesh_get_input_layout(enum MESH_TYPE mesh_type, D3D12_INP
 
 struct MeshCommon {
   enum MESH_TYPE mesh_type;
-  uint32_t mesh_memory_size;
+  u32 mesh_memory_size;
   struct Vector* vertices;
   struct Vector* indices;
   struct Vector* textures;

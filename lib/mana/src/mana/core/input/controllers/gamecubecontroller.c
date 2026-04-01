@@ -3,7 +3,7 @@
 #ifdef _WIN64
 DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE, 0xA5DCBF10, 0x6530, 0x11D2, 0x90, 0x1F, 0x00, 0xC0, 0x4F, 0xB9, 0x51, 0xED);
 
-static BOOL gamecube_controller_is_gamecube_controller_adapter(HANDLE deviceHandle) {
+internal BOOL gamecube_controller_is_gamecube_controller_adapter(HANDLE deviceHandle) {
   // Replace with the VID and PID of the GameCube controller adapter
 
   BOOL is_match = FALSE;
@@ -21,7 +21,7 @@ static BOOL gamecube_controller_is_gamecube_controller_adapter(HANDLE deviceHand
 }
 
 // Note: Needed for certain other gamecube adapters to work or something
-static bool SendHIDReport(WINUSB_INTERFACE_HANDLE winusbHandle) {
+internal b8 SendHIDReport(WINUSB_INTERFACE_HANDLE winusbHandle) {
   WINUSB_SETUP_PACKET setup_packet = {
       .RequestType = 0x21,  // Class-specific request to interface
       .Request = 0x0B,      // SET_PROTOCOL
@@ -49,7 +49,7 @@ static bool SendHIDReport(WINUSB_INTERFACE_HANDLE winusbHandle) {
   }
 }
 
-static uint_fast8_t gamecube_controller_initialize_winusb(WINUSB_INTERFACE_HANDLE* winusb_handle, UCHAR* read_pipe_id, UCHAR* write_pipe_id) {
+internal u8 gamecube_controller_initialize_winusb(WINUSB_INTERFACE_HANDLE* winusb_handle, UCHAR* read_pipe_id, UCHAR* write_pipe_id) {
   // HDEVINFO hDevInfo = SetupDiGetClassDevs(NULL, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE | DIGCF_ALLCLASSES);
   HDEVINFO h_dev_info = SetupDiGetClassDevs(NULL, NULL, NULL, DIGCF_DEVICEINTERFACE | DIGCF_ALLCLASSES);
 
@@ -163,11 +163,11 @@ static uint_fast8_t gamecube_controller_initialize_winusb(WINUSB_INTERFACE_HANDL
 }
 #endif
 
-uint_fast8_t gamecube_controller_init(struct ControllerCommon* controller_common) {
-  // controller_common->gamecube_controller.first_read = true;
+u8 gamecube_controller_init(struct ControllerCommon* controller_common) {
+  // controller_common->gamecube_controller.first_read = TRUE;
 #ifdef _WIN64
   // Initialize WinUSB
-  uint_fast8_t error_code_gamecube_controller = gamecube_controller_initialize_winusb(&(controller_common->gamecube_controller.winusb_handle), &(controller_common->gamecube_controller.read_pipe_id), &(controller_common->gamecube_controller.write_pipe_id));
+  u8 error_code_gamecube_controller = gamecube_controller_initialize_winusb(&(controller_common->gamecube_controller.winusb_handle), &(controller_common->gamecube_controller.read_pipe_id), &(controller_common->gamecube_controller.write_pipe_id));
   if (error_code_gamecube_controller)
     return error_code_gamecube_controller;
 
@@ -178,7 +178,7 @@ uint_fast8_t gamecube_controller_init(struct ControllerCommon* controller_common
   if (!controller_common->gamecube_controller.overlapped.hEvent)
     return 1;
 
-  controller_common->gamecube_controller.reading_pending = false;
+  controller_common->gamecube_controller.reading_pending = FALSE;
 #endif
 
   return 0;
@@ -191,7 +191,7 @@ void gamecube_controller_delete(struct ControllerCommon* controller_common) {
 #endif
 }
 
-static void add_gc_action(struct ControllerCommon* controller_common, uint_fast8_t button, bool pressed, bool held, bool released, float value) {
+internal void add_gc_action(struct ControllerCommon* controller_common, u8 button, b8 pressed, b8 held, b8 released, r32 value) {
   if (controller_common->controller_action_list_size < 16) {
     struct ControllerAction* controller_action = &(controller_common->controller_action_list[controller_common->controller_action_list_size]);
     controller_action->button = button;
@@ -203,58 +203,58 @@ static void add_gc_action(struct ControllerCommon* controller_common, uint_fast8
   }
 }
 
-static void gamecube_controller_process_controller_data(struct ControllerCommon* controller_common) {
+internal void gamecube_controller_process_controller_data(struct ControllerCommon* controller_common) {
   memset(controller_common->controller_action_list, 0, sizeof(controller_common->controller_action_list));
   controller_common->controller_action_list_size = 0;
 #ifdef _WIN64
-  for (uint_fast8_t i = 0; i < 37; i++) {
+  for (u8 i = 0; i < 37; i++) {
     if (controller_common->gamecube_controller.buffer[i] == GC_ADAPTER_START_OF_INPUT) {  // Check if it's the start of a controller's data
-      for (uint_fast8_t z = 1; z < 37; z += GC_BUFFER_SIZE + 1) {
-        uint_fast8_t buffer_index = (i + z) % GC_ADAPTER_TOTAL_BUFFER_SIZE;  // Handle wrapping
+      for (u8 z = 1; z < 37; z += GC_BUFFER_SIZE + 1) {
+        u8 buffer_index = (i + z) % GC_ADAPTER_TOTAL_BUFFER_SIZE;  // Handle wrapping
 
         if (controller_common->gamecube_controller.buffer[buffer_index] == GC_CONTROLLER_PLUGGED_IN) {
           // Read the next 8 bytes for controller data
           BYTE controllerData[GC_BUFFER_SIZE];
-          for (uint_fast8_t j = 0; j < GC_BUFFER_SIZE; j++)
+          for (u8 j = 0; j < GC_BUFFER_SIZE; j++)
             controllerData[j] = controller_common->gamecube_controller.buffer[(buffer_index + j + 1) % GC_ADAPTER_TOTAL_BUFFER_SIZE];
 
           if (controllerData[0] & GC_CONTROLLER_A)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_A, true, true, false, 1.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_A, TRUE, TRUE, FALSE, 1.0f);
           if (controllerData[0] & GC_CONTROLLER_B)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_B, true, true, false, 1.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_B, TRUE, TRUE, FALSE, 1.0f);
           if (controllerData[0] & GC_CONTROLLER_X)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_X, true, true, false, 1.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_X, TRUE, TRUE, FALSE, 1.0f);
           if (controllerData[0] & GC_CONTROLLER_Y)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_Y, true, true, false, 1.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_Y, TRUE, TRUE, FALSE, 1.0f);
           if (controllerData[0] & GC_CONTROLLER_DPAD_LEFT)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_DPAD_LEFT, true, true, false, 1.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_DPAD_LEFT, TRUE, TRUE, FALSE, 1.0f);
           if (controllerData[0] & GC_CONTROLLER_DPAD_RIGHT)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_DPAD_RIGHT, true, true, false, 1.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_DPAD_RIGHT, TRUE, TRUE, FALSE, 1.0f);
           if (controllerData[0] & GC_CONTROLLER_DPAD_UP)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_DPAD_UP, true, true, false, 1.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_DPAD_UP, TRUE, TRUE, FALSE, 1.0f);
           if (controllerData[0] & GC_CONTROLLER_DPAD_DOWN)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_DPAD_DOWN, true, true, false, 1.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_DPAD_DOWN, TRUE, TRUE, FALSE, 1.0f);
           if (controllerData[1] & GC_CONTROLLER_START)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_START, true, true, false, 1.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_START, TRUE, TRUE, FALSE, 1.0f);
           if (controllerData[1] & GC_CONTROLLER_Z)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_Z, true, true, false, 1.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_Z, TRUE, TRUE, FALSE, 1.0f);
           if (controllerData[1] & GC_CONTROLLER_R)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_R, true, true, false, 1.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_R, TRUE, TRUE, FALSE, 1.0f);
           if (controllerData[1] & GC_CONTROLLER_L)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_L, true, true, false, 1.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_L, TRUE, TRUE, FALSE, 1.0f);
 
           if (controllerData[2] - 128 > 10 || controllerData[2] - 128 < -10)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_JOYSTICK_X, true, true, false, (float)(controllerData[2] - 128) / 128.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_JOYSTICK_X, TRUE, TRUE, FALSE, (r32)(controllerData[2] - 128) / 128.0f);
           if (controllerData[3] - 128 > 10 || controllerData[3] - 128 < -10)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_JOYSTICK_Y, true, true, false, (float)(controllerData[3] - 128) / 128.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_JOYSTICK_Y, TRUE, TRUE, FALSE, (r32)(controllerData[3] - 128) / 128.0f);
           if (controllerData[4] - 128 > 10 || controllerData[4] - 128 < -10)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_CSTICK_X, true, true, false, (float)(controllerData[4] - 128) / 128.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_CSTICK_X, TRUE, TRUE, FALSE, (r32)(controllerData[4] - 128) / 128.0f);
           if (controllerData[5] - 128 > 10 || controllerData[5] - 128 < -10)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_CSTICK_Y, true, true, false, (float)(controllerData[5] - 128) / 128.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_CSTICK_Y, TRUE, TRUE, FALSE, (r32)(controllerData[5] - 128) / 128.0f);
           if (controllerData[6] > 105)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_L_TRIGGER, true, true, false, (float)controllerData[6] / 255.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_L_TRIGGER, TRUE, TRUE, FALSE, (r32)controllerData[6] / 255.0f);
           if (controllerData[7] > 105)
-            add_gc_action(controller_common, GC_CONTROLLER_ACTION_R_TRIGGER, true, true, false, (float)controllerData[7] / 255.0f);
+            add_gc_action(controller_common, GC_CONTROLLER_ACTION_R_TRIGGER, TRUE, TRUE, FALSE, (r32)controllerData[7] / 255.0f);
 
         } else if (controller_common->gamecube_controller.buffer[buffer_index] == GC_CONTROLLER_NOT_PLUGGED_IN) {
           // Controller is not plugged in
@@ -277,12 +277,12 @@ void gamecube_controller_process_input(struct ControllerCommon* controller_commo
   // if (!writeResult)
   //  printf("Failed to send rumble command. Error: %lu\n", GetLastError());
   ////////////////////
-  if (controller_common->gamecube_controller.reading_pending == false) {
+  if (controller_common->gamecube_controller.reading_pending == FALSE) {
     // BOOL read_result = WinUsb_ReadPipe(controller_common->gamecube_controller.winusb_handle, controller_common->gamecube_controller.pipe_id, controller_common->gamecube_controller.buffer, sizeof(controller_common->gamecube_controller.buffer), NULL, &(controller_common->gamecube_controller.overlapped));
     WinUsb_ReadPipe(controller_common->gamecube_controller.winusb_handle, controller_common->gamecube_controller.read_pipe_id, controller_common->gamecube_controller.buffer, sizeof(controller_common->gamecube_controller.buffer), NULL, &(controller_common->gamecube_controller.overlapped));
-    controller_common->gamecube_controller.reading_pending = true;
+    controller_common->gamecube_controller.reading_pending = TRUE;
     // if (!read_result && GetLastError() == ERROR_IO_PENDING)
-    //   controller_common->gamecube_controller.reading_pending = true;
+    //   controller_common->gamecube_controller.reading_pending = TRUE;
     // else if (read_result) // The operation completed immediately
     //   gamecube_controller_process_controller_data(controller_common);
   }
@@ -299,7 +299,7 @@ void gamecube_controller_process_input(struct ControllerCommon* controller_commo
   //    else
   //      printf("Insufficient data received\n");
   //  }
-  //  controller_common->gamecube_controller.reading_pending = false;
+  //  controller_common->gamecube_controller.reading_pending = FALSE;
   //}
 #endif
 }

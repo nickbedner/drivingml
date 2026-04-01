@@ -42,7 +42,7 @@ void model_vulkan_clone_delete(struct ModelCommon* model_common, struct APICommo
   }
 }
 
-void model_vulkan_render(struct ModelCommon* model_common, struct GBuffer* gbuffer, double delta_time) {
+void model_vulkan_render(struct ModelCommon* model_common, struct GBuffer* gbuffer, r64 delta_time) {
   //(void)delta_time;
   VkCommandBuffer cmd = gbuffer->gbuffer_common.gbuffer_vulkan.command_buffer;
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, model_common->shader_handle->shader_common.shader_vulkan.graphics_pipeline);
@@ -55,7 +55,7 @@ void model_vulkan_render(struct ModelCommon* model_common, struct GBuffer* gbuff
   vkCmdBindVertexBuffers(cmd, 0, 1, vertex_buffers, offsets);
   vkCmdBindIndexBuffer(cmd, model_common->model_vulkan.index_buffer, 0, VK_INDEX_TYPE_UINT32);
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, model_common->shader_handle->shader_common.shader_vulkan.pipeline_layout, 0, 1, model_common->model_vulkan.descriptor_set, 0, NULL);
-  vkCmdDrawIndexed(cmd, (uint32_t)model_common->model_mesh->mesh_common.indices->size, 1, 0, 0, 0);
+  vkCmdDrawIndexed(cmd, (u32)model_common->model_mesh->mesh_common.indices->size, 1, 0, 0, 0);
 }
 
 void model_vulkan_update_uniforms(struct ModelCommon* model_common, struct APICommon* api_common, struct GBuffer* gbuffer, vec3d position, vec4 light_pos, vec4 diffuse_color, vec4 ambient_color, vec4 specular_light) {

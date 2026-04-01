@@ -12,17 +12,17 @@
 #include "mana/graphics/entities/water/watercommon.h"
 
 struct WaterFunc {
-  uint_fast8_t (*water_init)(struct WaterCommon*, struct APICommon*, struct Shader*, struct Texture*);
+  u8 (*water_init)(struct WaterCommon*, struct APICommon*, struct Shader*, struct Texture*);
   void (*water_delete)(struct WaterCommon*, struct APICommon*);
   void (*water_render)(struct WaterCommon*, struct GBufferCommon*);
-  void (*water_update_uniforms)(struct WaterCommon*, struct APICommon*, struct GBufferCommon*, uint32_t, uint32_t);
+  void (*water_update_uniforms)(struct WaterCommon*, struct APICommon*, struct GBufferCommon*, u32, u32);
 };
 
 #ifdef VULKAN_API_SUPPORTED
-static const struct WaterFunc VULKAN_WATER = {water_vulkan_init, water_vulkan_delete, water_vulkan_render, water_vulkan_update_uniforms};
+global const struct WaterFunc VULKAN_WATER = {water_vulkan_init, water_vulkan_delete, water_vulkan_render, water_vulkan_update_uniforms};
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-static const struct WaterFunc DIRECTX_12_WATER = {water_directx_12_init, water_directx_12_delete, water_directx_12_render, water_directx_12_update_uniforms};
+global const struct WaterFunc DIRECTX_12_WATER = {water_directx_12_init, water_directx_12_delete, water_directx_12_render, water_directx_12_update_uniforms};
 #endif
 
 struct Water {
@@ -30,7 +30,7 @@ struct Water {
   struct WaterCommon water_common;
 };
 
-uint_fast8_t water_init(struct Water*, struct APICommon*, struct Shader*, struct Texture*);
+u8 water_init(struct Water*, struct APICommon*, struct Shader*, struct Texture*);
 void water_delete(struct Water*, struct APICommon*);
 void water_render(struct Water*, struct GBufferCommon*);
-void water_update_uniforms(struct Water*, struct APICommon*, struct GBufferCommon*, uint32_t width, uint32_t height);
+void water_update_uniforms(struct Water*, struct APICommon*, struct GBufferCommon*, u32 width, u32 height);

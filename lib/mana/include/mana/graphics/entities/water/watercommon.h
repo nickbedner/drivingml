@@ -65,11 +65,11 @@ struct WaterCommon {
   vec3 position;
   vec3 scale;
 
-  float width;
-  float height;
-  float time;
+  r32 width;
+  r32 height;
+  r32 time;
   // Interal padding to ensure 16 byte alignment of uniform buffer data
-  float _pad0;
+  r32 _pad0;
 
   union {
 #ifdef VULKAN_API_SUPPORTED

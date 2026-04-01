@@ -1,6 +1,6 @@
 #include "mana/graphics/apis/api.h"
 
-uint_fast8_t gpu_api_init(struct API *api, enum API_TYPE preferred_api_type) {
+u8 gpu_api_init(struct API* api, enum API_TYPE preferred_api_type) {
   // TODO: Assign rendering struct here?
 
   if (api_handlers[preferred_api_type].api_func.api_init) {
@@ -29,7 +29,7 @@ uint_fast8_t gpu_api_init(struct API *api, enum API_TYPE preferred_api_type) {
   return API_ERROR;
 }
 
-void gpu_api_delete(struct API *api) {
+void gpu_api_delete(struct API* api) {
   // Note: Check to make sure delete function exists before calling it
   if (api->api_func.api_delete)
     api->api_func.api_delete(&api->api_common);

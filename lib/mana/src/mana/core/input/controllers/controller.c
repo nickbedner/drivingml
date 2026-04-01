@@ -1,6 +1,6 @@
 #include "mana/core/input/controllers/controller.h"
 
-uint_fast8_t controller_init(struct Controller *controller) {
+u8 controller_init(struct Controller* controller) {
 #ifdef KEYBOARD_MOUSE_CONTROLLER_SUPPORTED
   if (controller->controller_common.controller_type == CONTROLLER_KEYBOARD_MOUSE)
     controller->controller_func = KEYBOARD_MOUSE_CONTROLLER;
@@ -25,10 +25,10 @@ uint_fast8_t controller_init(struct Controller *controller) {
   return controller->controller_func.controller_init(&(controller->controller_common));
 }
 
-void controller_delete(struct Controller *controller) {
+void controller_delete(struct Controller* controller) {
   controller->controller_func.controller_delete(&(controller->controller_common));
 }
 
-void controller_process_input(struct Controller *controller) {
+void controller_process_input(struct Controller* controller) {
   controller->controller_func.controller_process_input(&(controller->controller_common));
 }

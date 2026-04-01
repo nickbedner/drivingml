@@ -9,47 +9,47 @@ typedef struct mat4 {
   union {
     struct
     {
-      float m00, m01, m02, m03,
+      r32 m00, m01, m02, m03,
           m10, m11, m12, m13,
           m20, m21, m22, m23,
           m30, m31, m32, m33;
     };
-    float data[16];
+    r32 data[16];
     vec4 vecs[4];
   };
 } mat4;
 
-static const mat4 MAT4_ZERO = {.data[0] = 0.0f, .data[1] = 0.0f, .data[2] = 0.0f, .data[3] = 0.0f, .data[4] = 0.0f, .data[5] = 0.0f, .data[6] = 0.0f, .data[7] = 0.0f, .data[8] = 0.0f, .data[9] = 0.0f, .data[10] = 0.0f, .data[11] = 0.0f, .data[12] = 0.0f, .data[13] = 0.0f, .data[14] = 0.0f, .data[15] = 0.0f};
-static const mat4 MAT4_IDENTITY = {.data[0] = 1.0f, .data[1] = 0.0f, .data[2] = 0.0f, .data[3] = 0.0f, .data[4] = 0.0f, .data[5] = 1.0f, .data[6] = 0.0f, .data[7] = 0.0f, .data[8] = 0.0f, .data[9] = 0.0f, .data[10] = 1.0f, .data[11] = 0.0f, .data[12] = 0.0f, .data[13] = 0.0f, .data[14] = 0.0f, .data[15] = 1.0f};
+global const mat4 MAT4_ZERO = {.data[0] = 0.0f, .data[1] = 0.0f, .data[2] = 0.0f, .data[3] = 0.0f, .data[4] = 0.0f, .data[5] = 0.0f, .data[6] = 0.0f, .data[7] = 0.0f, .data[8] = 0.0f, .data[9] = 0.0f, .data[10] = 0.0f, .data[11] = 0.0f, .data[12] = 0.0f, .data[13] = 0.0f, .data[14] = 0.0f, .data[15] = 0.0f};
+global const mat4 MAT4_IDENTITY = {.data[0] = 1.0f, .data[1] = 0.0f, .data[2] = 0.0f, .data[3] = 0.0f, .data[4] = 0.0f, .data[5] = 1.0f, .data[6] = 0.0f, .data[7] = 0.0f, .data[8] = 0.0f, .data[9] = 0.0f, .data[10] = 1.0f, .data[11] = 0.0f, .data[12] = 0.0f, .data[13] = 0.0f, .data[14] = 0.0f, .data[15] = 1.0f};
 
-static inline mat4 mat4_mul(mat4 m1, mat4 m2);
-static inline vec4 mat4_mul_vec4(mat4 m1, vec4 v1);
-static inline mat4 mat4_translate(mat4 m1, vec3 v1);
-static inline vec3 mat4_transform(mat4 m1, vec3 v1);
-static inline float mat4_determinant(mat4 m1);
-static inline mat4 mat4_inverse(mat4 m1);
-static inline vec3 mat4_transform_direction(mat4 m1, vec3 v1);
-static inline vec3 mat4_transform_inverse_direction(mat4 m1, vec3 v1);
-static inline vec3 mat4_transform_inverse(mat4 m1, vec3 v1);
-static inline vec3 mat4_get_axis_vector(mat4 m1, int i);
-static inline mat4 mat4_orientation_and_pos(quat q1, vec3 v1);
-static inline void mat4_fill_gl_array(mat4 m1, float* array);
-static inline mat4 mat4_look_at(vec3 eye, vec3 center, vec3 up);
-static inline mat4 mat4_transpose(mat4 m1);
-static inline mat4 mat4_rotate(mat4 m1, float angle, vec3 axis);
+global inline mat4 mat4_mul(mat4 m1, mat4 m2);
+global inline vec4 mat4_mul_vec4(mat4 m1, vec4 v1);
+global inline mat4 mat4_translate(mat4 m1, vec3 v1);
+global inline vec3 mat4_transform(mat4 m1, vec3 v1);
+global inline r32 mat4_determinant(mat4 m1);
+global inline mat4 mat4_inverse(mat4 m1);
+global inline vec3 mat4_transform_direction(mat4 m1, vec3 v1);
+global inline vec3 mat4_transform_inverse_direction(mat4 m1, vec3 v1);
+global inline vec3 mat4_transform_inverse(mat4 m1, vec3 v1);
+global inline vec3 mat4_get_axis_vector(mat4 m1, int i);
+global inline mat4 mat4_orientation_and_pos(quat q1, vec3 v1);
+global inline void mat4_fill_gl_array(mat4 m1, r32* array);
+global inline mat4 mat4_look_at(vec3 eye, vec3 center, vec3 up);
+global inline mat4 mat4_transpose(mat4 m1);
+global inline mat4 mat4_rotate(mat4 m1, r32 angle, vec3 axis);
 
-static inline mat4 mat4_mul(mat4 m1, mat4 m2) {
+global inline mat4 mat4_mul(mat4 m1, mat4 m2) {
   mat4 dest;
 
-  float a00 = m1.vecs[0].data[0], a01 = m1.vecs[0].data[1], a02 = m1.vecs[0].data[2], a03 = m1.vecs[0].data[3],
-        a10 = m1.vecs[1].data[0], a11 = m1.vecs[1].data[1], a12 = m1.vecs[1].data[2], a13 = m1.vecs[1].data[3],
-        a20 = m1.vecs[2].data[0], a21 = m1.vecs[2].data[1], a22 = m1.vecs[2].data[2], a23 = m1.vecs[2].data[3],
-        a30 = m1.vecs[3].data[0], a31 = m1.vecs[3].data[1], a32 = m1.vecs[3].data[2], a33 = m1.vecs[3].data[3],
+  r32 a00 = m1.vecs[0].data[0], a01 = m1.vecs[0].data[1], a02 = m1.vecs[0].data[2], a03 = m1.vecs[0].data[3],
+      a10 = m1.vecs[1].data[0], a11 = m1.vecs[1].data[1], a12 = m1.vecs[1].data[2], a13 = m1.vecs[1].data[3],
+      a20 = m1.vecs[2].data[0], a21 = m1.vecs[2].data[1], a22 = m1.vecs[2].data[2], a23 = m1.vecs[2].data[3],
+      a30 = m1.vecs[3].data[0], a31 = m1.vecs[3].data[1], a32 = m1.vecs[3].data[2], a33 = m1.vecs[3].data[3],
 
-        b00 = m2.vecs[0].data[0], b01 = m2.vecs[0].data[1], b02 = m2.vecs[0].data[2], b03 = m2.vecs[0].data[3],
-        b10 = m2.vecs[1].data[0], b11 = m2.vecs[1].data[1], b12 = m2.vecs[1].data[2], b13 = m2.vecs[1].data[3],
-        b20 = m2.vecs[2].data[0], b21 = m2.vecs[2].data[1], b22 = m2.vecs[2].data[2], b23 = m2.vecs[2].data[3],
-        b30 = m2.vecs[3].data[0], b31 = m2.vecs[3].data[1], b32 = m2.vecs[3].data[2], b33 = m2.vecs[3].data[3];
+      b00 = m2.vecs[0].data[0], b01 = m2.vecs[0].data[1], b02 = m2.vecs[0].data[2], b03 = m2.vecs[0].data[3],
+      b10 = m2.vecs[1].data[0], b11 = m2.vecs[1].data[1], b12 = m2.vecs[1].data[2], b13 = m2.vecs[1].data[3],
+      b20 = m2.vecs[2].data[0], b21 = m2.vecs[2].data[1], b22 = m2.vecs[2].data[2], b23 = m2.vecs[2].data[3],
+      b30 = m2.vecs[3].data[0], b31 = m2.vecs[3].data[1], b32 = m2.vecs[3].data[2], b33 = m2.vecs[3].data[3];
 
   dest.vecs[0].data[0] = a00 * b00 + a10 * b01 + a20 * b02 + a30 * b03;
   dest.vecs[0].data[1] = a01 * b00 + a11 * b01 + a21 * b02 + a31 * b03;
@@ -71,14 +71,14 @@ static inline mat4 mat4_mul(mat4 m1, mat4 m2) {
   return dest;
 }
 
-static inline vec4 mat4_mul_vec4(mat4 m1, vec4 v1) {
+global inline vec4 mat4_mul_vec4(mat4 m1, vec4 v1) {
   return (vec4){.data[0] = m1.m00 * v1.data[0] + m1.m10 * v1.data[1] + m1.m20 * v1.data[2] + m1.m30 * v1.data[3],
                 .data[1] = m1.m01 * v1.data[0] + m1.m11 * v1.data[1] + m1.m21 * v1.data[2] + m1.m31 * v1.data[3],
                 .data[2] = m1.m02 * v1.data[0] + m1.m12 * v1.data[1] + m1.m22 * v1.data[2] + m1.m32 * v1.data[3],
                 .data[3] = m1.m03 * v1.data[0] + m1.m13 * v1.data[1] + m1.m23 * v1.data[2] + m1.m33 * v1.data[3]};
 }
 
-static inline mat4 mat4_translate(mat4 m1, vec3 v1) {
+global inline mat4 mat4_translate(mat4 m1, vec3 v1) {
   m1.vecs[3] = vec4_add(vec4_scale(m1.vecs[0], v1.data[0]), m1.vecs[3]);
   m1.vecs[3] = vec4_add(vec4_scale(m1.vecs[1], v1.data[1]), m1.vecs[3]);
   m1.vecs[3] = vec4_add(vec4_scale(m1.vecs[2], v1.data[2]), m1.vecs[3]);
@@ -86,13 +86,13 @@ static inline mat4 mat4_translate(mat4 m1, vec3 v1) {
 }
 
 // Transform also translate? <-- NO!
-static inline vec3 mat4_transform(mat4 m1, vec3 v1) {
+global inline vec3 mat4_transform(mat4 m1, vec3 v1) {
   return (vec3){.data[0] = v1.data[0] * m1.data[0] + v1.data[1] * m1.data[1] + v1.data[2] * m1.data[2] + m1.data[3],
                 .data[1] = v1.data[0] * m1.data[4] + v1.data[1] * m1.data[5] + v1.data[2] * m1.data[6] + m1.data[7],
                 .data[2] = v1.data[0] * m1.data[8] + v1.data[1] * m1.data[9] + v1.data[2] * m1.data[10] + m1.data[11]};
 }
 
-static inline mat4 mat4_scale(mat4 m1, vec3 v1) {
+global inline mat4 mat4_scale(mat4 m1, vec3 v1) {
   return (mat4){
       .vecs[0] = vec4_scale(m1.vecs[0], v1.data[0]),
       .vecs[1] = vec4_scale(m1.vecs[1], v1.data[1]),
@@ -100,18 +100,18 @@ static inline mat4 mat4_scale(mat4 m1, vec3 v1) {
       .vecs[3] = m1.vecs[3]};
 }
 
-static inline float mat4_determinant(mat4 m1) {
+global inline r32 mat4_determinant(mat4 m1) {
   return -m1.data[8] * m1.data[5] * m1.data[2] + m1.data[4] * m1.data[9] * m1.data[2] + m1.data[8] * m1.data[1] * m1.data[6] - m1.data[0] * m1.data[9] * m1.data[6] - m1.data[4] * m1.data[1] * m1.data[10] + m1.data[0] * m1.data[5] * m1.data[10];
 }
 
-static inline mat4 mat4_inverse(mat4 m1) {
+global inline mat4 mat4_inverse(mat4 m1) {
   mat4 dest;
-  float t[6];
-  float det;
-  float a = m1.vecs[0].data[0], b = m1.vecs[0].data[1], c = m1.vecs[0].data[2], d = m1.vecs[0].data[3],
-        e = m1.vecs[1].data[0], f = m1.vecs[1].data[1], g = m1.vecs[1].data[2], h = m1.vecs[1].data[3],
-        i = m1.vecs[2].data[0], j = m1.vecs[2].data[1], k = m1.vecs[2].data[2], l = m1.vecs[2].data[3],
-        m = m1.vecs[3].data[0], n = m1.vecs[3].data[1], o = m1.vecs[3].data[2], p = m1.vecs[3].data[3];
+  r32 t[6];
+  r32 det;
+  r32 a = m1.vecs[0].data[0], b = m1.vecs[0].data[1], c = m1.vecs[0].data[2], d = m1.vecs[0].data[3],
+      e = m1.vecs[1].data[0], f = m1.vecs[1].data[1], g = m1.vecs[1].data[2], h = m1.vecs[1].data[3],
+      i = m1.vecs[2].data[0], j = m1.vecs[2].data[1], k = m1.vecs[2].data[2], l = m1.vecs[2].data[3],
+      m = m1.vecs[3].data[0], n = m1.vecs[3].data[1], o = m1.vecs[3].data[2], p = m1.vecs[3].data[3];
 
   t[0] = k * p - o * l;
   t[1] = j * p - n * l;
@@ -176,19 +176,19 @@ static inline mat4 mat4_inverse(mat4 m1) {
   return dest;
 }
 
-static inline vec3 mat4_transform_direction(mat4 m1, vec3 v1) {
+global inline vec3 mat4_transform_direction(mat4 m1, vec3 v1) {
   return (vec3){.data[0] = v1.data[0] * m1.data[0] + v1.data[1] * m1.data[1] + v1.data[2] * m1.data[2],
                 .data[1] = v1.data[0] * m1.data[4] + v1.data[1] * m1.data[5] + v1.data[2] * m1.data[6],
                 .data[2] = v1.data[0] * m1.data[8] + v1.data[1] * m1.data[9] + v1.data[2] * m1.data[10]};
 }
 
-static inline vec3 mat4_transform_inverse_direction(mat4 m1, vec3 v1) {
+global inline vec3 mat4_transform_inverse_direction(mat4 m1, vec3 v1) {
   return (vec3){.data[0] = v1.data[0] * m1.data[0] + v1.data[1] * m1.data[4] + v1.data[2] * m1.data[8],
                 .data[1] = v1.data[0] * m1.data[1] + v1.data[1] * m1.data[5] + v1.data[2] * m1.data[9],
                 .data[2] = v1.data[0] * m1.data[2] + v1.data[1] * m1.data[6] + v1.data[2] * m1.data[10]};
 }
 
-static inline vec3 mat4_transform_inverse(mat4 m1, vec3 v1) {
+global inline vec3 mat4_transform_inverse(mat4 m1, vec3 v1) {
   vec3 temp = v1;
   temp.data[0] -= m1.data[3];
   temp.data[1] -= m1.data[7];
@@ -199,11 +199,11 @@ static inline vec3 mat4_transform_inverse(mat4 m1, vec3 v1) {
                 .data[2] = temp.data[0] * m1.data[2] + temp.data[1] * m1.data[6] + temp.data[2] * m1.data[10]};
 }
 
-static inline vec3 mat4_get_axis_vector(mat4 m1, int i) {
+global inline vec3 mat4_get_axis_vector(mat4 m1, int i) {
   return (vec3){.data[0] = m1.data[i], .data[1] = m1.data[i + 4], .data[2] = m1.data[i + 8]};
 }
 
-static inline mat4 mat4_orientation_and_pos(quat q1, vec3 v1) {
+global inline mat4 mat4_orientation_and_pos(quat q1, vec3 v1) {
   return (mat4){.data[0] = 1 - (2 * q1.data[2] * q1.data[2] + 2 * q1.data[3] * q1.data[3]),
                 .data[1] = 2 * q1.data[1] * q1.data[2] + 2 * q1.data[3] * q1.data[0],
                 .data[2] = 2 * q1.data[1] * q1.data[3] - 2 * q1.data[2] * q1.data[0],
@@ -218,7 +218,7 @@ static inline mat4 mat4_orientation_and_pos(quat q1, vec3 v1) {
                 .data[11] = v1.data[2]};
 }
 
-static inline void mat4_fill_gl_array(mat4 m1, float* array) {
+global inline void mat4_fill_gl_array(mat4 m1, r32* array) {
   array[0] = m1.data[0];
   array[1] = m1.data[4];
   array[2] = m1.data[8];
@@ -240,7 +240,7 @@ static inline void mat4_fill_gl_array(mat4 m1, float* array) {
   array[15] = 1.0f;
 }
 
-static inline mat4 mat4_look_at(vec3 eye, vec3 center, vec3 up) {
+global inline mat4 mat4_look_at(vec3 eye, vec3 center, vec3 up) {
   mat4 dest;
   vec3 f, u, s;
 
@@ -268,7 +268,7 @@ static inline mat4 mat4_look_at(vec3 eye, vec3 center, vec3 up) {
   return dest;
 }
 
-static inline mat4 mat4_transpose(mat4 m1) {
+global inline mat4 mat4_transpose(mat4 m1) {
   // return (mat4){.m00 = m1.m00,
   //               .m10 = m1.m01,
   //               .m01 = m1.m10,
@@ -305,10 +305,10 @@ static inline mat4 mat4_transpose(mat4 m1) {
   return dest;
 }
 
-static inline mat4 mat4_rotate(mat4 m1, float angle, vec3 axis) {
+global inline mat4 mat4_rotate(mat4 m1, r32 angle, vec3 axis) {
   mat4 rot = MAT4_ZERO;
   vec3 axisn, v, vs;
-  float c;
+  r32 c;
 
   c = cosf(angle);
 
@@ -346,14 +346,14 @@ static inline mat4 mat4_rotate(mat4 m1, float angle, vec3 axis) {
   rot.m03 = rot.m13 = rot.m23 = rot.m30 = rot.m31 = rot.m32 = 0.0f;
   rot.m33 = 1.0f;
   ////////////////////////////////////////////////////////////////
-  float a00 = m1.vecs[0].data[0], a01 = m1.vecs[0].data[1], a02 = m1.vecs[0].data[2], a03 = m1.vecs[0].data[3],
-        a10 = m1.vecs[1].data[0], a11 = m1.vecs[1].data[1], a12 = m1.vecs[1].data[2], a13 = m1.vecs[1].data[3],
-        a20 = m1.vecs[2].data[0], a21 = m1.vecs[2].data[1], a22 = m1.vecs[2].data[2], a23 = m1.vecs[2].data[3],
-        a30 = m1.vecs[3].data[0], a31 = m1.vecs[3].data[1], a32 = m1.vecs[3].data[2], a33 = m1.vecs[3].data[3],
+  r32 a00 = m1.vecs[0].data[0], a01 = m1.vecs[0].data[1], a02 = m1.vecs[0].data[2], a03 = m1.vecs[0].data[3],
+      a10 = m1.vecs[1].data[0], a11 = m1.vecs[1].data[1], a12 = m1.vecs[1].data[2], a13 = m1.vecs[1].data[3],
+      a20 = m1.vecs[2].data[0], a21 = m1.vecs[2].data[1], a22 = m1.vecs[2].data[2], a23 = m1.vecs[2].data[3],
+      a30 = m1.vecs[3].data[0], a31 = m1.vecs[3].data[1], a32 = m1.vecs[3].data[2], a33 = m1.vecs[3].data[3],
 
-        b00 = rot.vecs[0].data[0], b01 = rot.vecs[0].data[1], b02 = rot.vecs[0].data[2],
-        b10 = rot.vecs[1].data[0], b11 = rot.vecs[1].data[1], b12 = rot.vecs[1].data[2],
-        b20 = rot.vecs[2].data[0], b21 = rot.vecs[2].data[1], b22 = rot.vecs[2].data[2];
+      b00 = rot.vecs[0].data[0], b01 = rot.vecs[0].data[1], b02 = rot.vecs[0].data[2],
+      b10 = rot.vecs[1].data[0], b11 = rot.vecs[1].data[1], b12 = rot.vecs[1].data[2],
+      b20 = rot.vecs[2].data[0], b21 = rot.vecs[2].data[1], b22 = rot.vecs[2].data[2];
 
   mat4 dest = m1;
   dest.vecs[0].data[0] = a00 * b00 + a10 * b01 + a20 * b02;

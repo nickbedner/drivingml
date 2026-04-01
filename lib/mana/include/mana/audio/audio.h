@@ -131,35 +131,35 @@
 // clang-format on
 
 struct WAVHeader {
-  int8_t chunk_id[4];
-  uint32_t chunk_size;
-  int8_t format[4];
-  int8_t subchunk1_id[4];
-  uint32_t subchunk1_size;
-  uint16_t audio_format;
-  uint16_t num_channels;
-  uint32_t sample_rate;
-  uint32_t byte_rate;
-  uint16_t block_align;
-  uint16_t bits_per_sample;
-  int8_t subchunk2_id[4];
-  uint32_t subchunk2_size;
+  i8 chunk_id[4];
+  u32 chunk_size;
+  i8 format[4];
+  i8 subchunk1_id[4];
+  u32 subchunk1_size;
+  u16 audio_format;
+  u16 num_channels;
+  u32 sample_rate;
+  u32 byte_rate;
+  u16 block_align;
+  u16 bits_per_sample;
+  i8 subchunk2_id[4];
+  u32 subchunk2_size;
 };
 
 struct AudioClip {
   struct WAVHeader header;
   union {
-    int8_t *int8;
-    int16_t *int16;
-    int32_t *int32;
-    float *float32;
+    i8 *int8;
+    i16 *int16;
+    i32 *int32;
+    r32 *float32;
   } samples;
 };
 
 void outputSineWave(void);
 int load_audio(char *file, struct AudioClip *clip);
 
-static inline UINT32 to_reference_time(double seconds) {
+internal inline UINT32 to_reference_time(r64 seconds) {
   return (UINT32)(seconds * 10000000.0 + 0.5);
 }
 */

@@ -93,10 +93,10 @@ struct GBufferCommon {
   vec4 color_clear_value;
   vec4 normal_clear_value;
 
-  float depth_clear_value;
-  uint_fast8_t descriptors;
+  r32 depth_clear_value;
+  u8 descriptors;
   // Note: Padding for alignment
-  uint8_t _pad0[3];
+  u8 _pad0[3];
 
   union {
 #ifdef VULKAN_API_SUPPORTED

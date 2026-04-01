@@ -1,6 +1,6 @@
 #include "mana/graphics/render/postprocess/postprocessdirectx12.h"
 
-static inline uint_fast8_t post_process_directx_12_init_common(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common) {
+internal inline u8 post_process_directx_12_init_common(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common) {
   D3D12_HEAP_PROPERTIES heap_props;
   heap_props.Type = D3D12_HEAP_TYPE_DEFAULT;
   heap_props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -27,7 +27,7 @@ static inline uint_fast8_t post_process_directx_12_init_common(struct PostProces
   init_clear_value.Color[2] = 0.0f;
   init_clear_value.Color[3] = 0.0f;
 
-  for (uint32_t num = 0; num < POST_PROCESS_PING_PONG; num++) {
+  for (u32 num = 0; num < POST_PROCESS_PING_PONG; num++) {
     HRESULT hr;
     hr = api_common->directx_12_api.device->lpVtbl->CreateCommittedResource(api_common->directx_12_api.device, &heap_props, D3D12_HEAP_FLAG_NONE, &resource_desc, D3D12_RESOURCE_STATE_RENDER_TARGET, &init_clear_value, &IID_ID3D12Resource, (void**)&(post_process_common->post_process_directx12.color_textures[num]));
     if (FAILED(hr))
@@ -87,7 +87,7 @@ static inline uint_fast8_t post_process_directx_12_init_common(struct PostProces
     }
   }
 
-  for (uint_fast8_t frame = 0; frame < POST_PROCESS_PING_PONG; frame++) {
+  for (u8 frame = 0; frame < POST_PROCESS_PING_PONG; frame++) {
     D3D12_DESCRIPTOR_HEAP_DESC srv_heap_desc;
     memset(&srv_heap_desc, 0, sizeof(srv_heap_desc));
     srv_heap_desc.NumDescriptors = MAX_SWAP_CHAIN_FRAMES;  // Or however many you need
@@ -117,9 +117,9 @@ static inline uint_fast8_t post_process_directx_12_init_common(struct PostProces
 }
 
 // Note: I'm thinking only need to use supersample once when writing from color texture to post process. When post process is ping ponging it should be regular resolution
-static inline void post_process_direct12_update_constant_buffer(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common) {
+internal inline void post_process_direct12_update_constant_buffer(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common) {
   struct ResolveUniformBufferObject ubos = {0};
-  ubos.screen_size = (vec2){.x = (float)swap_chain_common->swap_chain_extent.width, .y = (float)swap_chain_common->swap_chain_extent.height};
+  ubos.screen_size = (vec2){.x = (r32)swap_chain_common->swap_chain_extent.width, .y = (r32)swap_chain_common->swap_chain_extent.height};
 
   // Map the constant buffer to update it
   void* data;
@@ -131,7 +131,7 @@ static inline void post_process_direct12_update_constant_buffer(struct PostProce
     log_message(LOG_SEVERITY_ERROR, "Failed to map constant buffer.\n");
 }
 
-uint_fast8_t post_process_directx_12_init(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common) {
+u8 post_process_directx_12_init(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common) {
   post_process_directx_12_init_common(post_process_common, api_common, swap_chain_common);
 
   // Set up the constant buffer
@@ -144,7 +144,7 @@ uint_fast8_t post_process_directx_12_init(struct PostProcessCommon* post_process
 }
 
 void post_process_directx_12_delete(struct PostProcessCommon* post_process_common, struct APICommon* api_common) {
-  for (uint_fast8_t num = 0; num < POST_PROCESS_PING_PONG; num++) {
+  for (u8 num = 0; num < POST_PROCESS_PING_PONG; num++) {
     // Release Color Textures
     if (post_process_common->post_process_directx12.color_textures[num]) {
       post_process_common->post_process_directx12.color_textures[num]->lpVtbl->Release(post_process_common->post_process_directx12.color_textures[num]);
@@ -189,7 +189,7 @@ void post_process_directx_12_delete(struct PostProcessCommon* post_process_commo
   }
 }
 
-uint_fast8_t post_process_directx_12_resize(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common) {
+u8 post_process_directx_12_resize(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common) {
   post_process_directx_12_delete(post_process_common, api_common);
 
   if (post_process_directx_12_init_common(post_process_common, api_common, swap_chain_common) != 0)
@@ -200,18 +200,18 @@ uint_fast8_t post_process_directx_12_resize(struct PostProcessCommon* post_proce
   return 0;
 }
 
-uint_fast8_t post_process_directx_12_resolve_init(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct GBuffer* gbuffer, struct SwapChainCommon* swap_chain_common) {
+u8 post_process_directx_12_resolve_init(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct GBuffer* gbuffer, struct SwapChainCommon* swap_chain_common) {
   directx_12_graphics_utils_setup_vertex_buffer(&(api_common->directx_12_api), post_process_common->blit_fullscreen_triangle.mesh_common.vertices, &(post_process_common->post_process_directx12.vertex_buffer));
   directx_12_graphics_utils_setup_index_buffer(&(api_common->directx_12_api), post_process_common->blit_fullscreen_triangle.mesh_common.indices, &(post_process_common->post_process_directx12.index_buffer));
 
   return 0;
 }
 
-uint_fast8_t post_process_directx_12_resolve_update(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct GBuffer* gbuffer, struct SwapChainCommon* swap_chain_common) {
+u8 post_process_directx_12_resolve_update(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct GBuffer* gbuffer, struct SwapChainCommon* swap_chain_common) {
   return 0;
 }
 
-uint_fast8_t post_process_directx_12_resolve_render(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct GBuffer* gbuffer, struct SwapChainCommon* swap_chain_common) {
+u8 post_process_directx_12_resolve_render(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct GBuffer* gbuffer, struct SwapChainCommon* swap_chain_common) {
   // Reset the command allocator and command list for post-processing.
   post_process_common->post_process_directx12.command_allocator[post_process_common->ping_pong]->lpVtbl->Reset(post_process_common->post_process_directx12.command_allocator[post_process_common->ping_pong]);
   post_process_common->post_process_directx12.command_list[post_process_common->ping_pong]->lpVtbl->Reset(post_process_common->post_process_directx12.command_list[post_process_common->ping_pong], post_process_common->post_process_directx12.command_allocator[post_process_common->ping_pong], NULL);
@@ -245,7 +245,7 @@ uint_fast8_t post_process_directx_12_resolve_render(struct PostProcessCommon* po
 
   post_process_common->post_process_directx12.index_buffer_view.BufferLocation = post_process_common->post_process_directx12.index_buffer->lpVtbl->GetGPUVirtualAddress(post_process_common->post_process_directx12.index_buffer);
   post_process_common->post_process_directx12.index_buffer_view.Format = DXGI_FORMAT_R32_UINT;
-  post_process_common->post_process_directx12.index_buffer_view.SizeInBytes = (UINT)(sizeof(uint32_t) * post_process_common->blit_fullscreen_triangle.mesh_common.indices->size);
+  post_process_common->post_process_directx12.index_buffer_view.SizeInBytes = (UINT)(sizeof(u32) * post_process_common->blit_fullscreen_triangle.mesh_common.indices->size);
   post_process_common->post_process_directx12.command_list[post_process_common->ping_pong]->lpVtbl->IASetIndexBuffer(post_process_common->post_process_directx12.command_list[post_process_common->ping_pong], &(post_process_common->post_process_directx12.index_buffer_view));
 
   // Bind descriptor heaps, root signatures, and draw the fullscreen triangle
@@ -260,7 +260,7 @@ uint_fast8_t post_process_directx_12_resolve_render(struct PostProcessCommon* po
   post_process_common->post_process_directx12.command_list[post_process_common->ping_pong]->lpVtbl->SetGraphicsRootDescriptorTable(post_process_common->post_process_directx12.command_list[post_process_common->ping_pong], 2, post_process_common->resolve_shader->shader[swap_chain_common->supersample_scale - 1].shader_common.shader_directx12.sampler_handle_gpu);
   // post_process_common->post_process_directx12.command_list[post_process_common->ping_pong]->lpVtbl->SetGraphicsRootDescriptorTable(post_process_common->post_process_directx12.command_list[post_process_common->ping_pong], 0, gbuffer->gbuffer_common.gbuffer_directx12.srv_gpu_handle);
   post_process_common->post_process_directx12.command_list[post_process_common->ping_pong]->lpVtbl->IASetPrimitiveTopology(post_process_common->post_process_directx12.command_list[post_process_common->ping_pong], D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-  post_process_common->post_process_directx12.command_list[post_process_common->ping_pong]->lpVtbl->DrawIndexedInstanced(post_process_common->post_process_directx12.command_list[post_process_common->ping_pong], (uint32_t)post_process_common->blit_fullscreen_triangle.mesh_common.indices->size, 1, 0, 0, 0);
+  post_process_common->post_process_directx12.command_list[post_process_common->ping_pong]->lpVtbl->DrawIndexedInstanced(post_process_common->post_process_directx12.command_list[post_process_common->ping_pong], (u32)post_process_common->blit_fullscreen_triangle.mesh_common.indices->size, 1, 0, 0, 0);
   // post_process_common->post_process_directx12.command_list[post_process_common->ping_pong]->lpVtbl->DrawInstanced(post_process_common->post_process_directx12.command_list[post_process_common->ping_pong], 4, 1, 0, 0);
   // post_process_common->post_process_directx12.command_list[post_process_common->ping_pong]->lpVtbl->IASetPrimitiveTopology(post_process_common->post_process_directx12.command_list[post_process_common->ping_pong], D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   // post_process_common->post_process_directx12.command_list[post_process_common->ping_pong]->lpVtbl->DrawInstanced(post_process_common->post_process_directx12.command_list[post_process_common->ping_pong], 6, 1, 0, 0);

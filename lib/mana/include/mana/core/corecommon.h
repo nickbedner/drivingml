@@ -32,6 +32,25 @@
 #define MAX_LENGTH_OF_PATH 4096
 #endif
 
+#define global static
+#define internal static
+#define persist static
+
+typedef float r32;
+typedef double r64;
+typedef int8_t i8;
+typedef int16_t i16;
+typedef int32_t i32;
+typedef int64_t i64;
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+typedef uint8_t b8;
+typedef uint32_t b32;
+#define TRUE 1
+#define FALSE 0
+
 #define M_E 2.71828182845904523536         // e
 #define M_LOG2E 1.44269504088896340736     // log2(e)
 #define M_LOG10E 0.434294481903251827651   // log10(e)
@@ -54,7 +73,7 @@
     clock_t start = clock();                                               \
     func;                                                                  \
     clock_t end = clock();                                                 \
-    double elapsed = (double)(end - start) / CLOCKS_PER_SEC;               \
+    r64 elapsed = (r64)(end - start) / CLOCKS_PER_SEC;                     \
     printf("Function '%s' took %f seconds to execute.\n", #func, elapsed); \
     fflush(stdout);                                                        \
   } while (0)
@@ -68,7 +87,7 @@ enum log_severity_t {
 };
 
 void log_message(enum log_severity_t severity, const char* format, ...);
-int32_t log_delete(void);
+i32 log_delete(void);
 
-double get_high_resolution_time(void);
+r64 get_high_resolution_time(void);
 void mana_search_for_assets_directory(char* asset_directory, size_t max_len);

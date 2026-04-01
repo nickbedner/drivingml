@@ -1,6 +1,6 @@
 #include "mana/graphics/render/postprocess/postprocessvulkan.h"
 
-static inline uint_fast8_t post_process_vulkan_init_common(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common) {
+internal inline u8 post_process_vulkan_init_common(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common) {
   enum VkFormat image_format = VK_FORMAT_R8G8B8A8_UNORM;  // VK_FORMAT_R16G16B16A16_SFLOAT;
   struct VkAttachmentDescription color_attachment = {0};
   vulkan_graphics_utils_create_color_attachment(swap_chain_common->swap_chain_vulkan.swap_chain_image_format, &color_attachment);
@@ -51,9 +51,9 @@ static inline uint_fast8_t post_process_vulkan_init_common(struct PostProcessCom
   if (vkCreateRenderPass(api_common->vulkan_api.device, &render_pass_info, NULL, &(post_process_common->post_process_vulkan.render_pass)) != VK_SUCCESS)
     return 0;
 
-  for (uint_fast8_t ping_pong_target = 0; ping_pong_target < POST_PROCESS_PING_PONG; ping_pong_target++) {
+  for (u8 ping_pong_target = 0; ping_pong_target < POST_PROCESS_PING_PONG; ping_pong_target++) {
     vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, swap_chain_common->swap_chain_extent.width, swap_chain_common->swap_chain_extent.height, 1, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(post_process_common->post_process_vulkan.color_images[ping_pong_target]), &(post_process_common->post_process_vulkan.color_image_memories[ping_pong_target]));
-    vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, post_process_common->post_process_vulkan.color_images[ping_pong_target], VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, false, &(post_process_common->post_process_vulkan.color_image_views[ping_pong_target]));
+    vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, post_process_common->post_process_vulkan.color_images[ping_pong_target], VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, FALSE, &(post_process_common->post_process_vulkan.color_image_views[ping_pong_target]));
 
     VkImageView attachments_framebuffer = post_process_common->post_process_vulkan.color_image_views[ping_pong_target];
     VkFramebufferCreateInfo framebuffer_info;
@@ -76,19 +76,19 @@ static inline uint_fast8_t post_process_vulkan_init_common(struct PostProcessCom
 }
 
 // Note: I'm thinking only need to use supersample once when writing from color texture to post process. When post process is ping ponging it should be regular resolution
-static inline void post_process_vulkan_update_uniform_buffer(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common) {
-  struct ResolveUniformBufferObject ubos = {.screen_size = (vec2){.x = (float)swap_chain_common->swap_chain_extent.width, .y = (float)swap_chain_common->swap_chain_extent.height}};
+internal inline void post_process_vulkan_update_uniform_buffer(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common) {
+  struct ResolveUniformBufferObject ubos = {.screen_size = (vec2){.x = (r32)swap_chain_common->swap_chain_extent.width, .y = (r32)swap_chain_common->swap_chain_extent.height}};
   void* data;
   vkMapMemory(api_common->vulkan_api.device, post_process_common->post_process_vulkan.uniform_buffers_memory, 0, sizeof(struct ResolveUniformBufferObject), 0, &data);
   memcpy(data, &ubos, sizeof(struct ResolveUniformBufferObject));
   vkUnmapMemory(api_common->vulkan_api.device, post_process_common->post_process_vulkan.uniform_buffers_memory);
 }
 
-uint_fast8_t post_process_vulkan_init(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common) {
+u8 post_process_vulkan_init(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common) {
   if (post_process_vulkan_init_common(post_process_common, api_common, swap_chain_common) != 0)
     return 1;
 
-  for (uint_fast8_t ping_pong_target = 0; ping_pong_target < POST_PROCESS_PING_PONG; ping_pong_target++) {
+  for (u8 ping_pong_target = 0; ping_pong_target < POST_PROCESS_PING_PONG; ping_pong_target++) {
     VkSemaphoreCreateInfo semaphore_info;
     memset(&semaphore_info, 0, sizeof(semaphore_info));
     semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -118,10 +118,10 @@ uint_fast8_t post_process_vulkan_init(struct PostProcessCommon* post_process_com
   return 0;
 }
 
-static inline void post_process_delete_common(struct PostProcessCommon* post_process_common, struct APICommon* api_common) {
+internal inline void post_process_delete_common(struct PostProcessCommon* post_process_common, struct APICommon* api_common) {
   vkDestroyRenderPass(api_common->vulkan_api.device, post_process_common->post_process_vulkan.render_pass, NULL);
 
-  for (uint_fast8_t ping_pong_target = 0; ping_pong_target <= 1; ping_pong_target++) {
+  for (u8 ping_pong_target = 0; ping_pong_target <= 1; ping_pong_target++) {
     vkDestroyFramebuffer(api_common->vulkan_api.device, post_process_common->post_process_vulkan.framebuffer[ping_pong_target], NULL);
     vkDestroyImageView(api_common->vulkan_api.device, post_process_common->post_process_vulkan.color_image_views[ping_pong_target], NULL);
     vkDestroyImage(api_common->vulkan_api.device, post_process_common->post_process_vulkan.color_images[ping_pong_target], NULL);
@@ -142,11 +142,11 @@ void post_process_vulkan_delete(struct PostProcessCommon* post_process_common, s
   vkDestroyBuffer(api_common->vulkan_api.device, post_process_common->post_process_vulkan.index_buffer, NULL);
   vkFreeMemory(api_common->vulkan_api.device, post_process_common->post_process_vulkan.index_buffer_memory, NULL);
 
-  for (uint_fast8_t ping_pong_target = 0; ping_pong_target <= 1; ping_pong_target++)
+  for (u8 ping_pong_target = 0; ping_pong_target <= 1; ping_pong_target++)
     vkDestroySemaphore(api_common->vulkan_api.device, post_process_common->post_process_vulkan.semaphore[ping_pong_target], NULL);
 }
 
-uint_fast8_t post_process_vulkan_resize(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common) {
+u8 post_process_vulkan_resize(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common) {
   post_process_delete_common(post_process_common, api_common);
   post_process_vulkan_init_common(post_process_common, api_common, swap_chain_common);
 
@@ -155,8 +155,8 @@ uint_fast8_t post_process_vulkan_resize(struct PostProcessCommon* post_process_c
   return 0;
 }
 
-uint_fast8_t post_process_vulkan_resolve_init(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct GBuffer* gbuffer, struct SwapChainCommon* swap_chain_common) {
-  for (uint_fast8_t shader_num = 0; shader_num < 4; shader_num++) {
+u8 post_process_vulkan_resolve_init(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct GBuffer* gbuffer, struct SwapChainCommon* swap_chain_common) {
+  for (u8 shader_num = 0; shader_num < 4; shader_num++) {
     vulkan_graphics_utils_create_descriptors(&(api_common->vulkan_api), &(post_process_common->post_process_vulkan.descriptor_set[shader_num]), &(post_process_common->resolve_shader->shader[shader_num].shader_common.shader_vulkan.descriptor_set_layout), &(post_process_common->resolve_shader->shader[shader_num].shader_common.shader_vulkan.descriptor_pool), post_process_common->resolve_shader->shader[shader_num].shader_common.shader_settings.descriptors);
 
     VkWriteDescriptorSet dcs[2];
@@ -172,8 +172,8 @@ uint_fast8_t post_process_vulkan_resolve_init(struct PostProcessCommon* post_pro
   return 0;
 }
 
-uint_fast8_t post_process_vulkan_resolve_update(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct GBuffer* gbuffer, struct SwapChainCommon* swap_chain_common) {
-  for (uint_fast8_t shader_num = 0; shader_num < 4; shader_num++) {
+u8 post_process_vulkan_resolve_update(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct GBuffer* gbuffer, struct SwapChainCommon* swap_chain_common) {
+  for (u8 shader_num = 0; shader_num < 4; shader_num++) {
     VkWriteDescriptorSet dcs[2];
     memset(dcs, 0, sizeof(dcs));
     vulkan_graphics_utils_setup_descriptor_buffer(dcs, 0, &(post_process_common->post_process_vulkan.descriptor_set[shader_num]), (VkDescriptorBufferInfo[]){vulkan_graphics_utils_setup_descriptor_buffer_info(sizeof(struct ResolveUniformBufferObject), &(post_process_common->post_process_vulkan.uniform_buffer))});
@@ -183,7 +183,7 @@ uint_fast8_t post_process_vulkan_resolve_update(struct PostProcessCommon* post_p
   return 0;
 }
 
-uint_fast8_t post_process_vulkan_resolve_render(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct GBuffer* gbuffer, struct SwapChainCommon* swap_chain_common) {
+u8 post_process_vulkan_resolve_render(struct PostProcessCommon* post_process_common, struct APICommon* api_common, struct GBuffer* gbuffer, struct SwapChainCommon* swap_chain_common) {
   // Custom for intial blitting to post process image
   VkCommandBufferBeginInfo begin_info;
   memset(&begin_info, 0, sizeof(begin_info));
@@ -218,7 +218,7 @@ uint_fast8_t post_process_vulkan_resolve_render(struct PostProcessCommon* post_p
   vkCmdBindVertexBuffers(post_process_common->post_process_vulkan.command_buffer[post_process_common->ping_pong], 0, 1, vertex_buffers, offsets);
   vkCmdBindIndexBuffer(post_process_common->post_process_vulkan.command_buffer[post_process_common->ping_pong], post_process_common->post_process_vulkan.index_buffer, 0, VK_INDEX_TYPE_UINT32);
   vkCmdBindDescriptorSets(post_process_common->post_process_vulkan.command_buffer[post_process_common->ping_pong], VK_PIPELINE_BIND_POINT_GRAPHICS, post_process_common->resolve_shader->shader[swap_chain_common->supersample_scale - 1].shader_common.shader_vulkan.pipeline_layout, 0, 1, post_process_common->post_process_vulkan.descriptor_set, 0, NULL);
-  vkCmdDrawIndexed(post_process_common->post_process_vulkan.command_buffer[post_process_common->ping_pong], (uint32_t)post_process_common->blit_fullscreen_triangle.mesh_common.indices->size, 1, 0, 0, 0);
+  vkCmdDrawIndexed(post_process_common->post_process_vulkan.command_buffer[post_process_common->ping_pong], (u32)post_process_common->blit_fullscreen_triangle.mesh_common.indices->size, 1, 0, 0, 0);
   vkCmdEndRenderPass(post_process_common->post_process_vulkan.command_buffer[post_process_common->ping_pong]);
 
   if (vkEndCommandBuffer(post_process_common->post_process_vulkan.command_buffer[post_process_common->ping_pong]) != VK_SUCCESS) {

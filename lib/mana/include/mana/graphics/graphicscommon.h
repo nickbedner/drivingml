@@ -24,9 +24,9 @@
 #include "mana/math/vec3.h"
 #include "mana/math/vec4.h"
 
-static const vec4 COLOR_TRANSPARENT_BLACK = {.x = 0.0f, .y = 0.0f, .z = 0.0f, .w = 0.0f};
-static const vec4 COLOR_SUN_BLUE = {.x = 0.0f, .y = 0.5098f, .z = 0.8627f, .w = 1.0f};
-static const vec4 COLOR_CORNFLOWER_BLUE = {.x = 0.392f, .y = 0.584f, .z = 0.929f, .w = 1.0f};
+global const vec4 COLOR_TRANSPARENT_BLACK = {.x = 0.0f, .y = 0.0f, .z = 0.0f, .w = 0.0f};
+global const vec4 COLOR_SUN_BLUE = {.x = 0.0f, .y = 0.5098f, .z = 0.8627f, .w = 1.0f};
+global const vec4 COLOR_CORNFLOWER_BLUE = {.x = 0.392f, .y = 0.584f, .z = 0.929f, .w = 1.0f};
 
 struct LightingUniformBufferObject {
   alignas(16) vec4 direction;

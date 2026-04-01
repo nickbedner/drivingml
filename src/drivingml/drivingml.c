@@ -1,16 +1,16 @@
 #include "drivingml/drivingml.h"
 
-uint_fast8_t drivingml_init(struct DrivingML* drivingml) {
+u8 drivingml_init(struct DrivingML* drivingml) {
   struct RendererSettings main_window_renderer_settings = {0};
   main_window_renderer_settings.width = 1280;
   main_window_renderer_settings.height = 720;
   main_window_renderer_settings.supersample_scale = 1;
   main_window_renderer_settings.msaa_samples = 1;
-  main_window_renderer_settings.vsync = true;
+  main_window_renderer_settings.vsync = TRUE;
   main_window_renderer_settings.preferred_api_type = API_VULKAN;
 
   // TODO: Load preferred from file
-  const uint_fast8_t mana_init_error = mana_init(&(drivingml->mana), main_window_renderer_settings.preferred_api_type);
+  const u8 mana_init_error = mana_init(&(drivingml->mana), main_window_renderer_settings.preferred_api_type);
 
   switch (mana_init_error) {
     case (MANA_SUCCESS): {
@@ -26,7 +26,7 @@ uint_fast8_t drivingml_init(struct DrivingML* drivingml) {
     }
   }
 
-  const uint_fast8_t window_error = window_init(&(drivingml->window), &(drivingml->mana.api.api_common), PROJECT_NAME, &(main_window_renderer_settings));
+  const u8 window_error = window_init(&(drivingml->window), &(drivingml->mana.api.api_common), PROJECT_NAME, &(main_window_renderer_settings));
 
   switch (window_error) {
     case (WINDOW_SUCCESS): {
@@ -54,13 +54,13 @@ void drivingml_delete(struct DrivingML* drivingml) {
 }
 
 void drivingml_start(struct DrivingML* drivingml) {
-  const double sim_dt = 1.0 / 60.0;
-  double previous_time = get_high_resolution_time();
-  double accumulator = 0.0;
+  const r64 sim_dt = 1.0 / 60.0;
+  r64 previous_time = get_high_resolution_time();
+  r64 accumulator = 0.0;
 
   while (!drivingml->window.should_close) {
-    double current_time = get_high_resolution_time();
-    double frame_time = current_time - previous_time;
+    r64 current_time = get_high_resolution_time();
+    r64 frame_time = current_time - previous_time;
 
     previous_time = current_time;
 
@@ -69,8 +69,8 @@ void drivingml_start(struct DrivingML* drivingml) {
     // window->minimized
     window_prepare_frame(&(drivingml->window));
 
-    int32_t max_steps = 5;
-    int32_t steps = 0;
+    i32 max_steps = 5;
+    i32 steps = 0;
 
     if (EVAL_MODE) {
       // In training mode we want to run as many sim steps as possible to speed up training, but still render every frame so we can see what's going on
@@ -81,7 +81,7 @@ void drivingml_start(struct DrivingML* drivingml) {
       }
 
       if (drivingml->window.minimized) {
-        double sleep_s = sim_dt - accumulator;
+        r64 sleep_s = sim_dt - accumulator;
         // More than 1 ms left
         if (sleep_s > 0.001) {
           Sleep((DWORD)((sleep_s - 0.001) * 1000.0));

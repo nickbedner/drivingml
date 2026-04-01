@@ -1,12 +1,12 @@
 #include "mana/graphics/utilities/texture/texturedirectx12.h"
 
-static uint64_t texture_directx_12_upload_texture_data(struct APICommon* api_common, ID3D12GraphicsCommandList* command_list, ID3D12Resource* texture_resource, DXGI_FORMAT format, const void* data, uint32_t base_width, uint32_t base_height, uint32_t mip_levels, uint8_t bytes_per_channel, uint8_t channels) {
+internal u64 texture_directx_12_upload_texture_data(struct APICommon* api_common, ID3D12GraphicsCommandList* command_list, ID3D12Resource* texture_resource, DXGI_FORMAT format, const void* data, u32 base_width, u32 base_height, u32 mip_levels, u8 bytes_per_channel, u8 channels) {
   ID3D12Device* device = api_common->directx_12_api.device;
 
   D3D12_RESOURCE_DESC tex_desc;
   texture_resource->lpVtbl->GetDesc(texture_resource, &tex_desc);
 
-  uint32_t bytes_per_pixel = bytes_per_channel * channels;
+  u32 bytes_per_pixel = bytes_per_channel * channels;
   UINT num_subresources = mip_levels;
 
   D3D12_PLACED_SUBRESOURCE_FOOTPRINT* layouts = (D3D12_PLACED_SUBRESOURCE_FOOTPRINT*)malloc(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) * num_subresources);
@@ -25,10 +25,10 @@ static uint64_t texture_directx_12_upload_texture_data(struct APICommon* api_com
   UINT64 upload_size = 0;
   device->lpVtbl->GetCopyableFootprints(device, &tex_desc, 0, num_subresources, 0, layouts, num_rows, row_sizes, &upload_size);
 
-  const uint8_t* src = (const uint8_t*)data;
+  const u8* src = (const u8*)data;
   for (UINT mip = 0; mip < num_subresources; ++mip) {
-    uint32_t w = base_width >> mip;
-    uint32_t h = base_height >> mip;
+    u32 w = base_width >> mip;
+    u32 h = base_height >> mip;
     if (w == 0) w = 1;
     if (h == 0) h = 1;
 
@@ -72,7 +72,7 @@ static uint64_t texture_directx_12_upload_texture_data(struct APICommon* api_com
     return 1;
   }
 
-  uint8_t* mapped = NULL;
+  u8* mapped = NULL;
   D3D12_RANGE read_range = {0, 0};
   hr = upload_heap->lpVtbl->Map(upload_heap, 0, &read_range, (void**)&mapped);
   if (FAILED(hr)) {
@@ -85,8 +85,8 @@ static uint64_t texture_directx_12_upload_texture_data(struct APICommon* api_com
   }
 
   for (UINT mip = 0; mip < num_subresources; ++mip) {
-    const uint8_t* src_rows = (const uint8_t*)subresources[mip].pData;
-    uint8_t* dst_rows = mapped + layouts[mip].Offset;
+    const u8* src_rows = (const u8*)subresources[mip].pData;
+    u8* dst_rows = mapped + layouts[mip].Offset;
     UINT64 src_row_pitch = (UINT64)subresources[mip].RowPitch;
     UINT dst_row_pitch = layouts[mip].Footprint.RowPitch;
 
@@ -169,22 +169,22 @@ static uint64_t texture_directx_12_upload_texture_data(struct APICommon* api_com
   return 0;
 }
 
-uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, void* pixels) {
+u8 texture_directx_12_init(struct TextureCommon* texture_common, struct TextureManagerCommon* texture_manager_common, struct APICommon* api_common, void* pixels) {
   struct TextureSettings texture_settings = texture_common->texture_settings;
 
   void* upload_pixels = pixels;
 
   if (texture_settings.mip_type == MIP_CUSTOM) {
-    uint32_t mip_count = texture_settings.mip_count;
+    u32 mip_count = texture_settings.mip_count;
     if (mip_count < 1)
       mip_count = 1;
 
-    uint32_t bytes_per_channel_local = (texture_common->bit_depth == 16) ? 2 : 1;
+    u32 bytes_per_channel_local = (texture_common->bit_depth == 16) ? 2 : 1;
 
     size_t total = 0;
-    for (uint8_t level = 0; level < mip_count; ++level) {
-      uint32_t w = texture_common->width >> level;
-      uint32_t h = texture_common->height >> level;
+    for (u8 level = 0; level < mip_count; ++level) {
+      u32 w = texture_common->width >> level;
+      u32 h = texture_common->height >> level;
       if (w == 0)
         w = 1;
       if (h == 0)
@@ -193,7 +193,7 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
       total += (size_t)w * (size_t)h * (size_t)texture_common->channels * (size_t)bytes_per_channel_local;
     }
 
-    uint8_t* combined = (uint8_t*)malloc(total);
+    u8* combined = (u8*)malloc(total);
     if (!combined)
       return 1;
 
@@ -203,15 +203,15 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
     memcpy(combined + off, pixels, sz0);
     off += sz0;
 
-    for (uint8_t level = 1; level < mip_count; ++level) {
+    for (u8 level = 1; level < mip_count; ++level) {
       char* mip_path = texture_common_build_mip_path(texture_common->path, level);
       if (!mip_path) {
         free(combined);
         return 1;
       }
 
-      uint32_t wl = 0, hl = 0, chl = 0;
-      uint8_t bitl = 0, ctl = 0;
+      u32 wl = 0, hl = 0, chl = 0;
+      u8 bitl = 0, ctl = 0;
       void* pixelsL = png_loader_read_png(mip_path, api_common->asset_directory, &wl, &hl, &chl, &bitl, &ctl);
       free(mip_path);
 
@@ -228,8 +228,8 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
         return 1;
       }
 
-      uint32_t exp_w = texture_common->width >> level;
-      uint32_t exp_h = texture_common->height >> level;
+      u32 exp_w = texture_common->width >> level;
+      u32 exp_h = texture_common->height >> level;
       if (exp_w == 0) exp_w = 1;
       if (exp_h == 0) exp_h = 1;
 
@@ -277,8 +277,8 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
 #pragma clang diagnostic pop
   }
 
-  uint8_t bytes_per_channel = 1;
-  uint8_t channels = 4;
+  u8 bytes_per_channel = 1;
+  u8 channels = 4;
   DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM;
   switch (texture_settings.format_type) {
     case FORMAT_R8_UNORM: {
@@ -325,7 +325,7 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
 #pragma clang diagnostic pop
   }
 
-  uint32_t mip_levels = 1;
+  u32 mip_levels = 1;
 
   if (texture_settings.mip_type == MIP_CUSTOM) {
     mip_levels = texture_settings.mip_count;
@@ -368,7 +368,7 @@ uint8_t texture_directx_12_init(struct TextureCommon* texture_common, struct Tex
 
   UINT max_aniso = 1;
   if (filter == D3D12_FILTER_ANISOTROPIC) {
-    float req = texture_settings.max_anisotropy;
+    r32 req = texture_settings.max_anisotropy;
     if (req < 1.0f) req = 1.0f;
     if (req > 16.0f) req = 16.0f;
     max_aniso = (UINT)req;

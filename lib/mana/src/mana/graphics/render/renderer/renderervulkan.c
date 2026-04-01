@@ -1,27 +1,27 @@
 #include "mana/graphics/render/renderer/renderervulkan.h"
 
-static bool window_device_can_present(struct APICommon* api_common, struct SwapChain* swap_chain) {
+internal b8 window_device_can_present(struct APICommon* api_common, struct SwapChain* swap_chain) {
   struct VulkanAPI* vulkan_api = &api_common->vulkan_api;
 
-  uint32_t queue_family_count = 0;
+  u32 queue_family_count = 0;
   vkGetPhysicalDeviceQueueFamilyProperties(vulkan_api->physical_device, &queue_family_count, NULL);
   VkQueueFamilyProperties* queue_families = (VkQueueFamilyProperties*)alloca(queue_family_count * sizeof(VkQueueFamilyProperties));
   vkGetPhysicalDeviceQueueFamilyProperties(vulkan_api->physical_device, &queue_family_count, queue_families);
 
-  for (uint32_t queue_family_num = 0; queue_family_num < queue_family_count; queue_family_num++) {
-    VkBool32 present_support = false;
+  for (u32 queue_family_num = 0; queue_family_num < queue_family_count; queue_family_num++) {
+    VkBool32 present_support = FALSE;
     vkGetPhysicalDeviceSurfaceSupportKHR(vulkan_api->physical_device, queue_family_num, swap_chain->swap_chain_common.swap_chain_vulkan.surface, &present_support);
 
     if (queue_families[queue_family_num].queueCount > 0 && present_support) {
       (&vulkan_api->indices)->present_family = queue_family_num;
-      return true;
+      return TRUE;
     }
   }
 
-  return false;
+  return FALSE;
 }
 
-uint8_t vulkan_renderer_init(struct APICommon* api_common, struct Surface* surface, struct SwapChain* swap_chain, struct GBuffer* gbuffer, struct PostProcess* post_process, struct RendererSettings* renderer_settings) {
+u8 vulkan_renderer_init(struct APICommon* api_common, struct Surface* surface, struct SwapChain* swap_chain, struct GBuffer* gbuffer, struct PostProcess* post_process, struct RendererSettings* renderer_settings) {
   /* create the window surface */
   VkWin32SurfaceCreateInfoKHR surface_create_info;
   memset(&surface_create_info, 0, sizeof(surface_create_info));

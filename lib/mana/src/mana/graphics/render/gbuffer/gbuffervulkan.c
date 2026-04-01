@@ -1,22 +1,22 @@
 #include "mana/graphics/render/gbuffer/gbuffervulkan.h"
 
-static inline uint_fast8_t gbuffer_vulkan_init_common(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
+internal inline u8 gbuffer_vulkan_init_common(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   VkFormat image_format = VK_FORMAT_R8G8B8A8_UNORM;  // VK_FORMAT_R16G16B16A16_SFLOAT;
   VkImageUsageFlags image_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
   VkFormat depth_format = vulkan_graphics_utils_find_depth_format(api_common->vulkan_api.physical_device);
 
-  uint32_t gbuffer_width = swap_chain_common->swap_chain_extent.width * swap_chain_common->supersample_scale;
-  uint32_t gbuffer_height = swap_chain_common->swap_chain_extent.height * swap_chain_common->supersample_scale;
+  u32 gbuffer_width = swap_chain_common->swap_chain_extent.width * swap_chain_common->supersample_scale;
+  u32 gbuffer_height = swap_chain_common->swap_chain_extent.height * swap_chain_common->supersample_scale;
 
   // Resolve or standard if not multisampling
   vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, gbuffer_width, gbuffer_height, 1, 1, VK_SAMPLE_COUNT_1_BIT, image_format, VK_IMAGE_TILING_OPTIMAL, image_usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(gbuffer_common->gbuffer_vulkan.color_image), &(gbuffer_common->gbuffer_vulkan.color_image_memory));
-  vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.color_image, image_format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, false, &(gbuffer_common->gbuffer_vulkan.color_image_view));
+  vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.color_image, image_format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, FALSE, &(gbuffer_common->gbuffer_vulkan.color_image_view));
 
   vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, gbuffer_width, gbuffer_height, 1, 1, VK_SAMPLE_COUNT_1_BIT, image_format, VK_IMAGE_TILING_OPTIMAL, image_usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(gbuffer_common->gbuffer_vulkan.normal_image), &(gbuffer_common->gbuffer_vulkan.normal_image_memory));
-  vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.normal_image, image_format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, false, &(gbuffer_common->gbuffer_vulkan.normal_image_view));
+  vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.normal_image, image_format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, FALSE, &(gbuffer_common->gbuffer_vulkan.normal_image_view));
 
   vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, gbuffer_width, gbuffer_height, 1, 1, (VkSampleCountFlagBits)msaa_samples, depth_format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(gbuffer_common->gbuffer_vulkan.depth_image), &(gbuffer_common->gbuffer_vulkan.depth_image_memory));
-  vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.depth_image, depth_format, VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1, false, &(gbuffer_common->gbuffer_vulkan.depth_image_view));
+  vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.depth_image, depth_format, VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1, FALSE, &(gbuffer_common->gbuffer_vulkan.depth_image_view));
   VkAttachmentDescription color_attachment = {0};
   vulkan_graphics_utils_create_color_attachment(swap_chain_common->swap_chain_vulkan.swap_chain_image_format, &color_attachment);
   color_attachment.format = image_format;
@@ -48,10 +48,10 @@ static inline uint_fast8_t gbuffer_vulkan_init_common(struct GBufferCommon* gbuf
 
     // Multisample
     vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, gbuffer_width, gbuffer_height, 1, 1, (VkSampleCountFlagBits)msaa_samples, image_format, VK_IMAGE_TILING_OPTIMAL, image_usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(gbuffer_common->gbuffer_vulkan.multisample_color_image), &(gbuffer_common->gbuffer_vulkan.multisample_color_image_memory));
-    vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.multisample_color_image, image_format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, false, &(gbuffer_common->gbuffer_vulkan.multisample_color_image_view));
+    vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.multisample_color_image, image_format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, FALSE, &(gbuffer_common->gbuffer_vulkan.multisample_color_image_view));
 
     vulkan_graphics_utils_create_image(api_common->vulkan_api.device, api_common->vulkan_api.physical_device, gbuffer_width, gbuffer_height, 1, 1, (VkSampleCountFlagBits)msaa_samples, image_format, VK_IMAGE_TILING_OPTIMAL, image_usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &(gbuffer_common->gbuffer_vulkan.multisample_normal_image), &(gbuffer_common->gbuffer_vulkan.multisample_normal_image_memory));
-    vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.multisample_normal_image, image_format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, false, &(gbuffer_common->gbuffer_vulkan.multisample_normal_image_view));
+    vulkan_graphics_utils_create_image_view(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.multisample_normal_image, image_format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, FALSE, &(gbuffer_common->gbuffer_vulkan.multisample_normal_image_view));
 
     VkAttachmentDescription multisample_color_attachment = {0};
     vulkan_graphics_utils_create_color_attachment(swap_chain_common->swap_chain_vulkan.swap_chain_image_format, &multisample_color_attachment);
@@ -194,7 +194,7 @@ static inline uint_fast8_t gbuffer_vulkan_init_common(struct GBufferCommon* gbuf
   return 0;
 }
 
-uint_fast8_t gbuffer_vulkan_init(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
+u8 gbuffer_vulkan_init(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   if (gbuffer_vulkan_init_common(gbuffer_common, api_common, swap_chain_common, msaa_samples) != 0)
     return 1;
 
@@ -247,7 +247,7 @@ uint_fast8_t gbuffer_vulkan_init(struct GBufferCommon* gbuffer_common, struct AP
   return 0;
 }
 
-static inline void gbuffer_vulkan_delete_common(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, const uint_fast32_t msaa_samples) {
+internal inline void gbuffer_vulkan_delete_common(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, const uint_fast32_t msaa_samples) {
   vkDestroyRenderPass(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.render_pass, NULL);
 
   vkDestroyFramebuffer(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.framebuffer, NULL);
@@ -284,14 +284,14 @@ void gbuffer_vulkan_delete(struct GBufferCommon* gbuffer_common, struct APICommo
   vkDestroySampler(api_common->vulkan_api.device, gbuffer_common->gbuffer_vulkan.texture_sampler, NULL);
 }
 
-uint_fast8_t gbuffer_vulkan_resize(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
+u8 gbuffer_vulkan_resize(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   gbuffer_vulkan_delete_common(gbuffer_common, api_common, msaa_samples);
   gbuffer_vulkan_init_common(gbuffer_common, api_common, swap_chain_common, msaa_samples);
 
   return 0;
 }
 
-uint_fast8_t gbuffer_vulkan_start(struct GBufferCommon* gbuffer_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
+u8 gbuffer_vulkan_start(struct GBufferCommon* gbuffer_common, struct SwapChainCommon* swap_chain_common, const uint_fast32_t msaa_samples) {
   VkCommandBufferBeginInfo begin_info;
   memset(&begin_info, 0, sizeof(begin_info));
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -309,8 +309,8 @@ uint_fast8_t gbuffer_vulkan_start(struct GBufferCommon* gbuffer_common, struct S
   render_pass_info.framebuffer = gbuffer_common->gbuffer_vulkan.framebuffer;
   render_pass_info.renderArea.offset.x = 0;
   render_pass_info.renderArea.offset.y = 0;
-  render_pass_info.renderArea.extent.width = (uint32_t)((float)swap_chain_common->swap_chain_extent.width * swap_chain_common->supersample_scale);
-  render_pass_info.renderArea.extent.height = (uint32_t)((float)swap_chain_common->swap_chain_extent.height * swap_chain_common->supersample_scale);
+  render_pass_info.renderArea.extent.width = (u32)((r32)swap_chain_common->swap_chain_extent.width * swap_chain_common->supersample_scale);
+  render_pass_info.renderArea.extent.height = (u32)((r32)swap_chain_common->swap_chain_extent.height * swap_chain_common->supersample_scale);
 
   if (msaa_samples != 1) {
     VkClearValue clear_values[MULTISAMPLE_GBUFFER_TOTAL_ATTACHMENTS] = {0};
@@ -361,7 +361,7 @@ uint_fast8_t gbuffer_vulkan_start(struct GBufferCommon* gbuffer_common, struct S
   return 0;
 }
 
-uint_fast8_t gbuffer_vulkan_stop(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, const uint_fast32_t msaa_samples) {
+u8 gbuffer_vulkan_stop(struct GBufferCommon* gbuffer_common, struct APICommon* api_common, const uint_fast32_t msaa_samples) {
   vkCmdEndRenderPass(gbuffer_common->gbuffer_vulkan.command_buffer);
 
   if (vkEndCommandBuffer(gbuffer_common->gbuffer_vulkan.command_buffer) != VK_SUCCESS) {

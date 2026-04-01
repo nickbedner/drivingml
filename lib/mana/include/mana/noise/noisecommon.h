@@ -1,7 +1,6 @@
 #pragma once
 
 #include <math.h>
-#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,66 +51,66 @@ enum NoiseQuality {
 };
 
 // SSE2
-static inline __m128i sse2_mm_mullo_epi32(__m128i a, __m128i b);
-static inline int sse2_mm_extract_epi32(__m128i a, int index);
-static inline __m128 make_int_32_range_sse2(__m128 n);
-static inline __m128 s_curve3_sse2(__m128 a);
-static inline __m128 s_curve5_sse2(__m128 a);
-static inline __m128 linear_interp_sse2(__m128 n0, __m128 n1, __m128 a);
-static inline __m128i int_value_noise_3d_sse2_full(__m128i x, __m128i y, __m128i z, int seed);
-static inline __m128i int_value_noise_3d_sse2(__m128i x, int y, int z, int seed);
-static inline __m128 value_noise_3d_sse2_full(__m128i x, __m128i y, __m128i z, int seed);
-static inline __m128 value_noise_3d_sse2(__m128i x, int y, int z, int seed);
-static inline __m128 gradient_noise_3d_sse2(__m128 fx, float fy, float fz, __m128i ix, int iy, int iz, int seed);
-static inline __m128 gradient_coherent_noise_3d_sse2(__m128 x, float y, float z, int seed, enum NoiseQuality noise_quality);
+global inline __m128i sse2_mm_mullo_epi32(__m128i a, __m128i b);
+global inline int sse2_mm_extract_epi32(__m128i a, int index);
+global inline __m128 make_int_32_range_sse2(__m128 n);
+global inline __m128 s_curve3_sse2(__m128 a);
+global inline __m128 s_curve5_sse2(__m128 a);
+global inline __m128 linear_interp_sse2(__m128 n0, __m128 n1, __m128 a);
+global inline __m128i int_value_noise_3d_sse2_full(__m128i x, __m128i y, __m128i z, int seed);
+global inline __m128i int_value_noise_3d_sse2(__m128i x, int y, int z, int seed);
+global inline __m128 value_noise_3d_sse2_full(__m128i x, __m128i y, __m128i z, int seed);
+global inline __m128 value_noise_3d_sse2(__m128i x, int y, int z, int seed);
+global inline __m128 gradient_noise_3d_sse2(__m128 fx, r32 fy, r32 fz, __m128i ix, int iy, int iz, int seed);
+global inline __m128 gradient_coherent_noise_3d_sse2(__m128 x, r32 y, r32 z, int seed, enum NoiseQuality noise_quality);
 // SSE4_1
-static inline __m128i int_value_noise_3d_sse4_1_full(__m128i x, __m128i y, __m128i z, int seed);
-static inline __m128i int_value_noise_3d_sse4_1(__m128i x, int y, int z, int seed);
-static inline __m128 value_noise_3d_sse4_1_full(__m128i x, __m128i y, __m128i z, int seed);
-static inline __m128 value_noise_3d_sse4_1(__m128i x, int y, int z, int seed);
-static inline __m128 gradient_noise_3d_sse4_1(__m128 fx, float fy, float fz, __m128i ix, int iy, int iz, int seed);
-static inline __m128 gradient_coherent_noise_3d_sse4_1(__m128 x, float y, float z, int seed, enum NoiseQuality noise_quality);
+global inline __m128i int_value_noise_3d_sse4_1_full(__m128i x, __m128i y, __m128i z, int seed);
+global inline __m128i int_value_noise_3d_sse4_1(__m128i x, int y, int z, int seed);
+global inline __m128 value_noise_3d_sse4_1_full(__m128i x, __m128i y, __m128i z, int seed);
+global inline __m128 value_noise_3d_sse4_1(__m128i x, int y, int z, int seed);
+global inline __m128 gradient_noise_3d_sse4_1(__m128 fx, r32 fy, r32 fz, __m128i ix, int iy, int iz, int seed);
+global inline __m128 gradient_coherent_noise_3d_sse4_1(__m128 x, r32 y, r32 z, int seed, enum NoiseQuality noise_quality);
 // AVX
-static inline __m256 make_int_32_range_avx(__m256 n);
-static inline __m256 s_curve3_avx(__m256 a);
-static inline __m256 s_curve5_avx(__m256 a);
-static inline __m256 linear_interp_avx(__m256 n0, __m256 n1, __m256 a);
-static inline __m256i int_value_noise_3d_avx_full(__m256i x, __m256i y, __m256i z, int seed);
-static inline __m256i int_value_noise_3d_avx(__m256i x, int y, int z, int seed);
-static inline __m256 value_noise_3d_avx_full(__m256i x, __m256i y, __m256i z, int seed);
-static inline __m256 value_noise_3d_avx(__m256i x, int y, int z, int seed);
-static inline __m256 gradient_noise_3d_avx(__m256 fx, float fy, float fz, __m256i ix, int iy, int iz, int seed);
-static inline __m256 gradient_coherent_noise_3d_avx(__m256 x, float y, float z, int seed, enum NoiseQuality noise_quality);
+global inline __m256 make_int_32_range_avx(__m256 n);
+global inline __m256 s_curve3_avx(__m256 a);
+global inline __m256 s_curve5_avx(__m256 a);
+global inline __m256 linear_interp_avx(__m256 n0, __m256 n1, __m256 a);
+global inline __m256i int_value_noise_3d_avx_full(__m256i x, __m256i y, __m256i z, int seed);
+global inline __m256i int_value_noise_3d_avx(__m256i x, int y, int z, int seed);
+global inline __m256 value_noise_3d_avx_full(__m256i x, __m256i y, __m256i z, int seed);
+global inline __m256 value_noise_3d_avx(__m256i x, int y, int z, int seed);
+global inline __m256 gradient_noise_3d_avx(__m256 fx, r32 fy, r32 fz, __m256i ix, int iy, int iz, int seed);
+global inline __m256 gradient_coherent_noise_3d_avx(__m256 x, r32 y, r32 z, int seed, enum NoiseQuality noise_quality);
 // AVX2
-static inline __m256i fast_floor_avx2(__m256 x);
-static inline __m256i int_value_noise_3d_avx2_full(__m256i x, __m256i y, __m256i z, int seed);
-static inline __m256i int_value_noise_3d_avx2(__m256i x, int y, int z, int seed);
-static inline __m256 value_noise_3d_avx2_full(__m256i x, __m256i y, __m256i z, int seed);
-static inline __m256 value_noise_3d_avx2(__m256i x, int y, int z, int seed);
-static inline __m256 gradient_noise_3d_avx2(__m256 fx, float fy, float fz, __m256i ix, int iy, int iz, int seed);
-static inline __m256 gradient_noise_3d_avx2_normals(__m256 fx, __m256 fy, __m256 fz, __m256i ix, __m256i iy, __m256i iz, int seed);
-static inline __m256 gradient_coherent_noise_3d_avx2(__m256 x, float y, float z, int seed, enum NoiseQuality noise_quality);
-static inline __m256 gradient_coherent_noise_3d_avx2_normals(__m256 x, __m256 y, __m256 z, int seed, enum NoiseQuality noise_quality);
+global inline __m256i fast_floor_avx2(__m256 x);
+global inline __m256i int_value_noise_3d_avx2_full(__m256i x, __m256i y, __m256i z, int seed);
+global inline __m256i int_value_noise_3d_avx2(__m256i x, int y, int z, int seed);
+global inline __m256 value_noise_3d_avx2_full(__m256i x, __m256i y, __m256i z, int seed);
+global inline __m256 value_noise_3d_avx2(__m256i x, int y, int z, int seed);
+global inline __m256 gradient_noise_3d_avx2(__m256 fx, r32 fy, r32 fz, __m256i ix, int iy, int iz, int seed);
+global inline __m256 gradient_noise_3d_avx2_normals(__m256 fx, __m256 fy, __m256 fz, __m256i ix, __m256i iy, __m256i iz, int seed);
+global inline __m256 gradient_coherent_noise_3d_avx2(__m256 x, r32 y, r32 z, int seed, enum NoiseQuality noise_quality);
+global inline __m256 gradient_coherent_noise_3d_avx2_normals(__m256 x, __m256 y, __m256 z, int seed, enum NoiseQuality noise_quality);
 // Fallback
-static inline float make_int_32_range(float n);
-static inline float cubic_interp(float n0, float n1, float n2, float n3, float a);
-static inline float s_curve3(float a);
-static inline float s_curve5(float a);
-static inline float linear_interp(float n0, float n1, float a);
-static inline int int_value_noise_3d(int x, int y, int z, int seed);
-static inline float value_noise_3d(int x, int y, int z, int seed);
-static inline float gradient_noise_3d(float fx, float fy, float fz, int ix, int iy, int iz, int seed);
-static inline float gradient_coherent_noise_3d(float x, float y, float z, int seed, enum NoiseQuality noise_quality);
+global inline r32 make_int_32_range(r32 n);
+global inline r32 cubic_interp(r32 n0, r32 n1, r32 n2, r32 n3, r32 a);
+global inline r32 s_curve3(r32 a);
+global inline r32 s_curve5(r32 a);
+global inline r32 linear_interp(r32 n0, r32 n1, r32 a);
+global inline int int_value_noise_3d(int x, int y, int z, int seed);
+global inline r32 value_noise_3d(int x, int y, int z, int seed);
+global inline r32 gradient_noise_3d(r32 fx, r32 fy, r32 fz, int ix, int iy, int iz, int seed);
+global inline r32 gradient_coherent_noise_3d(r32 x, r32 y, r32 z, int seed, enum NoiseQuality noise_quality);
 
-static inline float noise_get(float *noise_set, int x_size, int y_size, int z_size, int x, int y, int z) {
+global inline r32 noise_get(r32* noise_set, int x_size, int y_size, int z_size, int x, int y, int z) {
   return *(noise_set + (x + (y * x_size) + (z * (x_size * y_size))));
 }
 
-static inline int detect_simd_support() {
+global inline int detect_simd_support() {
 #ifdef __arm64__
 #else
-  uint32_t eax, ebx, ecx, edx;
-  int8_t vendor[13];
+  u32 eax, ebx, ecx, edx;
+  i8 vendor[13];
 
   // function 0: vendor string
   __asm__ volatile(
@@ -159,15 +158,15 @@ static inline int detect_simd_support() {
 #ifdef __arm64__
 #else
 // SSE2 compatible mullo
-static inline __m128i sse2_mm_mullo_epi32(__m128i a, __m128i b) {
+global inline __m128i sse2_mm_mullo_epi32(__m128i a, __m128i b) {
   __m128i tmp_1 = _mm_mul_epu32(a, b);
   __m128i tmp_2 = _mm_mul_epu32(_mm_srli_si128(a, 4), _mm_srli_si128(b, 4));
   return _mm_unpacklo_epi32(_mm_shuffle_epi32(tmp_1, _MM_SHUFFLE(0, 0, 2, 0)), _mm_shuffle_epi32(tmp_2, _MM_SHUFFLE(0, 0, 2, 0)));
 }
 
 // SSE2 compatible extract32
-static inline int sse2_mm_extract_epi32(__m128i a, int index) {
-  return *(((int *)&a) + index);
+global inline int sse2_mm_extract_epi32(__m128i a, int index) {
+  return *(((int*)&a) + index);
   // Older OSX devices don't support _mm_shuffle_epi32
   // switch (index) {
   //  case 0:{
@@ -187,26 +186,26 @@ static inline int sse2_mm_extract_epi32(__m128i a, int index) {
 }
 
 // TODO: Clean this up slow way of doing this
-static inline __m128 make_int_32_range_sse2(__m128 n) {
+global inline __m128 make_int_32_range_sse2(__m128 n) {
   __m128 new_n;
 
   for (int loop_num = 0; loop_num < 4; loop_num++) {
-    float extracted_num = *(((float *)&n) + loop_num);
+    r32 extracted_num = *(((r32*)&n) + loop_num);
     if (extracted_num >= 1073741824.0)
-      *(((float *)&new_n) + loop_num) = (2.0 * fmod(extracted_num, 1073741824.0)) - 1073741824.0;
+      *(((r32*)&new_n) + loop_num) = (2.0 * fmod(extracted_num, 1073741824.0)) - 1073741824.0;
     else if (extracted_num <= -1073741824.0)
-      *(((float *)&new_n) + loop_num) = (2.0 * fmod(extracted_num, 1073741824.0)) + 1073741824.0;
+      *(((r32*)&new_n) + loop_num) = (2.0 * fmod(extracted_num, 1073741824.0)) + 1073741824.0;
     else
-      *(((float *)&new_n) + loop_num) = extracted_num;
+      *(((r32*)&new_n) + loop_num) = extracted_num;
   }
   return new_n;
 }
 
-static inline __m128 s_curve3_sse2(__m128 a) {
+global inline __m128 s_curve3_sse2(__m128 a) {
   return _mm_mul_ps(a, _mm_mul_ps(a, _mm_sub_ps(_mm_set1_ps(3.0), _mm_mul_ps(_mm_set1_ps(2.0), a))));
 }
 
-static inline __m128 s_curve5_sse2(__m128 a) {
+global inline __m128 s_curve5_sse2(__m128 a) {
   __m128 a3 = _mm_mul_ps(a, _mm_mul_ps(a, a));
   __m128 a4 = _mm_mul_ps(a3, a);
   __m128 a5 = _mm_mul_ps(a4, a);
@@ -214,44 +213,44 @@ static inline __m128 s_curve5_sse2(__m128 a) {
   return _mm_add_ps(_mm_sub_ps(_mm_mul_ps(_mm_set1_ps(6.0), a5), _mm_mul_ps(_mm_set1_ps(15.0), a4)), _mm_mul_ps(_mm_set1_ps(10.0), a3));
 }
 
-static inline __m128 linear_interp_sse2(__m128 n0, __m128 n1, __m128 a) {
+global inline __m128 linear_interp_sse2(__m128 n0, __m128 n1, __m128 a) {
   return _mm_add_ps(_mm_mul_ps(_mm_sub_ps(_mm_set1_ps(1.0), a), n0), _mm_mul_ps(a, n1));
 }
 
 // These 2 need work
-static inline __m128i int_value_noise_3d_sse2_full(__m128i x, __m128i y, __m128i z, int seed) {
+global inline __m128i int_value_noise_3d_sse2_full(__m128i x, __m128i y, __m128i z, int seed) {
   __m128i n;
   for (int value_num = 0; value_num < 4; value_num++) {
-    int32_t x_extract = *(((int32_t *)&x) + value_num);
-    int32_t y_extract = *(((int32_t *)&y) + value_num);
-    int32_t z_extract = *(((int32_t *)&z) + value_num);
-    int32_t n_val = (X_NOISE_GEN * x_extract + Y_NOISE_GEN * y_extract + Z_NOISE_GEN * z_extract + SEED_NOISE_GEN * seed) & 0x7fffffff;
+    i32 x_extract = *(((i32*)&x) + value_num);
+    i32 y_extract = *(((i32*)&y) + value_num);
+    i32 z_extract = *(((i32*)&z) + value_num);
+    i32 n_val = (X_NOISE_GEN * x_extract + Y_NOISE_GEN * y_extract + Z_NOISE_GEN * z_extract + SEED_NOISE_GEN * seed) & 0x7fffffff;
     n_val = (n_val >> 13) ^ n_val;
-    *(((int32_t *)&n) + value_num) = (n_val * (n_val * n_val * 60493 + 19990303) + 1376312589) & 0x7fffffff;
+    *(((i32*)&n) + value_num) = (n_val * (n_val * n_val * 60493 + 19990303) + 1376312589) & 0x7fffffff;
   }
   return n;
 }
 
-static inline __m128i int_value_noise_3d_sse2(__m128i x, int y, int z, int seed) {
+global inline __m128i int_value_noise_3d_sse2(__m128i x, int y, int z, int seed) {
   __m128i n;
   for (int value_num = 0; value_num < 4; value_num++) {
-    int32_t x_extract = *(((int32_t *)&x) + value_num);
-    int32_t n_val = (X_NOISE_GEN * x_extract + Y_NOISE_GEN * y + Z_NOISE_GEN * z + SEED_NOISE_GEN * seed) & 0x7fffffff;
+    i32 x_extract = *(((i32*)&x) + value_num);
+    i32 n_val = (X_NOISE_GEN * x_extract + Y_NOISE_GEN * y + Z_NOISE_GEN * z + SEED_NOISE_GEN * seed) & 0x7fffffff;
     n_val = (n_val >> 13) ^ n_val;
-    *(((int32_t *)&n) + value_num) = (n_val * (n_val * n_val * 60493 + 19990303) + 1376312589) & 0x7fffffff;
+    *(((i32*)&n) + value_num) = (n_val * (n_val * n_val * 60493 + 19990303) + 1376312589) & 0x7fffffff;
   }
   return n;
 }
 
-static inline __m128 value_noise_3d_sse2_full(__m128i x, __m128i y, __m128i z, int seed) {
+global inline __m128 value_noise_3d_sse2_full(__m128i x, __m128i y, __m128i z, int seed) {
   return _mm_sub_ps(_mm_set1_ps(1.0), _mm_div_ps(_mm_cvtepi32_ps(int_value_noise_3d_sse2_full(x, y, z, seed)), _mm_set1_ps(1073741824.0)));
 }
 
-static inline __m128 value_noise_3d_sse2(__m128i x, int y, int z, int seed) {
+global inline __m128 value_noise_3d_sse2(__m128i x, int y, int z, int seed) {
   return _mm_sub_ps(_mm_set1_ps(1.0), _mm_div_ps(_mm_cvtepi32_ps(int_value_noise_3d_sse2(x, y, z, seed)), _mm_set1_ps(1073741824.0)));
 }
 
-static inline __m128 gradient_noise_3d_sse2(__m128 fx, float fy, float fz, __m128i ix, int iy, int iz, int seed) {
+global inline __m128 gradient_noise_3d_sse2(__m128 fx, r32 fy, r32 fz, __m128i ix, int iy, int iz, int seed) {
   __m128i vector_index = _mm_and_si128(_mm_add_epi32(sse2_mm_mullo_epi32(_mm_set1_epi32(X_NOISE_GEN), ix), _mm_set1_epi32(Y_NOISE_GEN * iy + Z_NOISE_GEN * iz + SEED_NOISE_GEN * seed)), _mm_set1_epi32(0xffffffff));
   vector_index = _mm_xor_si128(vector_index, _mm_srli_epi32(vector_index, SHIFT_NOISE_GEN));
   vector_index = _mm_and_si128(vector_index, _mm_set1_epi32(0xff));
@@ -268,10 +267,10 @@ static inline __m128 gradient_noise_3d_sse2(__m128 fx, float fy, float fz, __m12
   return _mm_mul_ps(_mm_add_ps(_mm_add_ps(_mm_mul_ps(xv_gradient, xv_point), _mm_mul_ps(yv_gradient, yv_point)), _mm_mul_ps(zv_gradient, zv_point)), _mm_set1_ps(2.12));
 }
 
-static inline __m128 gradient_coherent_noise_3d_sse2(__m128 x, float y, float z, int seed, enum NoiseQuality noise_quality) {
+global inline __m128 gradient_coherent_noise_3d_sse2(__m128 x, r32 y, r32 z, int seed, enum NoiseQuality noise_quality) {
   __m128i x0;
   for (int x_num = 0; x_num < 4; x_num++)
-    *(((int32_t *)&x0) + x_num) = (*(((float *)&x) + x_num) > 0.0 ? (int)*(((float *)&x) + x_num) : (int)*(((float *)&x) + x_num) - 1);
+    *(((i32*)&x0) + x_num) = (*(((r32*)&x) + x_num) > 0.0 ? (int)*(((r32*)&x) + x_num) : (int)*(((r32*)&x) + x_num) - 1);
   //__m128 x0_mask = _mm_cmpgt_ps(x, _mm_setzero_ps());
   //__m128i x0 = _mm_cvtps_epi32(_mm_floor_ps(_mm_or_ps(_mm_and_ps(x, x0_mask), _mm_andnot_ps(x0_mask, _mm_sub_ps(x, _mm_set1_ps(1))))));
   __m128i x1 = _mm_add_epi32(x0, _mm_set1_epi32(1));
@@ -281,24 +280,24 @@ static inline __m128 gradient_coherent_noise_3d_sse2(__m128 x, float y, float z,
   int z1 = z0 + 1;
 
   __m128 xs;
-  float ys, zs;
+  r32 ys, zs;
   switch (noise_quality) {
     case QUALITY_FAST: {
       xs = _mm_sub_ps(x, _mm_cvtepi32_ps(x0));
-      ys = (y - (float)y0);
-      zs = (z - (float)z0);
+      ys = (y - (r32)y0);
+      zs = (z - (r32)z0);
       break;
     }
     case QUALITY_STANDARD: {
       xs = s_curve3_sse2(_mm_sub_ps(x, _mm_cvtepi32_ps(x0)));
-      ys = s_curve3(y - (float)y0);
-      zs = s_curve3(z - (float)z0);
+      ys = s_curve3(y - (r32)y0);
+      zs = s_curve3(z - (r32)z0);
       break;
     }
     case QUALITY_BEST: {
       xs = s_curve5_sse2(_mm_sub_ps(x, _mm_cvtepi32_ps(x0)));
-      ys = s_curve5(y - (float)y0);
-      zs = s_curve5(z - (float)z0);
+      ys = s_curve5(y - (r32)y0);
+      zs = s_curve5(z - (r32)z0);
       break;
     }
   }
@@ -319,27 +318,27 @@ static inline __m128 gradient_coherent_noise_3d_sse2(__m128 x, float y, float z,
   return linear_interp_sse2(iy0, iy1, _mm_set1_ps(zs));
 }
 
-static inline __m128i int_value_noise_3d_sse4_1_full(__m128i x, __m128i y, __m128i z, int seed) {
+global inline __m128i int_value_noise_3d_sse4_1_full(__m128i x, __m128i y, __m128i z, int seed) {
   __m128i n = _mm_and_si128(_mm_add_epi32(_mm_mullo_epi32(_mm_set1_epi32(X_NOISE_GEN), x), _mm_add_epi32(_mm_mullo_epi32(_mm_set1_epi32(Y_NOISE_GEN), y), _mm_add_epi32(_mm_mullo_epi32(_mm_set1_epi32(Z_NOISE_GEN), z), _mm_set1_epi32(SEED_NOISE_GEN * seed)))), _mm_set1_epi32(0x7fffffff));
   n = _mm_xor_si128(_mm_srli_epi32(n, 13), n);
   return _mm_and_si128(_mm_add_epi32(_mm_mullo_epi32(n, _mm_add_epi32(_mm_mullo_epi32(n, _mm_mullo_epi32(n, _mm_set1_epi32(60493))), _mm_set1_epi32(19990303))), _mm_set1_epi32(1376312589)), _mm_set1_epi32(0x7fffffff));
 }
 
-static inline __m128i int_value_noise_3d_sse4_1(__m128i x, int y, int z, int seed) {
+global inline __m128i int_value_noise_3d_sse4_1(__m128i x, int y, int z, int seed) {
   __m128i n = _mm_and_si128(_mm_add_epi32(_mm_mullo_epi32(_mm_set1_epi32(X_NOISE_GEN), x), _mm_set1_epi32(Y_NOISE_GEN * y + Z_NOISE_GEN * z + SEED_NOISE_GEN * seed)), _mm_set1_epi32(0x7fffffff));
   n = _mm_xor_si128(_mm_srli_epi32(n, 13), n);
   return _mm_and_si128(_mm_add_epi32(_mm_mullo_epi32(n, _mm_add_epi32(_mm_mullo_epi32(n, _mm_mullo_epi32(n, _mm_set1_epi32(60493))), _mm_set1_epi32(19990303))), _mm_set1_epi32(1376312589)), _mm_set1_epi32(0x7fffffff));
 }
 
-static inline __m128 value_noise_3d_sse4_1_full(__m128i x, __m128i y, __m128i z, int seed) {
+global inline __m128 value_noise_3d_sse4_1_full(__m128i x, __m128i y, __m128i z, int seed) {
   return _mm_sub_ps(_mm_set1_ps(1.0), _mm_div_ps(_mm_cvtepi32_ps(int_value_noise_3d_sse4_1_full(x, y, z, seed)), _mm_set1_ps(1073741824.0)));
 }
 
-static inline __m128 value_noise_3d_sse4_1(__m128i x, int y, int z, int seed) {
+global inline __m128 value_noise_3d_sse4_1(__m128i x, int y, int z, int seed) {
   return _mm_sub_ps(_mm_set1_ps(1.0), _mm_div_ps(_mm_cvtepi32_ps(int_value_noise_3d_sse4_1(x, y, z, seed)), _mm_set1_ps(1073741824.0)));
 }
 
-static inline __m128 gradient_noise_3d_sse4_1(__m128 fx, float fy, float fz, __m128i ix, int iy, int iz, int seed) {
+global inline __m128 gradient_noise_3d_sse4_1(__m128 fx, r32 fy, r32 fz, __m128i ix, int iy, int iz, int seed) {
   __m128i vector_index = _mm_and_si128(_mm_add_epi32(_mm_mullo_epi32(_mm_set1_epi32(X_NOISE_GEN), ix), _mm_set1_epi32(Y_NOISE_GEN * iy + Z_NOISE_GEN * iz + SEED_NOISE_GEN * seed)), _mm_set1_epi32(0xffffffff));
   vector_index = _mm_xor_si128(vector_index, _mm_srli_epi32(vector_index, SHIFT_NOISE_GEN));
   vector_index = _mm_and_si128(vector_index, _mm_set1_epi32(0xff));
@@ -356,7 +355,7 @@ static inline __m128 gradient_noise_3d_sse4_1(__m128 fx, float fy, float fz, __m
   return _mm_mul_ps(_mm_add_ps(_mm_add_ps(_mm_mul_ps(xv_gradient, xv_point), _mm_mul_ps(yv_gradient, yv_point)), _mm_mul_ps(zv_gradient, zv_point)), _mm_set1_ps(2.12));
 }
 
-static inline __m128 gradient_coherent_noise_3d_sse4_1(__m128 x, float y, float z, int seed, enum NoiseQuality noise_quality) {
+global inline __m128 gradient_coherent_noise_3d_sse4_1(__m128 x, r32 y, r32 z, int seed, enum NoiseQuality noise_quality) {
   __m128i x0 = _mm_cvtps_epi32(_mm_floor_ps(_mm_blendv_ps(_mm_sub_ps(x, _mm_set1_ps(1.0)), x, _mm_cmpgt_ps(x, _mm_setzero_ps()))));
   __m128i x1 = _mm_add_epi32(x0, _mm_set1_epi32(1));
   int y0 = (y > 0.0 ? (int)y : (int)y - 1);
@@ -365,24 +364,24 @@ static inline __m128 gradient_coherent_noise_3d_sse4_1(__m128 x, float y, float 
   int z1 = z0 + 1;
 
   __m128 xs;
-  float ys, zs;
+  r32 ys, zs;
   switch (noise_quality) {
     case QUALITY_FAST: {
       xs = _mm_sub_ps(x, _mm_cvtepi32_ps(x0));
-      ys = (y - (float)y0);
-      zs = (z - (float)z0);
+      ys = (y - (r32)y0);
+      zs = (z - (r32)z0);
       break;
     }
     case QUALITY_STANDARD: {
       xs = s_curve3_sse2(_mm_sub_ps(x, _mm_cvtepi32_ps(x0)));
-      ys = s_curve3(y - (float)y0);
-      zs = s_curve3(z - (float)z0);
+      ys = s_curve3(y - (r32)y0);
+      zs = s_curve3(z - (r32)z0);
       break;
     }
     case QUALITY_BEST: {
       xs = s_curve5_sse2(_mm_sub_ps(x, _mm_cvtepi32_ps(x0)));
-      ys = s_curve5(y - (float)y0);
-      zs = s_curve5(z - (float)z0);
+      ys = s_curve5(y - (r32)y0);
+      zs = s_curve5(z - (r32)z0);
       break;
     }
   }
@@ -404,26 +403,26 @@ static inline __m128 gradient_coherent_noise_3d_sse4_1(__m128 x, float y, float 
 }
 
 // TODO: Clean this up slow way of doing this
-static inline __m256 make_int_32_range_avx(__m256 n) {
+global inline __m256 make_int_32_range_avx(__m256 n) {
   __m256 new_n;
 
   for (int loop_num = 0; loop_num < 8; loop_num++) {
-    float extracted_num = *(((float *)&n) + loop_num);
+    r32 extracted_num = *(((r32*)&n) + loop_num);
     if (extracted_num >= 1073741824.0)
-      *(((float *)&new_n) + loop_num) = (2.0 * fmod(extracted_num, 1073741824.0)) - 1073741824.0;
+      *(((r32*)&new_n) + loop_num) = (2.0 * fmod(extracted_num, 1073741824.0)) - 1073741824.0;
     else if (extracted_num <= -1073741824.0)
-      *(((float *)&new_n) + loop_num) = (2.0 * fmod(extracted_num, 1073741824.0)) + 1073741824.0;
+      *(((r32*)&new_n) + loop_num) = (2.0 * fmod(extracted_num, 1073741824.0)) + 1073741824.0;
     else
-      *(((float *)&new_n) + loop_num) = extracted_num;
+      *(((r32*)&new_n) + loop_num) = extracted_num;
   }
   return new_n;
 }
 
-static inline __m256 s_curve3_avx(__m256 a) {
+global inline __m256 s_curve3_avx(__m256 a) {
   return _mm256_mul_ps(a, _mm256_mul_ps(a, _mm256_sub_ps(_mm256_set1_ps(3.0), _mm256_mul_ps(_mm256_set1_ps(2.0), a))));
 }
 
-static inline __m256 s_curve5_avx(__m256 a) {
+global inline __m256 s_curve5_avx(__m256 a) {
   __m256 a3 = _mm256_mul_ps(a, _mm256_mul_ps(a, a));
   __m256 a4 = _mm256_mul_ps(a3, a);
   __m256 a5 = _mm256_mul_ps(a4, a);
@@ -431,11 +430,11 @@ static inline __m256 s_curve5_avx(__m256 a) {
   return _mm256_add_ps(_mm256_sub_ps(_mm256_mul_ps(_mm256_set1_ps(6.0), a5), _mm256_mul_ps(_mm256_set1_ps(15.0), a4)), _mm256_mul_ps(_mm256_set1_ps(10.0), a3));
 }
 
-static inline __m256 linear_interp_avx(__m256 n0, __m256 n1, __m256 a) {
+global inline __m256 linear_interp_avx(__m256 n0, __m256 n1, __m256 a) {
   return _mm256_add_ps(_mm256_mul_ps(_mm256_sub_ps(_mm256_set1_ps(1.0), a), n0), _mm256_mul_ps(a, n1));
 }
 
-static inline __m256i int_value_noise_3d_avx_full(__m256i x, __m256i y, __m256i z, int seed) {
+global inline __m256i int_value_noise_3d_avx_full(__m256i x, __m256i y, __m256i z, int seed) {
   __m128i n_low = _mm_and_si128(_mm_add_epi32(_mm_mullo_epi32(_mm_set1_epi32(X_NOISE_GEN), _mm256_extractf128_si256(x, 0)), _mm_add_epi32(_mm_mullo_epi32(_mm_set1_epi32(Y_NOISE_GEN), _mm256_extractf128_si256(y, 0)), _mm_add_epi32(_mm_mullo_epi32(_mm_set1_epi32(Z_NOISE_GEN), _mm256_extractf128_si256(z, 0)), _mm_set1_epi32(SEED_NOISE_GEN * seed)))), _mm_set1_epi32(0x7fffffff));
   __m128i n_high = _mm_and_si128(_mm_add_epi32(_mm_mullo_epi32(_mm_set1_epi32(X_NOISE_GEN), _mm256_extractf128_si256(x, 1)), _mm_add_epi32(_mm_mullo_epi32(_mm_set1_epi32(Y_NOISE_GEN), _mm256_extractf128_si256(y, 1)), _mm_add_epi32(_mm_mullo_epi32(_mm_set1_epi32(Z_NOISE_GEN), _mm256_extractf128_si256(z, 1)), _mm_set1_epi32(SEED_NOISE_GEN * seed)))), _mm_set1_epi32(0x7fffffff));
   n_low = _mm_xor_si128(_mm_srli_epi32(n_low, 13), n_low);
@@ -445,7 +444,7 @@ static inline __m256i int_value_noise_3d_avx_full(__m256i x, __m256i y, __m256i 
   return _mm256_set_m128i(n_high, n_low);
 }
 
-static inline __m256i int_value_noise_3d_avx(__m256i x, int y, int z, int seed) {
+global inline __m256i int_value_noise_3d_avx(__m256i x, int y, int z, int seed) {
   __m128i n_low = _mm_and_si128(_mm_add_epi32(_mm_mullo_epi32(_mm_set1_epi32(X_NOISE_GEN), _mm256_extractf128_si256(x, 0)), _mm_set1_epi32(Y_NOISE_GEN * y + Z_NOISE_GEN * z + SEED_NOISE_GEN * seed)), _mm_set1_epi32(0x7fffffff));
   __m128i n_high = _mm_and_si128(_mm_add_epi32(_mm_mullo_epi32(_mm_set1_epi32(X_NOISE_GEN), _mm256_extractf128_si256(x, 1)), _mm_set1_epi32(Y_NOISE_GEN * y + Z_NOISE_GEN * z + SEED_NOISE_GEN * seed)), _mm_set1_epi32(0x7fffffff));
   n_low = _mm_xor_si128(_mm_srli_epi32(n_low, 13), n_low);
@@ -455,15 +454,15 @@ static inline __m256i int_value_noise_3d_avx(__m256i x, int y, int z, int seed) 
   return _mm256_set_m128i(n_high, n_low);
 }
 
-static inline __m256 value_noise_3d_avx_full(__m256i x, __m256i y, __m256i z, int seed) {
+global inline __m256 value_noise_3d_avx_full(__m256i x, __m256i y, __m256i z, int seed) {
   return _mm256_sub_ps(_mm256_set1_ps(1.0), _mm256_div_ps(_mm256_cvtepi32_ps(int_value_noise_3d_avx_full(x, y, z, seed)), _mm256_set1_ps(1073741824.0)));
 }
 
-static inline __m256 value_noise_3d_avx(__m256i x, int y, int z, int seed) {
+global inline __m256 value_noise_3d_avx(__m256i x, int y, int z, int seed) {
   return _mm256_sub_ps(_mm256_set1_ps(1.0), _mm256_div_ps(_mm256_cvtepi32_ps(int_value_noise_3d_avx(x, y, z, seed)), _mm256_set1_ps(1073741824.0)));
 }
 
-static inline __m256 gradient_noise_3d_avx(__m256 fx, float fy, float fz, __m256i ix, int iy, int iz, int seed) {
+global inline __m256 gradient_noise_3d_avx(__m256 fx, r32 fy, r32 fz, __m256i ix, int iy, int iz, int seed) {
   __m128i vector_index_low = _mm_and_si128(_mm_add_epi32(_mm_mullo_epi32(_mm_set1_epi32(X_NOISE_GEN), _mm256_extractf128_si256(ix, 0)), _mm_set1_epi32(Y_NOISE_GEN * iy + Z_NOISE_GEN * iz + SEED_NOISE_GEN * seed)), _mm_set1_epi32(0xffffffff));
   vector_index_low = _mm_xor_si128(vector_index_low, _mm_srli_epi32(vector_index_low, SHIFT_NOISE_GEN));
   vector_index_low = _mm_and_si128(vector_index_low, _mm_set1_epi32(0xff));
@@ -484,7 +483,7 @@ static inline __m256 gradient_noise_3d_avx(__m256 fx, float fy, float fz, __m256
   return _mm256_mul_ps(_mm256_add_ps(_mm256_add_ps(_mm256_mul_ps(xv_gradient, xv_point), _mm256_mul_ps(yv_gradient, yv_point)), _mm256_mul_ps(zv_gradient, zv_point)), _mm256_set1_ps(2.12));
 }
 
-static inline __m256 gradient_coherent_noise_3d_avx(__m256 x, float y, float z, int seed, enum NoiseQuality noise_quality) {
+global inline __m256 gradient_coherent_noise_3d_avx(__m256 x, r32 y, r32 z, int seed, enum NoiseQuality noise_quality) {
   __m256i x0 = _mm256_cvtps_epi32(_mm256_floor_ps(_mm256_blendv_ps(_mm256_sub_ps(x, _mm256_set1_ps(1.0)), x, _mm256_cmp_ps(x, _mm256_setzero_ps(), _CMP_GT_OQ))));
   __m128i x1_low = _mm256_extractf128_si256(x0, 0);
   x1_low = _mm_add_epi32(x1_low, _mm_set1_epi32(1));
@@ -497,24 +496,24 @@ static inline __m256 gradient_coherent_noise_3d_avx(__m256 x, float y, float z, 
   int z1 = z0 + 1;
 
   __m256 xs;
-  float ys, zs;
+  r32 ys, zs;
   switch (noise_quality) {
     case QUALITY_FAST: {
       xs = _mm256_sub_ps(x, _mm256_cvtepi32_ps(x0));
-      ys = (y - (float)y0);
-      zs = (z - (float)z0);
+      ys = (y - (r32)y0);
+      zs = (z - (r32)z0);
       break;
     }
     case QUALITY_STANDARD: {
       xs = s_curve3_avx(_mm256_sub_ps(x, _mm256_cvtepi32_ps(x0)));
-      ys = s_curve3(y - (float)y0);
-      zs = s_curve3(z - (float)z0);
+      ys = s_curve3(y - (r32)y0);
+      zs = s_curve3(z - (r32)z0);
       break;
     }
     case QUALITY_BEST: {
       xs = s_curve5_avx(_mm256_sub_ps(x, _mm256_cvtepi32_ps(x0)));
-      ys = s_curve5(y - (float)y0);
-      zs = s_curve5(z - (float)z0);
+      ys = s_curve5(y - (r32)y0);
+      zs = s_curve5(z - (r32)z0);
       break;
     }
   }
@@ -535,27 +534,27 @@ static inline __m256 gradient_coherent_noise_3d_avx(__m256 x, float y, float z, 
   return linear_interp_avx(iy0, iy1, _mm256_set1_ps(zs));
 }
 
-static inline __m256i int_value_noise_3d_avx2_full(__m256i x, __m256i y, __m256i z, int seed) {
+global inline __m256i int_value_noise_3d_avx2_full(__m256i x, __m256i y, __m256i z, int seed) {
   __m256i n = _mm256_and_si256(_mm256_add_epi32(_mm256_mullo_epi32(_mm256_set1_epi32(X_NOISE_GEN), x), _mm256_add_epi32(_mm256_mullo_epi32(_mm256_set1_epi32(Y_NOISE_GEN), y), _mm256_add_epi32(_mm256_mullo_epi32(_mm256_set1_epi32(Z_NOISE_GEN), z), _mm256_set1_epi32(SEED_NOISE_GEN * seed)))), _mm256_set1_epi32(0x7fffffff));
   n = _mm256_xor_si256(_mm256_srli_epi32(n, 13), n);
   return _mm256_and_si256(_mm256_add_epi32(_mm256_mullo_epi32(n, _mm256_add_epi32(_mm256_mullo_epi32(n, _mm256_mullo_epi32(n, _mm256_set1_epi32(60493))), _mm256_set1_epi32(19990303))), _mm256_set1_epi32(1376312589)), _mm256_set1_epi32(0x7fffffff));
 }
 
-static inline __m256i int_value_noise_3d_avx2(__m256i x, int y, int z, int seed) {
+global inline __m256i int_value_noise_3d_avx2(__m256i x, int y, int z, int seed) {
   __m256i n = _mm256_and_si256(_mm256_add_epi32(_mm256_mullo_epi32(_mm256_set1_epi32(X_NOISE_GEN), x), _mm256_set1_epi32(Y_NOISE_GEN * y + Z_NOISE_GEN * z + SEED_NOISE_GEN * seed)), _mm256_set1_epi32(0x7fffffff));
   n = _mm256_xor_si256(_mm256_srli_epi32(n, 13), n);
   return _mm256_and_si256(_mm256_add_epi32(_mm256_mullo_epi32(n, _mm256_add_epi32(_mm256_mullo_epi32(n, _mm256_mullo_epi32(n, _mm256_set1_epi32(60493))), _mm256_set1_epi32(19990303))), _mm256_set1_epi32(1376312589)), _mm256_set1_epi32(0x7fffffff));
 }
 
-static inline __m256 value_noise_3d_avx2_full(__m256i x, __m256i y, __m256i z, int seed) {
+global inline __m256 value_noise_3d_avx2_full(__m256i x, __m256i y, __m256i z, int seed) {
   return _mm256_sub_ps(_mm256_set1_ps(1.0), _mm256_div_ps(_mm256_cvtepi32_ps(int_value_noise_3d_avx2_full(x, y, z, seed)), _mm256_set1_ps(1073741824.0)));
 }
 
-static inline __m256 value_noise_3d_avx2(__m256i x, int y, int z, int seed) {
+global inline __m256 value_noise_3d_avx2(__m256i x, int y, int z, int seed) {
   return _mm256_sub_ps(_mm256_set1_ps(1.0), _mm256_div_ps(_mm256_cvtepi32_ps(int_value_noise_3d_avx2(x, y, z, seed)), _mm256_set1_ps(1073741824.0)));
 }
 
-static inline __m256 gradient_noise_3d_avx2(__m256 fx, float fy, float fz, __m256i ix, int iy, int iz, int seed) {
+global inline __m256 gradient_noise_3d_avx2(__m256 fx, r32 fy, r32 fz, __m256i ix, int iy, int iz, int seed) {
   __m256i vector_index = _mm256_and_si256(_mm256_add_epi32(_mm256_mullo_epi32(_mm256_set1_epi32(X_NOISE_GEN), ix), _mm256_set1_epi32(Y_NOISE_GEN * iy + Z_NOISE_GEN * iz + SEED_NOISE_GEN * seed)), _mm256_set1_epi32(0xffffffff));
   vector_index = _mm256_xor_si256(vector_index, _mm256_srli_epi32(vector_index, SHIFT_NOISE_GEN));
   vector_index = _mm256_and_si256(vector_index, _mm256_set1_epi32(0xff));
@@ -572,7 +571,7 @@ static inline __m256 gradient_noise_3d_avx2(__m256 fx, float fy, float fz, __m25
   return _mm256_mul_ps(_mm256_add_ps(_mm256_add_ps(_mm256_mul_ps(xv_gradient, xv_point), _mm256_mul_ps(yv_gradient, yv_point)), _mm256_mul_ps(zv_gradient, zv_point)), _mm256_set1_ps(2.12));
 }
 
-static inline __m256 gradient_noise_3d_avx2_normals(__m256 fx, __m256 fy, __m256 fz, __m256i ix, __m256i iy, __m256i iz, int seed) {
+global inline __m256 gradient_noise_3d_avx2_normals(__m256 fx, __m256 fy, __m256 fz, __m256i ix, __m256i iy, __m256i iz, int seed) {
   __m256i y = _mm256_mullo_epi32(_mm256_set1_epi32(Y_NOISE_GEN), iy);
   __m256i z = _mm256_mullo_epi32(_mm256_set1_epi32(Z_NOISE_GEN), iz);
   __m256i y_z_seed = _mm256_add_epi32(_mm256_add_epi32(y, _mm256_set1_epi32(SEED_NOISE_GEN * seed)), z);
@@ -592,7 +591,7 @@ static inline __m256 gradient_noise_3d_avx2_normals(__m256 fx, __m256 fy, __m256
   return _mm256_mul_ps(_mm256_add_ps(_mm256_add_ps(_mm256_mul_ps(xv_gradient, xv_point), _mm256_mul_ps(yv_gradient, yv_point)), _mm256_mul_ps(zv_gradient, zv_point)), _mm256_set1_ps(2.12));
 }
 
-static inline __m256 gradient_coherent_noise_3d_avx2(__m256 x, float y, float z, int seed, enum NoiseQuality noise_quality) {
+global inline __m256 gradient_coherent_noise_3d_avx2(__m256 x, r32 y, r32 z, int seed, enum NoiseQuality noise_quality) {
   __m256i x0 = _mm256_cvtps_epi32(_mm256_floor_ps(_mm256_blendv_ps(_mm256_sub_ps(x, _mm256_set1_ps(1.0)), x, _mm256_cmp_ps(x, _mm256_setzero_ps(), _CMP_GT_OQ))));
   __m256i x1 = _mm256_add_epi32(x0, _mm256_set1_epi32(1));
   int y0 = (y > 0.0 ? (int)y : (int)y - 1);
@@ -601,24 +600,24 @@ static inline __m256 gradient_coherent_noise_3d_avx2(__m256 x, float y, float z,
   int z1 = z0 + 1;
 
   __m256 xs;
-  float ys, zs;
+  r32 ys, zs;
   switch (noise_quality) {
     case QUALITY_FAST: {
       xs = _mm256_sub_ps(x, _mm256_cvtepi32_ps(x0));
-      ys = (y - (float)y0);
-      zs = (z - (float)z0);
+      ys = (y - (r32)y0);
+      zs = (z - (r32)z0);
       break;
     }
     case QUALITY_STANDARD: {
       xs = s_curve3_avx(_mm256_sub_ps(x, _mm256_cvtepi32_ps(x0)));
-      ys = s_curve3(y - (float)y0);
-      zs = s_curve3(z - (float)z0);
+      ys = s_curve3(y - (r32)y0);
+      zs = s_curve3(z - (r32)z0);
       break;
     }
     case QUALITY_BEST: {
       xs = s_curve5_avx(_mm256_sub_ps(x, _mm256_cvtepi32_ps(x0)));
-      ys = s_curve5(y - (float)y0);
-      zs = s_curve5(z - (float)z0);
+      ys = s_curve5(y - (r32)y0);
+      zs = s_curve5(z - (r32)z0);
       break;
     }
   }
@@ -641,7 +640,7 @@ static inline __m256 gradient_coherent_noise_3d_avx2(__m256 x, float y, float z,
   return linear_interp_avx(iy0, iy1, _mm256_set1_ps(zs));
 }
 
-static inline __m256 gradient_coherent_noise_3d_avx2_normals(__m256 x, __m256 y, __m256 z, int seed, enum NoiseQuality noise_quality) {
+global inline __m256 gradient_coherent_noise_3d_avx2_normals(__m256 x, __m256 y, __m256 z, int seed, enum NoiseQuality noise_quality) {
   __m256i x0 = _mm256_cvtps_epi32(_mm256_floor_ps(_mm256_blendv_ps(_mm256_sub_ps(x, _mm256_set1_ps(1.0)), x, _mm256_cmp_ps(x, _mm256_setzero_ps(), _CMP_GT_OQ))));
   __m256i x1 = _mm256_add_epi32(x0, _mm256_set1_epi32(1));
   __m256i y0 = _mm256_cvtps_epi32(_mm256_floor_ps(_mm256_blendv_ps(_mm256_sub_ps(y, _mm256_set1_ps(1.0)), y, _mm256_cmp_ps(y, _mm256_setzero_ps(), _CMP_GT_OQ))));
@@ -690,7 +689,7 @@ static inline __m256 gradient_coherent_noise_3d_avx2_normals(__m256 x, __m256 y,
 }
 #endif
 
-static inline float make_int_32_range(float n) {
+global inline r32 make_int_32_range(r32 n) {
   if (n >= 1073741824.0)
     return (2.0 * fmod(n, 1073741824.0)) - 1073741824.0;
   else if (n <= -1073741824.0)
@@ -699,40 +698,40 @@ static inline float make_int_32_range(float n) {
     return n;
 }
 
-static inline float cubic_interp(float n0, float n1, float n2, float n3, float a) {
-  float p = (n3 - n2) - (n0 - n1);
-  float q = (n0 - n1) - p;
-  float r = n2 - n0;
-  float s = n1;
+global inline r32 cubic_interp(r32 n0, r32 n1, r32 n2, r32 n3, r32 a) {
+  r32 p = (n3 - n2) - (n0 - n1);
+  r32 q = (n0 - n1) - p;
+  r32 r = n2 - n0;
+  r32 s = n1;
   return p * a * a * a + q * a * a + r * a + s;
 }
 
-static inline float s_curve3(float a) {
+global inline r32 s_curve3(r32 a) {
   return (a * a * (3.0 - 2.0 * a));
 }
 
-static inline float s_curve5(float a) {
-  float a3 = a * a * a;
-  float a4 = a3 * a;
-  float a5 = a4 * a;
+global inline r32 s_curve5(r32 a) {
+  r32 a3 = a * a * a;
+  r32 a4 = a3 * a;
+  r32 a5 = a4 * a;
   return (6.0 * a5) - (15.0 * a4) + (10.0 * a3);
 }
 
-static inline float linear_interp(float n0, float n1, float a) {
+global inline r32 linear_interp(r32 n0, r32 n1, r32 a) {
   return ((1.0 - a) * n0) + (a * n1);
 }
 
-static inline int int_value_noise_3d(int x, int y, int z, int seed) {
+global inline int int_value_noise_3d(int x, int y, int z, int seed) {
   int n = (X_NOISE_GEN * x + Y_NOISE_GEN * y + Z_NOISE_GEN * z + SEED_NOISE_GEN * seed) & 0x7fffffff;
   n = (n >> 13) ^ n;
   return (n * (n * n * 60493 + 19990303) + 1376312589) & 0x7fffffff;
 }
 
-static inline float value_noise_3d(int x, int y, int z, int seed) {
-  return 1.0 - ((float)int_value_noise_3d(x, y, z, seed) / 1073741824.0);
+global inline r32 value_noise_3d(int x, int y, int z, int seed) {
+  return 1.0 - ((r32)int_value_noise_3d(x, y, z, seed) / 1073741824.0);
 }
 
-static inline float gradient_noise_3d(float fx, float fy, float fz, int ix, int iy, int iz, int seed) {
+global inline r32 gradient_noise_3d(r32 fx, r32 fy, r32 fz, int ix, int iy, int iz, int seed) {
   // NOTE: A memory lookup seems to be faster than the following on my benchmarks
   /*int random_x = (*(int *)&fx) ^ (*(int *)&fx >> 16);
   int random_y = (*(int *)&fy) ^ (*(int *)&fy >> 16);
@@ -742,13 +741,13 @@ static inline float gradient_noise_3d(float fx, float fy, float fz, int ix, int 
   random_y = seed ^ (Y_NOISE_GEN * random_y);
   random_z = seed ^ (Z_NOISE_GEN * random_z);
 
-  float xv_gradient = (random_x * random_x * random_x * 60493) / 2147483648.0;
-  float yv_gradient = (random_y * random_y * random_y * 60493) / 2147483648.0;
-  float zv_gradient = (random_z * random_z * random_z * 60493) / 2147483648.0;
+  r32 xv_gradient = (random_x * random_x * random_x * 60493) / 2147483648.0;
+  r32 yv_gradient = (random_y * random_y * random_y * 60493) / 2147483648.0;
+  r32 zv_gradient = (random_z * random_z * random_z * 60493) / 2147483648.0;
 
-  float xv_point = (fx - (float)ix);
-  float yv_point = (fy - (float)iy);
-  float zv_point = (fz - (float)iz);
+  r32 xv_point = (fx - (r32)ix);
+  r32 yv_point = (fy - (r32)iy);
+  r32 zv_point = (fz - (r32)iz);
 
   return ((xv_gradient * xv_point) + (yv_gradient * yv_point) + (zv_gradient * zv_point)) * 2.12;*/
 
@@ -757,18 +756,18 @@ static inline float gradient_noise_3d(float fx, float fy, float fz, int ix, int 
   vector_index &= 0xff;
   vector_index <<= 2;
 
-  float xv_gradient = g_random_vectors[vector_index];
-  float yv_gradient = g_random_vectors[vector_index + 1];
-  float zv_gradient = g_random_vectors[vector_index + 2];
+  r32 xv_gradient = g_random_vectors[vector_index];
+  r32 yv_gradient = g_random_vectors[vector_index + 1];
+  r32 zv_gradient = g_random_vectors[vector_index + 2];
 
-  float xv_point = (fx - (float)ix);
-  float yv_point = (fy - (float)iy);
-  float zv_point = (fz - (float)iz);
+  r32 xv_point = (fx - (r32)ix);
+  r32 yv_point = (fy - (r32)iy);
+  r32 zv_point = (fz - (r32)iz);
 
   return ((xv_gradient * xv_point) + (yv_gradient * yv_point) + (zv_gradient * zv_point)) * 2.12;
 }
 
-static inline float gradient_coherent_noise_3d(float x, float y, float z, int seed, enum NoiseQuality noise_quality) {
+global inline r32 gradient_coherent_noise_3d(r32 x, r32 y, r32 z, int seed, enum NoiseQuality noise_quality) {
   int x0 = (x > 0.0 ? (int)x : (int)x - 1);
   int x1 = x0 + 1;
   int y0 = (y > 0.0 ? (int)y : (int)y - 1);
@@ -777,42 +776,42 @@ static inline float gradient_coherent_noise_3d(float x, float y, float z, int se
   int z1 = z0 + 1;
 
   // TODOO: Likely not worth having this jump here for performance reasons, benchmark then decide for use cases
-  float xs = 0.0f, ys = 0.0f, zs = 0.0f;
+  r32 xs = 0.0f, ys = 0.0f, zs = 0.0f;
   switch (noise_quality) {
     case QUALITY_FAST: {
-      xs = (x - (float)x0);
-      ys = (y - (float)y0);
-      zs = (z - (float)z0);
+      xs = (x - (r32)x0);
+      ys = (y - (r32)y0);
+      zs = (z - (r32)z0);
       break;
     }
     case QUALITY_STANDARD: {
-      xs = s_curve3(x - (float)x0);
-      ys = s_curve3(y - (float)y0);
-      zs = s_curve3(z - (float)z0);
+      xs = s_curve3(x - (r32)x0);
+      ys = s_curve3(y - (r32)y0);
+      zs = s_curve3(z - (r32)z0);
       break;
     }
     case QUALITY_BEST: {
-      xs = s_curve5(x - (float)x0);
-      ys = s_curve5(y - (float)y0);
-      zs = s_curve5(z - (float)z0);
+      xs = s_curve5(x - (r32)x0);
+      ys = s_curve5(y - (r32)y0);
+      zs = s_curve5(z - (r32)z0);
       break;
     }
   }
 
-  float n0 = gradient_noise_3d(x, y, z, x0, y0, z0, seed);
-  float n1 = gradient_noise_3d(x, y, z, x1, y0, z0, seed);
-  float ix0 = linear_interp(n0, n1, xs);
+  r32 n0 = gradient_noise_3d(x, y, z, x0, y0, z0, seed);
+  r32 n1 = gradient_noise_3d(x, y, z, x1, y0, z0, seed);
+  r32 ix0 = linear_interp(n0, n1, xs);
   n0 = gradient_noise_3d(x, y, z, x0, y1, z0, seed);
   n1 = gradient_noise_3d(x, y, z, x1, y1, z0, seed);
-  float ix1 = linear_interp(n0, n1, xs);
-  float iy0 = linear_interp(ix0, ix1, ys);
+  r32 ix1 = linear_interp(n0, n1, xs);
+  r32 iy0 = linear_interp(ix0, ix1, ys);
   n0 = gradient_noise_3d(x, y, z, x0, y0, z1, seed);
   n1 = gradient_noise_3d(x, y, z, x1, y0, z1, seed);
   ix0 = linear_interp(n0, n1, xs);
   n0 = gradient_noise_3d(x, y, z, x0, y1, z1, seed);
   n1 = gradient_noise_3d(x, y, z, x1, y1, z1, seed);
   ix1 = linear_interp(n0, n1, xs);
-  float iy1 = linear_interp(ix0, ix1, ys);
+  r32 iy1 = linear_interp(ix0, ix1, ys);
 
   return linear_interp(iy0, iy1, zs);
 }

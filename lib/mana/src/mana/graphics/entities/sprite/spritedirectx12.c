@@ -1,6 +1,6 @@
 #include "mana/graphics/entities/sprite/spritedirectx12.h"
 
-uint_fast8_t sprite_directx_12_init(struct SpriteCommon* sprite_common, struct APICommon* api_common, struct Shader* shader, struct Texture* texture, size_t num) {
+u8 sprite_directx_12_init(struct SpriteCommon* sprite_common, struct APICommon* api_common, struct Shader* shader, struct Texture* texture, size_t num) {
   // Set up the vertex buffer
   directx_12_graphics_utils_setup_vertex_buffer(&(api_common->directx_12_api), sprite_common->image_mesh->mesh_common.vertices, &sprite_common->sprite_directx12.vertex_buffer);
 

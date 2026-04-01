@@ -22,20 +22,20 @@ struct GLTF {
   int num_meshes;
   int* mesh_materials;
   int* mesh_indices;
-  float* mesh_positions;
-  float* mesh_normals;
-  float* mesh_uvs;
+  r32* mesh_positions;
+  r32* mesh_normals;
+  r32* mesh_uvs;
 
   int num_materials;
-  float* material_diffuse;
-  float* material_specular;
-  float* material_shininess;
-  float* material_ambient;
+  r32* material_diffuse;
+  r32* material_specular;
+  r32* material_shininess;
+  r32* material_ambient;
 
   int num_skins;
   int* skin_joints;
-  float* skin_inverseBindMatrices;
-  float* skin_bindShapeMatrix;
+  r32* skin_inverseBindMatrices;
+  r32* skin_bindShapeMatrix;
 
   int num_animations;
   struct AnimationChannel* animation_channels;

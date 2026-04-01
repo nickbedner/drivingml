@@ -17,11 +17,11 @@ enum DIRECTX_12_RENDERER_STATUS {
   DIRETX_12_RENDERER_LAST_ERROR
 };
 
-uint_fast8_t api_directx_12_init(struct APICommon *api_common);
-void api_directx_12_delete(struct APICommon *api_common);
+u8 api_directx_12_init(struct APICommon* api_common);
+void api_directx_12_delete(struct APICommon* api_common);
 
-void directx_12_graphics_utils_poll_debug_messages(struct DirectX12API *directx_12_api);
-uint_fast8_t directx_12_graphics_utils_setup_vertex_buffer(struct DirectX12API *directx_12_api, struct Vector *vertices, ID3D12Resource **vertex_buffer);
-uint_fast8_t directx_12_graphics_utils_setup_index_buffer(struct DirectX12API *directx_12_api, struct Vector *indices, ID3D12Resource **index_buffer);
-uint_fast8_t directx_12_graphics_utils_setup_constant_buffer(struct DirectX12API *directx_12_api, UINT64 buffer_size, ID3D12Resource **constant_buffer);
+void directx_12_graphics_utils_poll_debug_messages(struct DirectX12API* directx_12_api);
+u8 directx_12_graphics_utils_setup_vertex_buffer(struct DirectX12API* directx_12_api, struct Vector* vertices, ID3D12Resource** vertex_buffer);
+u8 directx_12_graphics_utils_setup_index_buffer(struct DirectX12API* directx_12_api, struct Vector* indices, ID3D12Resource** index_buffer);
+u8 directx_12_graphics_utils_setup_constant_buffer(struct DirectX12API* directx_12_api, UINT64 buffer_size, ID3D12Resource** constant_buffer);
 #endif

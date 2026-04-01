@@ -1,6 +1,6 @@
 #include "mana/core/input/controllers/joystickcontroller.h"
 
-uint_fast8_t joystick_controller_init(struct ControllerCommon* controller_common) {
+u8 joystick_controller_init(struct ControllerCommon* controller_common) {
   return 0;
 }
 

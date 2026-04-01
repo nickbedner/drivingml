@@ -38,11 +38,11 @@ void input_manager_process_input(struct InputManager* input_manager) {
 }
 
 #ifdef KEYBOARD_MOUSE_CONTROLLER_SUPPORTED
-void input_manager_show_cursor(struct InputManager* input_manager, bool show_cursor) {
+void input_manager_show_cursor(struct InputManager* input_manager, b8 show_cursor) {
   struct KeyboardMouseController* input_manager_keyboard_mouse = input_manager_find_keyboard_mouse(input_manager);
   input_manager_keyboard_mouse->show_cursor = show_cursor;
 #ifdef _WIN64
-  // if (show_cursor == false)
+  // if (show_cursor == FALSE)
   //   SetCursor(NULL);
   //  if (show_cursor)
   //    SetCursor(LoadCursor(NULL, IDC_ARROW)); // Restore the default arrow cursor
@@ -53,14 +53,14 @@ void input_manager_show_cursor(struct InputManager* input_manager, bool show_cur
 #endif
 }
 
-void input_manager_lock_cursor(struct InputManager* input_manager, struct Surface* surface, bool lock_cursor) {
+void input_manager_lock_cursor(struct InputManager* input_manager, struct Surface* surface, b8 lock_cursor) {
   struct KeyboardMouseController* input_manager_keyboard_mouse = input_manager_find_keyboard_mouse(input_manager);
 #ifdef _WIN64
   // Only lock the cursor if the window is in focus
   if (GetForegroundWindow() == surface->hwnd) {
     input_manager_keyboard_mouse->lock_cursor = lock_cursor;
     if (lock_cursor) {
-      if (input_manager_keyboard_mouse->locked == false) {
+      if (input_manager_keyboard_mouse->locked == FALSE) {
         input_manager_keyboard_mouse->mouse_x_pos_diff = 0;
         input_manager_keyboard_mouse->mouse_y_pos_diff = 0;
 
@@ -69,17 +69,17 @@ void input_manager_lock_cursor(struct InputManager* input_manager, struct Surfac
 
         input_manager_move_cursor_to_center(input_manager, surface);
 
-        input_manager_keyboard_mouse->mouse_x_pos_locked = (double)locked_position.x;
-        input_manager_keyboard_mouse->mouse_y_pos_locked = (double)locked_position.y;
+        input_manager_keyboard_mouse->mouse_x_pos_locked = (r64)locked_position.x;
+        input_manager_keyboard_mouse->mouse_y_pos_locked = (r64)locked_position.y;
 
         SetCapture(GetActiveWindow());  // Capture all subsequent mouse input to this window
-        input_manager_keyboard_mouse->locked = true;
+        input_manager_keyboard_mouse->locked = TRUE;
       }
     } else {
-      if (input_manager_keyboard_mouse->locked == true) {
+      if (input_manager_keyboard_mouse->locked == TRUE) {
         ReleaseCapture();  // Release the mouse capture
-        input_manager_keyboard_mouse->locked = false;
-        SetCursorPos((int32_t)(input_manager_keyboard_mouse->mouse_x_pos_locked), (int32_t)(input_manager_keyboard_mouse->mouse_y_pos_locked));
+        input_manager_keyboard_mouse->locked = FALSE;
+        SetCursorPos((i32)(input_manager_keyboard_mouse->mouse_x_pos_locked), (i32)(input_manager_keyboard_mouse->mouse_y_pos_locked));
       }
     }
   }
@@ -88,7 +88,7 @@ void input_manager_lock_cursor(struct InputManager* input_manager, struct Surfac
 #endif
 }
 
-bool input_manager_in_window(struct InputManager* input_manager, struct Surface* surface) {
+b8 input_manager_in_window(struct InputManager* input_manager, struct Surface* surface) {
 #ifdef _WIN64
   if (GetForegroundWindow() == surface->hwnd) {
     POINT pt;
@@ -97,11 +97,11 @@ bool input_manager_in_window(struct InputManager* input_manager, struct Surface*
     RECT rect;
     GetClientRect(surface->hwnd, &rect);
     if (PtInRect(&rect, pt))
-      return true;
+      return TRUE;
     else
-      return false;
+      return FALSE;
   } else
-    return false;
+    return FALSE;
 #elif defined(__linux__)
 #elif defined(__APPLE__)
 #endif
@@ -111,27 +111,27 @@ vec2 input_manager_move_cursor_to_center(struct InputManager* input_manager, str
 #ifdef _WIN64
   RECT client_rect;
   GetClientRect(surface->hwnd, &client_rect);
-  int32_t center_x = (client_rect.left + client_rect.right) / 2;
-  int32_t center_y = (client_rect.top + client_rect.bottom) / 2;
+  i32 center_x = (client_rect.left + client_rect.right) / 2;
+  i32 center_y = (client_rect.top + client_rect.bottom) / 2;
   POINT center_point;
   center_point.x = center_x;
   center_point.y = center_y;
   ClientToScreen(surface->hwnd, &center_point);
   SetCursorPos(center_point.x, center_point.y);
-  return (vec2){.x = (float)center_point.x, .y = (float)center_point.y};
+  return (vec2){.x = (r32)center_point.x, .y = (r32)center_point.y};
 #elif defined(__linux__)
 #elif defined(__APPLE__)
 #endif
 }
 
-bool input_manager_is_window_in_focus(struct Surface* surface) {
+b8 input_manager_is_window_in_focus(struct Surface* surface) {
 #ifdef _WIN64
   return (GetForegroundWindow() == surface->hwnd);
 #elif defined(__linux__)
-  return false;
+  return FALSE;
   // Linux-specific implementation
 #elif defined(__APPLE__)
-  return false;
+  return FALSE;
   // macOS-specific implementation
 #endif
 }
@@ -145,7 +145,7 @@ struct ControllerAction* input_manager_get_controller_actions(struct InputManage
   }
   return NULL;
 }
-uint_fast8_t input_manager_get_controller_action_list_length(struct InputManager* input_manager) {
+u8 input_manager_get_controller_action_list_length(struct InputManager* input_manager) {
   for (size_t i = 0; i < input_manager->controllers.size; i++) {
     struct Controller* controller = (struct Controller*)array_list_get(&(input_manager->controllers), i);
     if (controller->controller_common.controller_type == CONTROLLER_GAMECUBE)
@@ -163,7 +163,7 @@ struct KeyboardMouseController* input_manager_find_keyboard_mouse(struct InputMa
   return NULL;
 }
 
-// void input_manager_set_cursor_pos(struct InputManager *input_manager, double x_pos, double y_pos) {
+// void input_manager_set_cursor_pos(struct InputManager *input_manager, r64 x_pos, r64 y_pos) {
 //   struct Controller *keyboard_mouse_controller = input_manager_find_keyboard_mouse(input_manager);
 //   if (keyboard_mouse_controller == NULL)
 //     return;
@@ -175,7 +175,7 @@ struct KeyboardMouseController* input_manager_find_keyboard_mouse(struct InputMa
 //   keyboard_mouse_controller->controller_common.keyboard_mouse_controller.mouse_y_pos = y_pos;
 // }
 //
-// void input_manager_set_cursor_scroll(struct InputManager *input_manager, double wheel_scroll) {
+// void input_manager_set_cursor_scroll(struct InputManager *input_manager, r64 wheel_scroll) {
 //   struct Controller *keyboard_mouse_controller = input_manager_find_keyboard_mouse(input_manager);
 //   if (keyboard_mouse_controller == NULL)
 //     return;

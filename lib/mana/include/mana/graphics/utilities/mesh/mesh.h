@@ -9,16 +9,16 @@
 #endif
 
 struct MeshFunc {
-  uint_fast8_t (*mesh_init)(struct MeshCommon *, enum MESH_TYPE, struct APICommon *);
-  void (*mesh_delete)(struct MeshCommon *, struct APICommon *);
-  void (*mesh_generate_buffers)(struct MeshCommon *, struct APICommon *);
+  u8 (*mesh_init)(struct MeshCommon*, enum MESH_TYPE, struct APICommon*);
+  void (*mesh_delete)(struct MeshCommon*, struct APICommon*);
+  void (*mesh_generate_buffers)(struct MeshCommon*, struct APICommon*);
 };
 
 #ifdef VULKAN_API_SUPPORTED
-static const struct MeshFunc MESH_VULKAN = {mesh_vulkan_init, mesh_vulkan_delete, mesh_vulkan_generate_buffers};
+internal const struct MeshFunc MESH_VULKAN = {mesh_vulkan_init, mesh_vulkan_delete, mesh_vulkan_generate_buffers};
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-static const struct MeshFunc MESH_DIRECTX12 = {mesh_directx_12_init, mesh_directx_12_delete, mesh_directx_12_generate_buffers};
+internal const struct MeshFunc MESH_DIRECTX12 = {mesh_directx_12_init, mesh_directx_12_delete, mesh_directx_12_generate_buffers};
 #endif
 
 struct Mesh {
@@ -26,76 +26,76 @@ struct Mesh {
   struct MeshCommon mesh_common;
 };
 
-uint_fast8_t mesh_init(struct Mesh *mesh, enum MESH_TYPE mesh_type, struct APICommon *api_common);
-void mesh_delete(struct Mesh *mesh, struct APICommon *api_common);
-uint32_t mesh_get_memory_size(enum MESH_TYPE mesh_type);
-void mesh_generate_buffers(struct Mesh *mesh, struct APICommon *api_common);
-void mesh_clear(struct Mesh *mesh);
-void mesh_clear_vertices(struct Mesh *mesh);
-void mesh_clear_indices(struct Mesh *mesh);
-void mesh_assign_vertex(struct Mesh *mesh, void *vertex);
-void mesh_assign_indice(struct Mesh *mesh, uint32_t indice);
+u8 mesh_init(struct Mesh* mesh, enum MESH_TYPE mesh_type, struct APICommon* api_common);
+void mesh_delete(struct Mesh* mesh, struct APICommon* api_common);
+u32 mesh_get_memory_size(enum MESH_TYPE mesh_type);
+void mesh_generate_buffers(struct Mesh* mesh, struct APICommon* api_common);
+void mesh_clear(struct Mesh* mesh);
+void mesh_clear_vertices(struct Mesh* mesh);
+void mesh_clear_indices(struct Mesh* mesh);
+void mesh_assign_vertex(struct Mesh* mesh, void* vertex);
+void mesh_assign_indice(struct Mesh* mesh, u32 indice);
 
-void mesh_fullscreen_triangle(struct Mesh *mesh);
+void mesh_fullscreen_triangle(struct Mesh* mesh);
 
-// static inline void mesh_sprite_init(struct Mesh *mesh);
-// static inline void mesh_sprite_assign_vertex(struct Vector *vector, float x, float y, float z, float u, float v);
-// static inline VkVertexInputBindingDescription mesh_sprite_get_binding_description(void);
-// static inline void mesh_sprite_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions);
+// internal inline void mesh_sprite_init(struct Mesh *mesh);
+// internal inline void mesh_sprite_assign_vertex(struct Vector *vector, r32 x, r32 y, r32 z, r32 u, r32 v);
+// internal inline VkVertexInputBindingDescription mesh_sprite_get_binding_description(void);
+// internal inline void mesh_sprite_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions);
 //
-// static inline void mesh_quad_init(struct Mesh *mesh);
-// static inline void mesh_quad_assign_vertex(struct Vector *vector, float x, float y, float z);
-// static inline VkVertexInputBindingDescription mesh_quad_get_binding_description(void);
-// static inline void mesh_quad_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions);
+// internal inline void mesh_quad_init(struct Mesh *mesh);
+// internal inline void mesh_quad_assign_vertex(struct Vector *vector, r32 x, r32 y, r32 z);
+// internal inline VkVertexInputBindingDescription mesh_quad_get_binding_description(void);
+// internal inline void mesh_quad_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions);
 //
-// static inline void mesh_triangle_init(struct Mesh *mesh);
-// static inline void mesh_triangle_assign_vertex(struct Vector *vector, float x, float y, float z);
-// static inline VkVertexInputBindingDescription mesh_triangle_get_binding_description(void);
-// static inline void mesh_triangle_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions);
+// internal inline void mesh_triangle_init(struct Mesh *mesh);
+// internal inline void mesh_triangle_assign_vertex(struct Vector *vector, r32 x, r32 y, r32 z);
+// internal inline VkVertexInputBindingDescription mesh_triangle_get_binding_description(void);
+// internal inline void mesh_triangle_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions);
 //
-// static inline void mesh_model_init(struct Mesh *mesh);
-// static inline void mesh_model_assign_vertex(struct Vector *vector, float x, float y, float z, float r1, float g1, float b1, float u, float v, float r2, float g2, float b2, int joint_id_x, int joint_id_y, int joint_id_z, float weight_x, float weight_y, float weight_z);
-// static inline VkVertexInputBindingDescription mesh_model_get_binding_description(void);
-// static inline void mesh_model_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions);
+// internal inline void mesh_model_init(struct Mesh *mesh);
+// internal inline void mesh_model_assign_vertex(struct Vector *vector, r32 x, r32 y, r32 z, r32 r1, r32 g1, r32 b1, r32 u, r32 v, r32 r2, r32 g2, r32 b2, int joint_id_x, int joint_id_y, int joint_id_z, r32 weight_x, r32 weight_y, r32 weight_z);
+// internal inline VkVertexInputBindingDescription mesh_model_get_binding_description(void);
+// internal inline void mesh_model_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions);
 //
-// static inline void mesh_model_static_init(struct Mesh *mesh);
-// static inline void mesh_model_static_assign_vertex(struct Vector *vector, float x, float y, float z, float r1, float g1, float b1, float u, float v, float r2, float g2, float b2);
-// static inline VkVertexInputBindingDescription mesh_model_static_get_binding_description(void);
-// static inline void mesh_model_static_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions);
+// internal inline void mesh_model_internal_init(struct Mesh *mesh);
+// internal inline void mesh_model_internal_assign_vertex(struct Vector *vector, r32 x, r32 y, r32 z, r32 r1, r32 g1, r32 b1, r32 u, r32 v, r32 r2, r32 g2, r32 b2);
+// internal inline VkVertexInputBindingDescription mesh_model_internal_get_binding_description(void);
+// internal inline void mesh_model_internal_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions);
 //
-// static inline void mesh_dual_contouring_init(struct Mesh *mesh);
-// static inline void mesh_dual_contouring_assign_vertex(struct Vector *vector, float x, float y, float z, float r, float g, float b);
-// static inline VkVertexInputBindingDescription mesh_dual_contouring_get_binding_description(void);
-// static inline void mesh_dual_contouring_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions);
+// internal inline void mesh_dual_contouring_init(struct Mesh *mesh);
+// internal inline void mesh_dual_contouring_assign_vertex(struct Vector *vector, r32 x, r32 y, r32 z, r32 r, r32 g, r32 b);
+// internal inline VkVertexInputBindingDescription mesh_dual_contouring_get_binding_description(void);
+// internal inline void mesh_dual_contouring_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions);
 //
-// static inline void mesh_manifold_dual_contouring_init(struct Mesh *mesh);
-// static inline void mesh_manifold_dual_contouring_assign_vertex(struct Vector *vector, float x, float y, float z, float r, float g, float b, float nr1, float ng1, float nb1, float nr2, float ng2, float nb2);
-// static inline void mesh_manifold_dual_contouring_assign_vertex_simple(struct Vector *vector, struct VertexManifoldDualContouring vertex);
-// static inline VkVertexInputBindingDescription mesh_manifold_dual_contouring_get_binding_description(void);
-// static inline void mesh_manifold_dual_contouring_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions);
+// internal inline void mesh_manifold_dual_contouring_init(struct Mesh *mesh);
+// internal inline void mesh_manifold_dual_contouring_assign_vertex(struct Vector *vector, r32 x, r32 y, r32 z, r32 r, r32 g, r32 b, r32 nr1, r32 ng1, r32 nb1, r32 nr2, r32 ng2, r32 nb2);
+// internal inline void mesh_manifold_dual_contouring_assign_vertex_simple(struct Vector *vector, struct VertexManifoldDualContouring vertex);
+// internal inline VkVertexInputBindingDescription mesh_manifold_dual_contouring_get_binding_description(void);
+// internal inline void mesh_manifold_dual_contouring_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions);
 //
-// static inline void mesh_grass_init(struct Mesh *mesh);
-// static inline void mesh_grass_assign_vertex(struct Vector *vector, float x, float y, float z, float w);
-// static inline VkVertexInputBindingDescription mesh_grass_get_binding_description(void);
-// static inline void mesh_grass_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions);
+// internal inline void mesh_grass_init(struct Mesh *mesh);
+// internal inline void mesh_grass_assign_vertex(struct Vector *vector, r32 x, r32 y, r32 z, r32 w);
+// internal inline VkVertexInputBindingDescription mesh_grass_get_binding_description(void);
+// internal inline void mesh_grass_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions);
 //
-// static inline void mesh_delete(struct Mesh *mesh);
-// static inline void mesh_clear(struct Mesh *mesh);
-// static inline void mesh_clear_vertices(struct Mesh *mesh);
-// static inline void mesh_clear_indices(struct Mesh *mesh);
-// static inline void mesh_assign_indice(struct Vector *vector, uint32_t indice);
+// internal inline void mesh_delete(struct Mesh *mesh);
+// internal inline void mesh_clear(struct Mesh *mesh);
+// internal inline void mesh_clear_vertices(struct Mesh *mesh);
+// internal inline void mesh_clear_indices(struct Mesh *mesh);
+// internal inline void mesh_assign_indice(struct Vector *vector, u32 indice);
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 //
-// static inline void mesh_sprite_init(struct Mesh *mesh) {
+// internal inline void mesh_sprite_init(struct Mesh *mesh) {
 //  mesh->vertices = calloc(1, sizeof(struct Vector));
 //  vector_init(mesh->vertices, sizeof(struct VertexSprite));
 //
 //  mesh->indices = calloc(1, sizeof(struct Vector));
-//  vector_init(mesh->indices, sizeof(uint32_t));
+//  vector_init(mesh->indices, sizeof(u32));
 //}
 //
-// static inline void mesh_sprite_assign_vertex(struct Vector *vector, float x, float y, float z, float u, float v) {
+// internal inline void mesh_sprite_assign_vertex(struct Vector *vector, r32 x, r32 y, r32 z, r32 u, r32 v) {
 //  struct VertexSprite vertex;
 //  memset(&vertex, 0, sizeof(vertex));
 //
@@ -109,7 +109,7 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  vector_push_back(vector, &vertex);
 //}
 //
-// static inline VkVertexInputBindingDescription mesh_sprite_get_binding_description(void) {
+// internal inline VkVertexInputBindingDescription mesh_sprite_get_binding_description(void) {
 //  VkVertexInputBindingDescription binding_description = {0};
 //  binding_description.binding = 0;
 //  binding_description.stride = sizeof(struct VertexSprite);
@@ -118,7 +118,7 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  return binding_description;
 //}
 //
-// static inline void mesh_sprite_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions) {
+// internal inline void mesh_sprite_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions) {
 //  attribute_descriptions[0].binding = 0;
 //  attribute_descriptions[0].location = 0;
 //  attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -132,12 +132,12 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 //
-// static inline void mesh_quad_init(struct Mesh *mesh) {
+// internal inline void mesh_quad_init(struct Mesh *mesh) {
 //  mesh->vertices = calloc(1, sizeof(struct Vector));
 //  vector_init(mesh->vertices, sizeof(struct VertexQuad));
 //
 //  mesh->indices = calloc(1, sizeof(struct Vector));
-//  vector_init(mesh->indices, sizeof(uint32_t));
+//  vector_init(mesh->indices, sizeof(u32));
 //
 //  mesh_quad_assign_vertex(mesh->vertices, -0.5f, -0.5f, 0.0f);
 //  mesh_quad_assign_vertex(mesh->vertices, 0.5f, -0.5f, 0.0f);
@@ -152,7 +152,7 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  mesh_assign_indice(mesh->indices, 0);
 //}
 //
-// static inline void mesh_quad_assign_vertex(struct Vector *vector, float x, float y, float z) {
+// internal inline void mesh_quad_assign_vertex(struct Vector *vector, r32 x, r32 y, r32 z) {
 //  struct VertexQuad vertex;
 //  memset(&vertex, 0, sizeof(vertex));
 //
@@ -163,7 +163,7 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  vector_push_back(vector, &vertex);
 //}
 //
-// static inline VkVertexInputBindingDescription mesh_quad_get_binding_description(void) {
+// internal inline VkVertexInputBindingDescription mesh_quad_get_binding_description(void) {
 //  VkVertexInputBindingDescription binding_description = {0};
 //  binding_description.binding = 0;
 //  binding_description.stride = sizeof(struct VertexQuad);
@@ -172,7 +172,7 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  return binding_description;
 //}
 //
-// static inline void mesh_quad_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions) {
+// internal inline void mesh_quad_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions) {
 //  attribute_descriptions[0].binding = 0;
 //  attribute_descriptions[0].location = 0;
 //  attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -181,12 +181,12 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 //
-// static inline void mesh_triangle_init(struct Mesh *mesh) {
+// internal inline void mesh_triangle_init(struct Mesh *mesh) {
 //  mesh->vertices = calloc(1, sizeof(struct Vector));
 //  vector_init(mesh->vertices, sizeof(struct VertexTriangle));
 //
 //  mesh->indices = calloc(1, sizeof(struct Vector));
-//  vector_init(mesh->indices, sizeof(uint32_t));
+//  vector_init(mesh->indices, sizeof(u32));
 //
 //  mesh_triangle_assign_vertex(mesh->vertices, -1.0f, 1.0f, 0.0f);
 //  mesh_triangle_assign_vertex(mesh->vertices, -1.0f, -2.0f, 0.0f);
@@ -197,7 +197,7 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  mesh_assign_indice(mesh->indices, 2);
 //}
 //
-// static inline void mesh_triangle_assign_vertex(struct Vector *vector, float x, float y, float z) {
+// internal inline void mesh_triangle_assign_vertex(struct Vector *vector, r32 x, r32 y, r32 z) {
 //  struct VertexTriangle vertex;
 //  memset(&vertex, 0, sizeof(vertex));
 //
@@ -208,7 +208,7 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  vector_push_back(vector, &vertex);
 //}
 //
-// static inline VkVertexInputBindingDescription mesh_triangle_get_binding_description(void) {
+// internal inline VkVertexInputBindingDescription mesh_triangle_get_binding_description(void) {
 //  VkVertexInputBindingDescription binding_description = {0};
 //  binding_description.binding = 0;
 //  binding_description.stride = sizeof(struct VertexTriangle);
@@ -217,7 +217,7 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  return binding_description;
 //}
 //
-// static inline void mesh_triangle_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions) {
+// internal inline void mesh_triangle_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions) {
 //  attribute_descriptions[0].binding = 0;
 //  attribute_descriptions[0].location = 0;
 //  attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -226,15 +226,15 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 //
-// static inline void mesh_model_init(struct Mesh *mesh) {
+// internal inline void mesh_model_init(struct Mesh *mesh) {
 //  mesh->vertices = calloc(1, sizeof(struct Vector));
 //  vector_init(mesh->vertices, sizeof(struct VertexModel));
 //
 //  mesh->indices = calloc(1, sizeof(struct Vector));
-//  vector_init(mesh->indices, sizeof(uint32_t));
+//  vector_init(mesh->indices, sizeof(u32));
 //}
 //
-// static inline void mesh_model_assign_vertex(struct Vector *vector, float x, float y, float z, float r1, float g1, float b1, float u, float v, float r2, float g2, float b2, int joint_id_x, int joint_id_y, int joint_id_z, float weight_x, float weight_y, float weight_z) {
+// internal inline void mesh_model_assign_vertex(struct Vector *vector, r32 x, r32 y, r32 z, r32 r1, r32 g1, r32 b1, r32 u, r32 v, r32 r2, r32 g2, r32 b2, int joint_id_x, int joint_id_y, int joint_id_z, r32 weight_x, r32 weight_y, r32 weight_z) {
 //  struct VertexModel vertex;
 //  memset(&vertex, 0, sizeof(vertex));
 //
@@ -264,7 +264,7 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  vector_push_back(vector, &vertex);
 //}
 //
-// static inline VkVertexInputBindingDescription mesh_model_get_binding_description(void) {
+// internal inline VkVertexInputBindingDescription mesh_model_get_binding_description(void) {
 //  VkVertexInputBindingDescription binding_description = {0};
 //  binding_description.binding = 0;
 //  binding_description.stride = sizeof(struct VertexModel);
@@ -273,7 +273,7 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  return binding_description;
 //}
 //
-// static inline void mesh_model_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions) {
+// internal inline void mesh_model_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions) {
 //  attribute_descriptions[0].binding = 0;
 //  attribute_descriptions[0].location = 0;
 //  attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -307,16 +307,16 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 //
-// static inline void mesh_model_static_init(struct Mesh *mesh) {
+// internal inline void mesh_model_internal_init(struct Mesh *mesh) {
 //  mesh->vertices = calloc(1, sizeof(struct Vector));
-//  vector_init(mesh->vertices, sizeof(struct VertexModelStatic));
+//  vector_init(mesh->vertices, sizeof(struct VertexModelinternal));
 //
 //  mesh->indices = calloc(1, sizeof(struct Vector));
-//  vector_init(mesh->indices, sizeof(uint32_t));
+//  vector_init(mesh->indices, sizeof(u32));
 //}
 //
-// static inline void mesh_model_static_assign_vertex(struct Vector *vector, float x, float y, float z, float r1, float g1, float b1, float u, float v, float r2, float g2, float b2) {
-//  struct VertexModelStatic vertex;
+// internal inline void mesh_model_internal_assign_vertex(struct Vector *vector, r32 x, r32 y, r32 z, r32 r1, r32 g1, r32 b1, r32 u, r32 v, r32 r2, r32 g2, r32 b2) {
+//  struct VertexModelinternal vertex;
 //  memset(&vertex, 0, sizeof(vertex));
 //
 //  vertex.position.x = x;
@@ -337,48 +337,48 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  vector_push_back(vector, &vertex);
 //}
 //
-// static inline VkVertexInputBindingDescription mesh_model_static_get_binding_description(void) {
+// internal inline VkVertexInputBindingDescription mesh_model_internal_get_binding_description(void) {
 //  VkVertexInputBindingDescription binding_description = {0};
 //  binding_description.binding = 0;
-//  binding_description.stride = sizeof(struct VertexModelStatic);
+//  binding_description.stride = sizeof(struct VertexModelinternal);
 //  binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 //
 //  return binding_description;
 //}
 //
-// static inline void mesh_model_static_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions) {
+// internal inline void mesh_model_internal_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions) {
 //  attribute_descriptions[0].binding = 0;
 //  attribute_descriptions[0].location = 0;
 //  attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-//  attribute_descriptions[0].offset = offsetof(struct VertexModelStatic, position);
+//  attribute_descriptions[0].offset = offsetof(struct VertexModelinternal, position);
 //
 //  attribute_descriptions[1].binding = 0;
 //  attribute_descriptions[1].location = 1;
 //  attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-//  attribute_descriptions[1].offset = offsetof(struct VertexModelStatic, normal);
+//  attribute_descriptions[1].offset = offsetof(struct VertexModelinternal, normal);
 //
 //  attribute_descriptions[2].binding = 0;
 //  attribute_descriptions[2].location = 2;
 //  attribute_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-//  attribute_descriptions[2].offset = offsetof(struct VertexModelStatic, tex_coord);
+//  attribute_descriptions[2].offset = offsetof(struct VertexModelinternal, tex_coord);
 //
 //  attribute_descriptions[3].binding = 0;
 //  attribute_descriptions[3].location = 3;
 //  attribute_descriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
-//  attribute_descriptions[3].offset = offsetof(struct VertexModelStatic, color);
+//  attribute_descriptions[3].offset = offsetof(struct VertexModelinternal, color);
 //}
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 //
-// static inline void mesh_dual_contouring_init(struct Mesh *mesh) {
+// internal inline void mesh_dual_contouring_init(struct Mesh *mesh) {
 //  mesh->vertices = calloc(1, sizeof(struct Vector));
 //  vector_init(mesh->vertices, sizeof(struct VertexDualContouring));
 //
 //  mesh->indices = calloc(1, sizeof(struct Vector));
-//  vector_init(mesh->indices, sizeof(uint32_t));
+//  vector_init(mesh->indices, sizeof(u32));
 //}
 //
-// static inline void mesh_dual_contouring_assign_vertex(struct Vector *vector, float x, float y, float z, float r, float g, float b) {
+// internal inline void mesh_dual_contouring_assign_vertex(struct Vector *vector, r32 x, r32 y, r32 z, r32 r, r32 g, r32 b) {
 //  struct VertexDualContouring vertex;
 //  memset(&vertex, 0, sizeof(vertex));
 //
@@ -393,7 +393,7 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  vector_push_back(vector, &vertex);
 //}
 //
-// static inline VkVertexInputBindingDescription mesh_dual_contouring_get_binding_description(void) {
+// internal inline VkVertexInputBindingDescription mesh_dual_contouring_get_binding_description(void) {
 //  VkVertexInputBindingDescription binding_description = {0};
 //  binding_description.binding = 0;
 //  binding_description.stride = sizeof(struct VertexDualContouring);
@@ -402,7 +402,7 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  return binding_description;
 //}
 //
-// static inline void mesh_dual_contouring_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions) {
+// internal inline void mesh_dual_contouring_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions) {
 //  attribute_descriptions[0].binding = 0;
 //  attribute_descriptions[0].location = 0;
 //  attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -416,15 +416,15 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 //
-// static inline void mesh_manifold_dual_contouring_init(struct Mesh *mesh) {
+// internal inline void mesh_manifold_dual_contouring_init(struct Mesh *mesh) {
 //  mesh->vertices = calloc(1, sizeof(struct Vector));
 //  vector_init(mesh->vertices, sizeof(struct VertexManifoldDualContouring));
 //
 //  mesh->indices = calloc(1, sizeof(struct Vector));
-//  vector_init(mesh->indices, sizeof(uint32_t));
+//  vector_init(mesh->indices, sizeof(u32));
 //}
 //
-// static inline void mesh_manifold_dual_contouring_assign_vertex(struct Vector *vector, float x, float y, float z, float r, float g, float b, float nr1, float ng1, float nb1, float nr2, float ng2, float nb2) {
+// internal inline void mesh_manifold_dual_contouring_assign_vertex(struct Vector *vector, r32 x, r32 y, r32 z, r32 r, r32 g, r32 b, r32 nr1, r32 ng1, r32 nb1, r32 nr2, r32 ng2, r32 nb2) {
 //  struct VertexManifoldDualContouring vertex;
 //  memset(&vertex, 0, sizeof(vertex));
 //
@@ -447,11 +447,11 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  vector_push_back(vector, &vertex);
 //}
 //
-// static inline void mesh_manifold_dual_contouring_assign_vertex_simple(struct Vector *vector, struct VertexManifoldDualContouring vertex) {
+// internal inline void mesh_manifold_dual_contouring_assign_vertex_simple(struct Vector *vector, struct VertexManifoldDualContouring vertex) {
 //  vector_push_back(vector, &vertex);
 //}
 //
-// static inline VkVertexInputBindingDescription mesh_manifold_dual_contouring_get_binding_description(void) {
+// internal inline VkVertexInputBindingDescription mesh_manifold_dual_contouring_get_binding_description(void) {
 //  VkVertexInputBindingDescription binding_description = {0};
 //  binding_description.binding = 0;
 //  binding_description.stride = sizeof(struct VertexManifoldDualContouring);
@@ -460,7 +460,7 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  return binding_description;
 //}
 //
-// static inline void mesh_manifold_dual_contouring_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions) {
+// internal inline void mesh_manifold_dual_contouring_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions) {
 //  attribute_descriptions[0].binding = 0;
 //  attribute_descriptions[0].location = 0;
 //  attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -484,15 +484,15 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 //
-// static inline void mesh_grass_init(struct Mesh *mesh) {
+// internal inline void mesh_grass_init(struct Mesh *mesh) {
 //  mesh->vertices = calloc(1, sizeof(struct Vector));
 //  vector_init(mesh->vertices, sizeof(struct VertexGrass));
 //
 //  mesh->indices = calloc(1, sizeof(struct Vector));
-//  vector_init(mesh->indices, sizeof(uint32_t));
+//  vector_init(mesh->indices, sizeof(u32));
 //}
 //
-// static inline void mesh_grass_assign_vertex(struct Vector *vector, float x, float y, float z, float w) {
+// internal inline void mesh_grass_assign_vertex(struct Vector *vector, r32 x, r32 y, r32 z, r32 w) {
 //  struct VertexGrass vertex;
 //  memset(&vertex, 0, sizeof(vertex));
 //
@@ -504,7 +504,7 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  vector_push_back(vector, &vertex);
 //}
 //
-// static inline VkVertexInputBindingDescription mesh_grass_get_binding_description(void) {
+// internal inline VkVertexInputBindingDescription mesh_grass_get_binding_description(void) {
 //  VkVertexInputBindingDescription binding_description = {0};
 //  binding_description.binding = 0;
 //  binding_description.stride = sizeof(struct VertexGrass);
@@ -513,7 +513,7 @@ void mesh_fullscreen_triangle(struct Mesh *mesh);
 //  return binding_description;
 //}
 //
-// static inline void mesh_grass_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions) {
+// internal inline void mesh_grass_get_attribute_descriptions(VkVertexInputAttributeDescription *attribute_descriptions) {
 //  attribute_descriptions[0].binding = 0;
 //  attribute_descriptions[0].location = 0;
 //  attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;

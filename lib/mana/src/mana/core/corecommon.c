@@ -77,34 +77,34 @@ void log_message(enum log_severity_t severity, const char* format, ...) {
   }
 }
 
-int32_t log_delete(void) {
+i32 log_delete(void) {
   return _unlink("error.log");
 }
 
-double get_high_resolution_time(void) {
+r64 get_high_resolution_time(void) {
 #ifdef _WIN64
   LARGE_INTEGER frequency;
   LARGE_INTEGER counter;
   QueryPerformanceFrequency(&frequency);
   QueryPerformanceCounter(&counter);
-  return (double)counter.QuadPart / (double)frequency.QuadPart;
+  return (r64)counter.QuadPart / (r64)frequency.QuadPart;
 #else
   struct timespec current_time;
   clock_gettime(CLOCK_MONOTONIC, &current_time);
   long delta_seconds = current_time.tv_sec - prev_time.tv_sec;
   long delta_nanoseconds = current_time.tv_nsec - prev_time.tv_nsec;
-  return (double)delta_seconds + (double)delta_nanoseconds / 1000000000;
+  return (r64)delta_seconds + (r64)delta_nanoseconds / 1000000000;
 #endif
 }
 
-static bool directory_exists(const char* path) {
+internal b8 directory_exists(const char* path) {
 #ifdef _WIN32
   DWORD dwAttrib = GetFileAttributesA(path);
   return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 #else
   struct stat info;
   if (stat(path, &info) != 0)
-    return false;
+    return FALSE;
   return (info.st_mode & S_IFDIR) != 0;
 #endif
 }

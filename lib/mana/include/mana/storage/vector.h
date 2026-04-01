@@ -15,30 +15,30 @@ struct Vector {
   void* items;         // Pointer to start of data
 };
 
-static inline void vector_init(struct Vector* vector, size_t memory_size) {
+global inline void vector_init(struct Vector* vector, size_t memory_size) {
   vector->size = 0;
   vector->capacity = VECTOR_INIT_CAPACITY;
   vector->memory_size = memory_size;
   vector->items = malloc(memory_size * VECTOR_INIT_CAPACITY);
 }
 
-static inline void vector_delete(struct Vector* vector) {
+global inline void vector_delete(struct Vector* vector) {
   free(vector->items);
 }
 
-static inline size_t vector_size(struct Vector* vector) {
+global inline size_t vector_size(struct Vector* vector) {
   return vector->size;
 }
 
-static inline size_t vector_capactiy(struct Vector* vector) {
+global inline size_t vector_capactiy(struct Vector* vector) {
   return vector->capacity;
 }
 
-static inline int vector_empty(struct Vector* vector) {
+global inline int vector_empty(struct Vector* vector) {
   return vector->size == 0;
 }
 
-static inline void vector_resize(struct Vector* vector, size_t capacity) {
+global inline void vector_resize(struct Vector* vector, size_t capacity) {
   void* new_items = realloc((char*)vector->items, vector->memory_size * capacity);
   if (new_items) {
     vector->items = new_items;
@@ -46,7 +46,7 @@ static inline void vector_resize(struct Vector* vector, size_t capacity) {
   }
 }
 
-static inline void vector_push_back(struct Vector* vector, void* item) {
+global inline void vector_push_back(struct Vector* vector, void* item) {
   if (vector->capacity == vector->size)
     vector_resize(vector, vector->capacity * VECTOR_RESIZE_FACTOR);
 
@@ -54,7 +54,7 @@ static inline void vector_push_back(struct Vector* vector, void* item) {
   vector->size++;
 }
 
-static inline void vector_pop_back(struct Vector* vector, void* copy_buffer) {
+global inline void vector_pop_back(struct Vector* vector, void* copy_buffer) {
   if (vector->size == 0)
     return;
 
@@ -66,7 +66,7 @@ static inline void vector_pop_back(struct Vector* vector, void* copy_buffer) {
     vector_resize(vector, vector->capacity / 2);
 }
 
-static inline void vector_insert(struct Vector* vector, size_t index, void* item) {
+global inline void vector_insert(struct Vector* vector, size_t index, void* item) {
   if (index >= vector->size)
     return;
 
@@ -79,23 +79,23 @@ static inline void vector_insert(struct Vector* vector, size_t index, void* item
   vector->size++;
 }
 
-static inline void vector_set(struct Vector* vector, size_t index, void* item) {
+global inline void vector_set(struct Vector* vector, size_t index, void* item) {
   if (index < vector->size)
     memcpy((char*)vector->items + (vector->memory_size * index), item, vector->memory_size);
 }
 
 // TODO: Add less safe version without check
-static inline void* vector_get(struct Vector* vector, size_t index) {
+global inline void* vector_get(struct Vector* vector, size_t index) {
   if (index < vector->size)
     return (char*)vector->items + (vector->memory_size * index);
   return NULL;
 }
 
-static inline int vector_exists(struct Vector* vector, size_t index) {
+global inline int vector_exists(struct Vector* vector, size_t index) {
   return index < vector->size;
 }
 
-static inline void vector_remove(struct Vector* vector, size_t index) {
+global inline void vector_remove(struct Vector* vector, size_t index) {
   if (index >= vector->size)
     return;
 
@@ -106,7 +106,7 @@ static inline void vector_remove(struct Vector* vector, size_t index) {
     vector_resize(vector, vector->capacity / 2);
 }
 
-static inline void vector_clear(struct Vector* vector) {
+global inline void vector_clear(struct Vector* vector) {
   vector->size = 0;
   vector->capacity = VECTOR_INIT_CAPACITY;
   vector_resize(vector, VECTOR_INIT_CAPACITY);

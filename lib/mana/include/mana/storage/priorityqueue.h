@@ -15,12 +15,12 @@ struct PriorityQueue {
   struct PriorityQueueNode* tail;
 };
 
-static inline void priority_queue_init(struct PriorityQueue* priority_queue) {
+global inline void priority_queue_init(struct PriorityQueue* priority_queue) {
   priority_queue->size = 0;
   priority_queue->head = priority_queue->tail = NULL;
 }
 
-static inline void priority_queue_delete(struct PriorityQueue* priority_queue) {
+global inline void priority_queue_delete(struct PriorityQueue* priority_queue) {
   if (priority_queue->head != NULL)
     free(priority_queue->head);
 
@@ -28,15 +28,15 @@ static inline void priority_queue_delete(struct PriorityQueue* priority_queue) {
     free(priority_queue->tail);
 }
 
-static inline size_t priority_queue_size(struct PriorityQueue* priority_queue) {
+global inline size_t priority_queue_size(struct PriorityQueue* priority_queue) {
   return priority_queue->size;
 }
 
-static inline int priority_queue_empty(struct PriorityQueue* priority_queue) {
+global inline int priority_queue_empty(struct PriorityQueue* priority_queue) {
   return priority_queue->size == 0;
 }
 
-static inline void priority_queue_push(struct PriorityQueue* priority_queue, void* item, size_t priority) {
+global inline void priority_queue_push(struct PriorityQueue* priority_queue, void* item, size_t priority) {
   struct PriorityQueueNode* new_node = (struct PriorityQueueNode*)malloc(sizeof(struct PriorityQueueNode));
   new_node->data = item;
   new_node->priority = priority;
@@ -60,7 +60,7 @@ static inline void priority_queue_push(struct PriorityQueue* priority_queue, voi
   priority_queue->size++;
 }
 
-static inline void* priority_queue_pop(struct PriorityQueue* priority_queue) {
+global inline void* priority_queue_pop(struct PriorityQueue* priority_queue) {
   if (priority_queue_empty(priority_queue))
     return NULL;
 
@@ -75,15 +75,15 @@ static inline void* priority_queue_pop(struct PriorityQueue* priority_queue) {
   return node_data;
 }
 
-static inline void* priority_queue_front(struct PriorityQueue* priority_queue) {
+global inline void* priority_queue_front(struct PriorityQueue* priority_queue) {
   return priority_queue->head->data;
 }
 
-static inline void* priority_queue_back(struct PriorityQueue* priority_queue) {
+global inline void* priority_queue_back(struct PriorityQueue* priority_queue) {
   return priority_queue->tail->data;
 }
 
-static inline void priority_queue_clear(struct PriorityQueue* priority_queue) {
+global inline void priority_queue_clear(struct PriorityQueue* priority_queue) {
   struct PriorityQueueNode* temp_node = NULL;
   while (!priority_queue_empty(priority_queue)) {
     temp_node = priority_queue->head->next;
@@ -95,7 +95,7 @@ static inline void priority_queue_clear(struct PriorityQueue* priority_queue) {
   priority_queue->head = priority_queue->tail = NULL;
 }
 
-static inline void priority_queue_clear_free(struct PriorityQueue* priority_queue) {
+global inline void priority_queue_clear_free(struct PriorityQueue* priority_queue) {
   struct PriorityQueueNode* temp_node = NULL;
   while (!priority_queue_empty(priority_queue)) {
     temp_node = priority_queue->head->next;

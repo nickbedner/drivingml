@@ -3,7 +3,7 @@
 void player_controller_init(struct PlayerController* player_controller) {
   // Assign current player controller to gamecube default
   // memcpy(player_controller->input_to_actions_map_main, PLAYER_CONTROLLER_DEFAULT_GAMECUBE_BINDINGS, sizeof(PLAYER_CONTROLLER_DEFAULT_GAMECUBE_BINDINGS));
-  for (uint_fast8_t i = 0; i < PLAYER_CONTROLLER_LAST; i++)
+  for (u8 i = 0; i < PLAYER_CONTROLLER_LAST; i++)
     player_controller->input_to_actions_map_main[i] = (enum PLAYER_CONTROLLER_ACTION)PLAYER_CONTROLLER_DEFAULT_GAMECUBE_BINDINGS[i];
 }
 
@@ -11,30 +11,30 @@ void player_controller_delete(struct PlayerController* player_controller) {
 }
 
 // Should action and value
-void player_controller_process_input(struct PlayerController* player_controller, struct ControllerAction* controller_action_list, uint_fast8_t controller_action_list_size) {
-  for (uint_fast8_t i = 0; i < controller_action_list_size; i++) {
+void player_controller_process_input(struct PlayerController* player_controller, struct ControllerAction* controller_action_list, u8 controller_action_list_size) {
+  for (u8 i = 0; i < controller_action_list_size; i++) {
     struct ControllerAction controller_action = controller_action_list[i];
-    for (uint_fast8_t j = 0; j < PLAYER_CONTROLLER_LAST; j++) {
-      uint_fast8_t player_binding = (uint_fast8_t)player_controller->input_to_actions_map_main[j];
+    for (u8 j = 0; j < PLAYER_CONTROLLER_LAST; j++) {
+      u8 player_binding = (u8)player_controller->input_to_actions_map_main[j];
       if (controller_action.button == player_binding) {  // || action == player_controller->input_to_actions_map_alt[j]) {
         // Do action
         switch (j) {
             // Note: These should technically apply an impulse to the player's physics object in the direction of the movement
           case PLAYER_CONTROLLER_MOVE_FORWARD:
             if (controller_action.value > 0)
-              player_controller->pos.y += (double)controller_action.value;
+              player_controller->pos.y += (r64)controller_action.value;
             break;
           case PLAYER_CONTROLLER_MOVE_BACKWARD:
             if (controller_action.value < 0)
-              player_controller->pos.y += (double)controller_action.value;
+              player_controller->pos.y += (r64)controller_action.value;
             break;
           case PLAYER_CONTROLLER_MOVE_LEFT:
             if (controller_action.value < 0)
-              player_controller->pos.x += (double)controller_action.value;
+              player_controller->pos.x += (r64)controller_action.value;
             break;
           case PLAYER_CONTROLLER_MOVE_RIGHT:
             if (controller_action.value > 0)
-              player_controller->pos.x += (double)controller_action.value;
+              player_controller->pos.x += (r64)controller_action.value;
             break;
           case PLAYER_CONTROLLER_CAMERA_UP:
             break;

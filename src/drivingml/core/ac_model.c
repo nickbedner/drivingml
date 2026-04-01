@@ -20,15 +20,15 @@ int load_ac_model(const char* path, struct ACModel* model) {
     return 0;
   }
 
-  int32_t dims[5];
-  fread(dims, sizeof(int32_t), 5, f);
+  i32 dims[5];
+  fread(dims, sizeof(i32), 5, f);
   if (dims[0] != 7 || dims[1] != 128 || dims[2] != 128 || dims[3] != 2) {
     printf("Model dimensions mismatch\n");
     fclose(f);
     return 0;
   }
 
-#define READ(arr) fread(arr, sizeof(float), sizeof(arr) / sizeof(float), f)
+#define READ(arr) fread(arr, sizeof(r32), sizeof(arr) / sizeof(r32), f)
   READ(model->input_to_hidden1_weights);
   READ(model->hidden1_bias);
   READ(model->hidden1_to_hidden2_weights);
@@ -43,11 +43,11 @@ int load_ac_model(const char* path, struct ACModel* model) {
   return 1;
 }
 
-void linear_layer(const float* weights, const float* bias, int input_size, int output_size, const float* input, float* output) {
+void linear_layer(const r32* weights, const r32* bias, int input_size, int output_size, const r32* input, r32* output) {
   for (int out_neuron = 0; out_neuron < output_size; out_neuron++) {
-    float neuron_sum = bias[out_neuron];
+    r32 neuron_sum = bias[out_neuron];
 
-    const float* weight_row = weights + out_neuron * input_size;
+    const r32* weight_row = weights + out_neuron * input_size;
 
     for (int in_feature = 0; in_feature < input_size; in_feature++)
       neuron_sum += weight_row[in_feature] * input[in_feature];
@@ -57,7 +57,7 @@ void linear_layer(const float* weights, const float* bias, int input_size, int o
 }
 
 // Note: Remember relu = Rectified Linear Unit, which introduces nonlinearity into the model
-void relu_activation(float* values, int count) {
+void relu_activation(r32* values, int count) {
   for (int neuron = 0; neuron < count; neuron++) {
     if (values[neuron] < 0.0f)
       values[neuron] = 0.0f;
@@ -65,11 +65,11 @@ void relu_activation(float* values, int count) {
 }
 
 // Forward pass and inference in C, which is the process of moving input data through the network's layers from input to output to generate a prediction
-void ac_forward(const struct ACModel* model, const float state_vector[INPUTS], float action_output[ACTIONS], float* value_prediction) {
-  float h1[HIDDEN_1];
-  float h2[HIDDEN_2];
-  float mean[ACTIONS];
-  float value[1];
+void ac_forward(const struct ACModel* model, const r32 state_vector[INPUTS], r32 action_output[ACTIONS], r32* value_prediction) {
+  r32 h1[HIDDEN_1];
+  r32 h2[HIDDEN_2];
+  r32 mean[ACTIONS];
+  r32 value[1];
 
   linear_layer(model->input_to_hidden1_weights, model->hidden1_bias, INPUTS, HIDDEN_1, state_vector, h1);
   relu_activation(h1, HIDDEN_1);
@@ -85,7 +85,7 @@ void ac_forward(const struct ACModel* model, const float state_vector[INPUTS], f
     action_output[i] = tanhf(mean[i]);
 
     // Same clamp as python
-    const float eps = 1e-6f;
+    const r32 eps = 1e-6f;
     if (action_output[i] < -1.0f + eps) action_output[i] = -1.0f + eps;
     if (action_output[i] > 1.0f - eps) action_output[i] = 1.0f - eps;
   }

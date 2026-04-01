@@ -9,7 +9,6 @@
 
 #include <ctype.h>
 #include <mana/storage/storage.h>
-#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -20,22 +19,22 @@ struct XmlNode {
   struct Map* child_nodes;  // Children are stored in an arraylist due to repeated tags
 };
 
-static inline void xml_node_init(struct XmlNode* xml_node, char* name);
-static inline void xml_node_delete(struct XmlNode* xml_node);
-static inline char* xml_node_get_attribute(struct XmlNode* xml_node, char* attr);
-static inline struct XmlNode* xml_node_get_child(struct XmlNode* xml_node, char* child_name);
-static inline struct XmlNode* xml_node_get_child_with_attribute(struct XmlNode* xml_node, char* child_name, char* attr, const char* value);
-static inline struct ArrayList* xml_node_get_children(struct XmlNode* xml_node, char* name);
-static inline void xml_node_add_attribute(struct XmlNode* xml_node, char* attr, char* value);
-static inline void xml_node_add_child(struct XmlNode* xml_node, struct XmlNode* child);
-static inline char* xml_node_get_data(struct XmlNode* xml_node);
-static inline void xml_node_set_data(struct XmlNode* xml_node, char* data);
+global inline void xml_node_init(struct XmlNode* xml_node, char* name);
+global inline void xml_node_delete(struct XmlNode* xml_node);
+global inline char* xml_node_get_attribute(struct XmlNode* xml_node, char* attr);
+global inline struct XmlNode* xml_node_get_child(struct XmlNode* xml_node, char* child_name);
+global inline struct XmlNode* xml_node_get_child_with_attribute(struct XmlNode* xml_node, char* child_name, char* attr, const char* value);
+global inline struct ArrayList* xml_node_get_children(struct XmlNode* xml_node, char* name);
+global inline void xml_node_add_attribute(struct XmlNode* xml_node, char* attr, char* value);
+global inline void xml_node_add_child(struct XmlNode* xml_node, struct XmlNode* child);
+global inline char* xml_node_get_data(struct XmlNode* xml_node);
+global inline void xml_node_set_data(struct XmlNode* xml_node, char* data);
 
-static inline void xml_node_init(struct XmlNode* xml_node, char* name) {
+global inline void xml_node_init(struct XmlNode* xml_node, char* name) {
   xml_node->name = name;
 }
 
-static inline void xml_node_delete(struct XmlNode* xml_node) {
+global inline void xml_node_delete(struct XmlNode* xml_node) {
   free(xml_node->name);
   if (xml_node->attributes != NULL) {
     const char* attributes_key;
@@ -59,14 +58,14 @@ static inline void xml_node_delete(struct XmlNode* xml_node) {
   }
 }
 
-static inline char* xml_node_get_attribute(struct XmlNode* xml_node, char* attr) {
+global inline char* xml_node_get_attribute(struct XmlNode* xml_node, char* attr) {
   if (xml_node == NULL || xml_node->attributes == NULL)
     return NULL;
   else
     return *(char**)map_get(xml_node->attributes, attr);
 }
 
-static inline struct XmlNode* xml_node_get_child(struct XmlNode* xml_node, char* child_name) {
+global inline struct XmlNode* xml_node_get_child(struct XmlNode* xml_node, char* child_name) {
   if (xml_node->child_nodes != NULL) {
     struct ArrayList** nodes = (struct ArrayList**)map_get(xml_node->child_nodes, child_name);
     if (nodes != NULL && !array_list_empty(*nodes))
@@ -75,7 +74,7 @@ static inline struct XmlNode* xml_node_get_child(struct XmlNode* xml_node, char*
   return NULL;
 }
 
-static inline struct XmlNode* xml_node_get_child_with_attribute(struct XmlNode* xml_node, char* child_name, char* attr, const char* value) {
+global inline struct XmlNode* xml_node_get_child_with_attribute(struct XmlNode* xml_node, char* child_name, char* attr, const char* value) {
   struct ArrayList* children = xml_node_get_children(xml_node, child_name);
   if (children == NULL || array_list_empty(children))
     return NULL;
@@ -90,7 +89,7 @@ static inline struct XmlNode* xml_node_get_child_with_attribute(struct XmlNode* 
   return NULL;
 }
 
-static inline struct ArrayList* xml_node_get_children(struct XmlNode* xml_node, char* name) {
+global inline struct ArrayList* xml_node_get_children(struct XmlNode* xml_node, char* name) {
   if (xml_node->child_nodes != NULL) {
     struct ArrayList** children = (struct ArrayList**)map_get(xml_node->child_nodes, name);
     if (children != NULL)
@@ -99,7 +98,7 @@ static inline struct ArrayList* xml_node_get_children(struct XmlNode* xml_node, 
   return NULL;
 }
 
-static inline void xml_node_add_attribute(struct XmlNode* xml_node, char* attr, char* value) {
+global inline void xml_node_add_attribute(struct XmlNode* xml_node, char* attr, char* value) {
   if (xml_node->attributes == NULL) {
     xml_node->attributes = (struct Map*)malloc(sizeof(struct Map));
     map_init(xml_node->attributes, sizeof(char*));
@@ -107,7 +106,7 @@ static inline void xml_node_add_attribute(struct XmlNode* xml_node, char* attr, 
   map_set(xml_node->attributes, attr, &value);
 }
 
-static inline void xml_node_add_child(struct XmlNode* xml_node, struct XmlNode* child) {
+global inline void xml_node_add_child(struct XmlNode* xml_node, struct XmlNode* child) {
   if (xml_node->child_nodes == NULL) {
     xml_node->child_nodes = (struct Map*)malloc(sizeof(struct Map));
     map_init(xml_node->child_nodes, sizeof(struct ArrayList*));
@@ -122,22 +121,22 @@ static inline void xml_node_add_child(struct XmlNode* xml_node, struct XmlNode* 
     array_list_add(*list, child);
 }
 
-static inline char* xml_node_get_data(struct XmlNode* xml_node) {
+global inline char* xml_node_get_data(struct XmlNode* xml_node) {
   return xml_node->data;
 }
 
-static inline void xml_node_set_data(struct XmlNode* xml_node, char* data) {
+global inline void xml_node_set_data(struct XmlNode* xml_node, char* data) {
   xml_node->data = data;
 }
 
-static inline struct XmlNode* xml_parser_load_xml_file(const char* xml_file_path);
-static inline struct XmlNode* xml_parser_load_node(char** scanner);
-static inline void xml_parser_delete(struct XmlNode* xml_node);
+global inline struct XmlNode* xml_parser_load_xml_file(const char* xml_file_path);
+global inline struct XmlNode* xml_parser_load_node(char** scanner);
+global inline void xml_parser_delete(struct XmlNode* xml_node);
 
-static inline char* xml_parser_read_file(const char* filename, size_t* file_length) {
+global inline char* xml_parser_read_file(const char* filename, size_t* file_length) {
   FILE* fp = NULL;
   char* result = NULL;
-  int64_t size = -1;
+  i64 size = -1;
 
   if (fopen_s(&fp, filename, "rb") != 0 || fp == NULL)
     return NULL;
@@ -168,7 +167,7 @@ cleanup:
   return result;
 }
 
-static inline struct XmlNode* xml_parser_load_xml_file(const char* xml_file_path) {
+global inline struct XmlNode* xml_parser_load_xml_file(const char* xml_file_path) {
   size_t xml_file_length = 0;
   char* xml_file_data = xml_parser_read_file(xml_file_path, &xml_file_length);
   char* file_start = xml_file_data;
@@ -184,7 +183,7 @@ static inline struct XmlNode* xml_parser_load_xml_file(const char* xml_file_path
   return xml_node;
 }
 
-static inline struct XmlNode* xml_parser_load_node(char** scanner) {
+global inline struct XmlNode* xml_parser_load_node(char** scanner) {
   // Extract line
   char* line_end = strchr(*scanner, '\n');
   if (line_end == NULL)
@@ -264,7 +263,7 @@ static inline struct XmlNode* xml_parser_load_node(char** scanner) {
   // printf("%s\n", data_start);
   char* data_end = strchr(data_start, '<');
   if (data_end != NULL) {
-    int64_t data_length = data_end - data_start;
+    i64 data_length = data_end - data_start;
     char* data_value = (char*)malloc(sizeof(char) * ((size_t)data_length + 1));
     snprintf(data_value, (size_t)(data_length + 1), "%s", data_start);
 
@@ -291,7 +290,7 @@ static inline struct XmlNode* xml_parser_load_node(char** scanner) {
   return xml_node;
 }
 
-static inline void xml_parser_delete(struct XmlNode* xml_node) {
+global inline void xml_parser_delete(struct XmlNode* xml_node) {
   if (xml_node->child_nodes != NULL) {
     const char* key;
     struct MapIter iter = map_iter();

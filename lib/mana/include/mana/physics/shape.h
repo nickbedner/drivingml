@@ -11,7 +11,7 @@ struct Shape {
   enum SHAPE_TYPE shape_type;
   union {
     struct SphereShape {
-      float radius;
+      r32 radius;
     };
   };
 };

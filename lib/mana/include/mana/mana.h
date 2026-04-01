@@ -16,5 +16,5 @@ struct Mana {
   struct API api;
 };
 
-uint_fast8_t mana_init(struct Mana *mana, enum API_TYPE preferred_api_type);
-void mana_delete(struct Mana *mana);
+u8 mana_init(struct Mana* mana, enum API_TYPE preferred_api_type);
+void mana_delete(struct Mana* mana);

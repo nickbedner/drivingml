@@ -1,6 +1,6 @@
 #include "mana/graphics/shaders/shadervulkan.h"
 
-static VkShaderModule shader_create_shader_module(struct APICommon* api_common, const uint32_t* code, uint_fast64_t length) {
+internal VkShaderModule shader_create_shader_module(struct APICommon* api_common, const u32* code, uint_fast64_t length) {
   VkShaderModuleCreateInfo create_info;
   memset(&create_info, 0, sizeof(VkShaderModuleCreateInfo));
   create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -14,13 +14,13 @@ static VkShaderModule shader_create_shader_module(struct APICommon* api_common, 
   return shader_module;
 }
 
-uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale) {
+u8 shader_vulkan_init(struct ShaderCommon* shader_common, struct APICommon* api_common, u32 width, u32 height, u8 supersample_scale) {
   if (shader_common->shader_settings.descriptors > 0) {
     VkDescriptorSetLayoutBinding bindings[SHADER_ATTACHMENT_LIMIT * 2];
     memset(bindings, 0, sizeof(VkDescriptorSetLayoutBinding) * SHADER_ATTACHMENT_LIMIT * 2);
     VkDescriptorPoolSize pool_sizes[SHADER_ATTACHMENT_LIMIT * 2];
     memset(pool_sizes, 0, sizeof(VkDescriptorPoolSize) * SHADER_ATTACHMENT_LIMIT * 2);
-    for (uint_fast8_t uniform_num = 0; uniform_num < shader_common->shader_settings.uniforms_constants; uniform_num++) {
+    for (u8 uniform_num = 0; uniform_num < shader_common->shader_settings.uniforms_constants; uniform_num++) {
       VkDescriptorSetLayoutBinding ubo_layout_binding = {0};
       ubo_layout_binding.binding = shader_common->shader_settings.uniform_constant_state[uniform_num].shader_position;
       ubo_layout_binding.descriptorCount = 1;
@@ -38,7 +38,7 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
       pool_sizes[shader_common->shader_settings.uniform_constant_state[uniform_num].shader_position].descriptorCount = shader_common->shader_settings.descriptors;
     }
 
-    for (uint_fast8_t sampler_num = 0; sampler_num < shader_common->shader_settings.texture_samples; sampler_num++) {
+    for (u8 sampler_num = 0; sampler_num < shader_common->shader_settings.texture_samples; sampler_num++) {
       VkDescriptorSetLayoutBinding sampler_layout_binding = {0};
       sampler_layout_binding.binding = shader_common->shader_settings.texture_sample_state[sampler_num].shader_position;
       sampler_layout_binding.descriptorCount = 1;
@@ -103,7 +103,7 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
       attribute_descriptions[1].location = 1;
       attribute_descriptions[1].binding = 0;
       attribute_descriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
-      attribute_descriptions[1].offset = sizeof(float) * 3;
+      attribute_descriptions[1].offset = sizeof(r32) * 3;
     }
 
     vertex_input_info.vertexBindingDescriptionCount = 1;
@@ -121,7 +121,7 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
   // VkPipelineColorBlendAttachmentState *color_blend_attachment = calloc(shader_common->shader_settings.color_attachments, sizeof(VkPipelineColorBlendAttachmentState));
   VkPipelineColorBlendAttachmentState color_blend_attachment[SHADER_ATTACHMENT_LIMIT];
   memset(color_blend_attachment, 0, sizeof(VkPipelineColorBlendAttachmentState) * SHADER_ATTACHMENT_LIMIT);
-  for (uint_fast8_t pipeline_attachment_num = 0; pipeline_attachment_num < shader_common->shader_settings.color_attachments; pipeline_attachment_num++) {
+  for (u8 pipeline_attachment_num = 0; pipeline_attachment_num < shader_common->shader_settings.color_attachments; pipeline_attachment_num++) {
     color_blend_attachment[pipeline_attachment_num].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     color_blend_attachment[pipeline_attachment_num].blendEnable = should_blend;
 
@@ -155,8 +155,8 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
   uint_fast64_t vertex_code_length = 0;
   uint_fast64_t fragment_code_length = 0;
 
-  uint32_t* vertex_shader_code = read_shader_file(vertex_path, &vertex_code_length);
-  uint32_t* fragment_shader_code = read_shader_file(fragment_path, &fragment_code_length);
+  u32* vertex_shader_code = read_shader_file(vertex_path, &vertex_code_length);
+  u32* fragment_shader_code = read_shader_file(fragment_path, &fragment_code_length);
 
   VkShaderModule vert_shader_module = shader_create_shader_module(api_common, vertex_shader_code, vertex_code_length);
   VkShaderModule frag_shader_module = shader_create_shader_module(api_common, fragment_shader_code, fragment_code_length);
@@ -270,7 +270,7 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
   VkPushConstantRange push_constant_range = {0};
   push_constant_range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
   push_constant_range.offset = 0;
-  push_constant_range.size = sizeof(int32_t);
+  push_constant_range.size = sizeof(i32);
 
   if (shader_common->shader_settings.descriptors > 0) {
     pipeline_layout_info.setLayoutCount = 1;
@@ -322,10 +322,10 @@ uint_fast8_t shader_vulkan_init(struct ShaderCommon* shader_common, struct APICo
   return 0;
 }
 
-uint_fast8_t shader_compute_vulkan_init(struct ShaderCommon* shader, struct APICommon* api_common) {
+u8 shader_compute_vulkan_init(struct ShaderCommon* shader, struct APICommon* api_common) {
   uint_fast64_t compute_length = 0;
 
-  uint32_t* compute_shader_code = read_shader_file(shader->shader_settings_compute.compute_shader, &compute_length);
+  u32* compute_shader_code = read_shader_file(shader->shader_settings_compute.compute_shader, &compute_length);
 
   VkShaderModule comp_shader_module = shader_create_shader_module(api_common, compute_shader_code, compute_length);
 
@@ -384,24 +384,24 @@ void shader_vulkan_delete(struct ShaderCommon* shader_common, struct APICommon* 
   }
 }
 
-void shader_vulkan_resize(struct ShaderCommon* shader_common, struct APICommon* api_common, uint32_t width, uint32_t height, uint_fast8_t supersample_scale) {
+void shader_vulkan_resize(struct ShaderCommon* shader_common, struct APICommon* api_common, u32 width, u32 height, u8 supersample_scale) {
   shader_common->shader_vulkan.viewport.x = 0.0f;
-  shader_common->shader_vulkan.viewport.y = (float)height;
+  shader_common->shader_vulkan.viewport.y = (r32)height;
   shader_common->shader_vulkan.viewport.minDepth = 0.0f;
   shader_common->shader_vulkan.viewport.maxDepth = 1.0f;
   if (shader_common->shader_settings.supersampled) {
-    shader_common->shader_vulkan.viewport.width = (float)width * supersample_scale;
-    shader_common->shader_vulkan.viewport.height = -(float)height * supersample_scale;
+    shader_common->shader_vulkan.viewport.width = (r32)width * supersample_scale;
+    shader_common->shader_vulkan.viewport.height = -(r32)height * supersample_scale;
   } else {
-    shader_common->shader_vulkan.viewport.width = (float)width;
-    shader_common->shader_vulkan.viewport.height = -(float)height;
+    shader_common->shader_vulkan.viewport.width = (r32)width;
+    shader_common->shader_vulkan.viewport.height = -(r32)height;
   }
 
   shader_common->shader_vulkan.scissor.offset.x = 0;
   shader_common->shader_vulkan.scissor.offset.y = 0;
   if (shader_common->shader_settings.supersampled) {
-    shader_common->shader_vulkan.scissor.extent.width = (uint32_t)((float)width * supersample_scale);
-    shader_common->shader_vulkan.scissor.extent.height = (uint32_t)((float)height * supersample_scale);
+    shader_common->shader_vulkan.scissor.extent.width = (u32)((r32)width * supersample_scale);
+    shader_common->shader_vulkan.scissor.extent.height = (u32)((r32)height * supersample_scale);
   } else {
     shader_common->shader_vulkan.scissor.extent.width = width;
     shader_common->shader_vulkan.scissor.extent.height = height;

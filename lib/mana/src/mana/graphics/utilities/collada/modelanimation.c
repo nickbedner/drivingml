@@ -1,8 +1,8 @@
 #include "mana/graphics/utilities/collada/modelanimation.h"
 
-struct AnimationData* animation_extract_animation(struct XmlNode* animation_data, struct XmlNode* joint_hierarchy, bool inverted_y) {
+struct AnimationData* animation_extract_animation(struct XmlNode* animation_data, struct XmlNode* joint_hierarchy, b8 inverted_y) {
   char* root_node = NULL;
-  float duration = 0.0f;
+  r32 duration = 0.0f;
   struct Vector* times = NULL;
   struct ArrayList* key_frames = NULL;
   struct ArrayList* animation_nodes = NULL;
@@ -42,7 +42,7 @@ struct AnimationData* animation_extract_animation(struct XmlNode* animation_data
     return NULL; /* no animation keys in this file */
   }
 
-  duration = *(float*)vector_get(times, vector_size(times) - 1);
+  duration = *(r32*)vector_get(times, vector_size(times) - 1);
 
   key_frames = animation_init_key_frames(times);
 
@@ -77,7 +77,7 @@ struct Vector* animation_get_key_times(struct XmlNode* animation_data) {
   if (times == NULL)
     return NULL;
 
-  vector_init(times, sizeof(float));
+  vector_init(times, sizeof(r32));
 
   if (animation_data == NULL)
     return times;
@@ -132,7 +132,7 @@ struct Vector* animation_get_key_times(struct XmlNode* animation_data) {
   char* raw_part = strtok_s(raw_times, " \t\r\n", &next_token);
 
   while (raw_part != NULL) {
-    float time = (float)atof(raw_part);
+    r32 time = (r32)atof(raw_part);
     vector_push_back(times, &time);
     raw_part = strtok_s(NULL, " \t\r\n", &next_token);
   }
@@ -146,13 +146,13 @@ struct ArrayList* animation_init_key_frames(struct Vector* times) {
   array_list_init(frames);
   for (size_t frame_num = 0; frame_num < vector_size(times); frame_num++) {
     struct KeyFrameData* key_frame_data = (struct KeyFrameData*)malloc(sizeof(struct KeyFrameData));
-    key_frame_data_init(key_frame_data, *(float*)vector_get(times, frame_num));
+    key_frame_data_init(key_frame_data, *(r32*)vector_get(times, frame_num));
     array_list_add(frames, key_frame_data);
   }
   return frames;
 }
 
-void animation_load_joint_transform(struct ArrayList* frames, struct XmlNode* joint_data, char* root_node_id, bool inverted_y) {
+void animation_load_joint_transform(struct ArrayList* frames, struct XmlNode* joint_data, char* root_node_id, b8 inverted_y) {
   char* joint_name_raw = xml_node_get_attribute(xml_node_get_child(joint_data, "channel"), "target");
   char* slash_pos = strchr(joint_name_raw, '/');
   size_t joint_name_length = (size_t)(slash_pos - joint_name_raw);
@@ -169,14 +169,14 @@ void animation_load_joint_transform(struct ArrayList* frames, struct XmlNode* jo
   free(joint_name_id);
 }
 
-void animation_process_transforms(char* joint_name, char* raw_data, struct ArrayList* key_frames, bool root, bool inverted_y) {
+void animation_process_transforms(char* joint_name, char* raw_data, struct ArrayList* key_frames, b8 root, b8 inverted_y) {
   char* next_token = NULL;
   char* raw_part = strtok_s(raw_data, " ", &next_token);
   for (size_t key_frame_num = 0; key_frame_num < array_list_size(key_frames); key_frame_num++) {
     mat4 transform = MAT4_ZERO;
 
     for (int matrix_value = 0; matrix_value < 16; matrix_value++) {
-      *(((float*)&transform) + matrix_value) = (float)atof(raw_part);
+      *(((r32*)&transform) + matrix_value) = (r32)atof(raw_part);
       raw_part = strtok_s(NULL, " ", &next_token);
     }
 
@@ -184,8 +184,6 @@ void animation_process_transforms(char* joint_name, char* raw_data, struct Array
 
     if (root) {
       mat4 correction = mat4_rotate(MAT4_IDENTITY, degree_to_radian(-90.0f), (vec3){.data[0] = 1.0f, .data[1] = 0.0f, .data[2] = 0.0f});
-      // if (inverted_y == false)
-      //   correction.data[10] = -1.0f; // Mirror on the Z-axis
       transform = mat4_mul(correction, transform);
     }
 

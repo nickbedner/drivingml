@@ -74,6 +74,6 @@ struct PostProcessCommon {
 #endif
   };
 
-  uint_fast8_t descriptors;
-  bool ping_pong;
+  u8 descriptors;
+  b8 ping_pong;
 };

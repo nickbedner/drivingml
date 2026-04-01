@@ -9,16 +9,16 @@
 #endif
 
 struct TextureManagerFunc {
-  uint_fast8_t (*texture_manager_init)(struct TextureManagerCommon* texture_manager, struct APICommon*);
+  u8 (*texture_manager_init)(struct TextureManagerCommon* texture_manager, struct APICommon*);
   void (*texture_manager_delete)(struct TextureManagerCommon* texture_manager, struct APICommon* api_common);
-  uint_fast8_t (*texture_manager_add)(struct TextureManagerCommon* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings);
+  u8 (*texture_manager_add)(struct TextureManagerCommon* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings);
 };
 
 #ifdef VULKAN_API_SUPPORTED
-static const struct TextureManagerFunc VULKAN_TEXTURE_MANAGER = {texture_manager_vulkan_init, texture_manager_vulkan_delete, texture_manager_vulkan_add};
+global const struct TextureManagerFunc VULKAN_TEXTURE_MANAGER = {texture_manager_vulkan_init, texture_manager_vulkan_delete, texture_manager_vulkan_add};
 #endif
 #ifdef DIRECTX_12_API_SUPPORTED
-static const struct TextureManagerFunc directx_12_TEXTURE_MANAGER = {texture_manager_directx_12_init, texture_manager_directx_12_delete, texture_manager_directx_12_add};
+global const struct TextureManagerFunc directx_12_TEXTURE_MANAGER = {texture_manager_directx_12_init, texture_manager_directx_12_delete, texture_manager_directx_12_add};
 #endif
 
 struct TextureManager {
@@ -28,6 +28,6 @@ struct TextureManager {
 
 void texture_manager_init(struct TextureManager* texture_manager, struct APICommon* api_common);
 void texture_manager_delete(struct TextureManager* texture_manager, struct APICommon* api_common);
-void texture_manager_add(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings, const char* path, bool is_sprite);
-void texture_manager_add_array(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings, const char* texture_name, const char* const* paths, uint32_t layer_count);
+void texture_manager_add(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings, const char* path, b8 is_sprite);
+void texture_manager_add_array(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings, const char* texture_name, const char* const* paths, u32 layer_count);
 struct Texture* texture_manager_get(struct TextureManager* texture_manager, const char* texture_name);

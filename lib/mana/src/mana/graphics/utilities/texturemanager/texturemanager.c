@@ -32,7 +32,7 @@ void texture_manager_delete(struct TextureManager* texture_manager, struct APICo
   texture_manager->texture_manager_func.texture_manager_delete(&(texture_manager->texture_manager_common), api_common);
 }
 
-void texture_manager_add(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings, const char* path, bool is_sprite) {
+void texture_manager_add(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings, const char* path, b8 is_sprite) {
   struct Texture* texture = (struct Texture*)malloc(sizeof(struct Texture));
   texture_init(texture, &(texture_manager->texture_manager_common), api_common, texture_settings, path, texture_manager->texture_manager_common.texture_index, is_sprite);
 
@@ -42,7 +42,7 @@ void texture_manager_add(struct TextureManager* texture_manager, struct APICommo
   texture_manager->texture_manager_common.texture_index++;
 }
 
-void texture_manager_add_array(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings, const char* texture_name, const char* const* paths, uint32_t layer_count) {
+void texture_manager_add_array(struct TextureManager* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings, const char* texture_name, const char* const* paths, u32 layer_count) {
   if (!texture_name || !paths || layer_count == 0) {
     log_message(LOG_SEVERITY_WARNING, "texture_manager_add_array got invalid args\n");
     return;
@@ -56,7 +56,7 @@ void texture_manager_add_array(struct TextureManager* texture_manager, struct AP
 
   memset(texture, 0, sizeof(struct Texture));
 
-  uint8_t result = texture_array_init(texture, &(texture_manager->texture_manager_common), api_common, texture_settings, paths, layer_count, texture_manager->texture_manager_common.texture_index);
+  u8 result = texture_array_init(texture, &(texture_manager->texture_manager_common), api_common, texture_settings, paths, layer_count, texture_manager->texture_manager_common.texture_index);
 
   if (result != 0) {
     free(texture);

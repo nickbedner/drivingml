@@ -14,47 +14,47 @@
 #include "mana/math/vec4.h"
 #include "mana/math/vec4d.h"
 
-static inline float degree_to_radian(float degree);
-static inline float radian_to_degree(float radian);
-static inline vec4 vec3_to_vec4(vec3 v1);
-static inline vec3 quaternion_to_vec3(quat q1);
-static inline mat4 quaternion_to_mat4(quat rotation);
-static inline mat4 quaternion_to_mat4_other(quat q);
-static inline quat mat4_to_quaternion(mat4 matrix);
-static inline vec3d vec3d_transform(vec3d value, quatd rot);
-static inline vec3 vec3d_to_vec3(vec3d vec);
-static inline mat4 mat4d_to_mat4(mat4d mat);
+global inline r32 degree_to_radian(r32 degree);
+global inline r32 radian_to_degree(r32 radian);
+global inline vec4 vec3_to_vec4(vec3 v1);
+global inline vec3 quaternion_to_vec3(quat q1);
+global inline mat4 quaternion_to_mat4(quat rotation);
+global inline mat4 quaternion_to_mat4_other(quat q);
+global inline quat mat4_to_quaternion(mat4 matrix);
+global inline vec3d vec3d_transform(vec3d value, quatd rot);
+global inline vec3 vec3d_to_vec3(vec3d vec);
+global inline mat4 mat4d_to_mat4(mat4d mat);
 
-static inline float degree_to_radian(float degree) {
-  return degree * (float)M_PI / 180.0f;
+global inline r32 degree_to_radian(r32 degree) {
+  return degree * (r32)M_PI / 180.0f;
 }
 
-static inline double degree_to_radian_d(double degree) {
+global inline r64 degree_to_radian_d(r64 degree) {
   return degree * M_PI / 180.0;
 }
 
-static inline float radian_to_degree(float radian) {
-  return radian * 180.0f / (float)M_PI;
+global inline r32 radian_to_degree(r32 radian) {
+  return radian * 180.0f / (r32)M_PI;
 }
 
-static inline vec4 vec3_to_vec4(vec3 v1) {
+global inline vec4 vec3_to_vec4(vec3 v1) {
   return (vec4){.data[0] = v1.data[0], .data[1] = v1.data[1], .data[2] = v1.data[2], 0.0f};
 }
 
-static inline vec3 quaternion_to_vec3(quat q1) {
+global inline vec3 quaternion_to_vec3(quat q1) {
   return (vec3){.data[0] = q1.data[0], .data[1] = q1.data[1], .data[2] = q1.data[2]};
 }
 
-static inline mat4 quaternion_to_mat4(quat rotation) {
-  float xy = rotation.data[0] * rotation.data[1];
-  float xz = rotation.data[0] * rotation.data[2];
-  float xw = rotation.data[0] * rotation.data[3];
-  float yz = rotation.data[1] * rotation.data[2];
-  float yw = rotation.data[1] * rotation.data[3];
-  float zw = rotation.data[2] * rotation.data[3];
-  float xSquared = rotation.data[0] * rotation.data[0];
-  float ySquared = rotation.data[1] * rotation.data[1];
-  float zSquared = rotation.data[2] * rotation.data[2];
+global inline mat4 quaternion_to_mat4(quat rotation) {
+  r32 xy = rotation.data[0] * rotation.data[1];
+  r32 xz = rotation.data[0] * rotation.data[2];
+  r32 xw = rotation.data[0] * rotation.data[3];
+  r32 yz = rotation.data[1] * rotation.data[2];
+  r32 yw = rotation.data[1] * rotation.data[3];
+  r32 zw = rotation.data[2] * rotation.data[3];
+  r32 xSquared = rotation.data[0] * rotation.data[0];
+  r32 ySquared = rotation.data[1] * rotation.data[1];
+  r32 zSquared = rotation.data[2] * rotation.data[2];
 
   mat4 dest;
   dest.m00 = 1 - 2 * (ySquared + zSquared);
@@ -78,8 +78,8 @@ static inline mat4 quaternion_to_mat4(quat rotation) {
 }
 
 // cglm
-static inline mat4 quaternion_to_mat4_other(quat q) {
-  float w, x, y, z,
+global inline mat4 quaternion_to_mat4_other(quat q) {
+  r32 w, x, y, z,
       xx, yy, zz,
       xy, yz, xz,
       wx, wy, wz, norm, s;
@@ -125,36 +125,36 @@ static inline mat4 quaternion_to_mat4_other(quat q) {
 }
 
 // Collada
-static inline quat mat4_to_quaternion(mat4 matrix) {
+global inline quat mat4_to_quaternion(mat4 matrix) {
   quat dest;
-  float diagonal = matrix.m00 + matrix.m11 + matrix.m22;
+  r32 diagonal = matrix.m00 + matrix.m11 + matrix.m22;
   if (diagonal > 0) {
-    float w4 = (float)(sqrtf(diagonal + 1.0f) * 2.0f);
+    r32 w4 = (r32)(sqrtf(diagonal + 1.0f) * 2.0f);
     dest.data[3] = w4 / 4.0f;
     dest.data[0] = (matrix.m21 - matrix.m12) / w4;
     dest.data[1] = (matrix.m02 - matrix.m20) / w4;
     dest.data[2] = (matrix.m10 - matrix.m01) / w4;
   } else if ((matrix.m00 > matrix.m11) && (matrix.m00 > matrix.m22)) {
-    float x4 = (float)(sqrtf(1.0f + matrix.m00 - matrix.m11 - matrix.m22) * 2.0f);
+    r32 x4 = (r32)(sqrtf(1.0f + matrix.m00 - matrix.m11 - matrix.m22) * 2.0f);
     dest.data[3] = (matrix.m21 - matrix.m12) / x4;
     dest.data[0] = x4 / 4.0f;
     dest.data[1] = (matrix.m01 + matrix.m10) / x4;
     dest.data[2] = (matrix.m02 + matrix.m20) / x4;
   } else if (matrix.m11 > matrix.m22) {
-    float y4 = (float)(sqrtf(1.0f + matrix.m11 - matrix.m00 - matrix.m22) * 2.0f);
+    r32 y4 = (r32)(sqrtf(1.0f + matrix.m11 - matrix.m00 - matrix.m22) * 2.0f);
     dest.data[3] = (matrix.m02 - matrix.m20) / y4;
     dest.data[0] = (matrix.m01 + matrix.m10) / y4;
     dest.data[1] = y4 / 4.0f;
     dest.data[2] = (matrix.m12 + matrix.m21) / y4;
   } else {
-    float z4 = (float)(sqrtf(1.0f + matrix.m22 - matrix.m00 - matrix.m11) * 2.0f);
+    r32 z4 = (r32)(sqrtf(1.0f + matrix.m22 - matrix.m00 - matrix.m11) * 2.0f);
     dest.data[3] = (matrix.m10 - matrix.m01) / z4;
     dest.data[0] = (matrix.m02 + matrix.m20) / z4;
     dest.data[1] = (matrix.m12 + matrix.m21) / z4;
     dest.data[2] = z4 / 4.0f;
   }
 
-  float mag = sqrtf(dest.data[3] * dest.data[3] + dest.data[0] * dest.data[0] + dest.data[1] * dest.data[1] + dest.data[2] * dest.data[2]);
+  r32 mag = sqrtf(dest.data[3] * dest.data[3] + dest.data[0] * dest.data[0] + dest.data[1] * dest.data[1] + dest.data[2] * dest.data[2]);
   dest.data[3] /= mag;
   dest.data[0] /= mag;
   dest.data[1] /= mag;
@@ -163,57 +163,57 @@ static inline quat mat4_to_quaternion(mat4 matrix) {
   return dest;
 }
 
-static inline vec3 ivec3_to_vec3(ivec3 ivec) {
-  return (vec3){.x = (float)ivec.x, .y = (float)ivec.y, .z = (float)ivec.z};
+global inline vec3 ivec3_to_vec3(ivec3 ivec) {
+  return (vec3){.x = (r32)ivec.x, .y = (r32)ivec.y, .z = (r32)ivec.z};
 }
 
-static inline ivec3 vec3_to_ivec3(vec3 vec) {
-  return (ivec3){.x = (int32_t)vec.x, .y = (int32_t)vec.y, .z = (int32_t)vec.z};
+global inline ivec3 vec3_to_ivec3(vec3 vec) {
+  return (ivec3){.x = (i32)vec.x, .y = (i32)vec.y, .z = (i32)vec.z};
 }
 
-static inline vec3d vec3d_transform(vec3d value, quatd rot) {
-  double x2 = rot.x + rot.x;
-  double y2 = rot.y + rot.y;
-  double z2 = rot.z + rot.z;
+global inline vec3d vec3d_transform(vec3d value, quatd rot) {
+  r64 x2 = rot.x + rot.x;
+  r64 y2 = rot.y + rot.y;
+  r64 z2 = rot.z + rot.z;
 
-  double wx2 = rot.w * x2;
-  double wy2 = rot.w * y2;
-  double wz2 = rot.w * z2;
-  double xx2 = rot.x * x2;
-  double xy2 = rot.x * y2;
-  double xz2 = rot.x * z2;
-  double yy2 = rot.y * y2;
-  double yz2 = rot.y * z2;
-  double zz2 = rot.z * z2;
+  r64 wx2 = rot.w * x2;
+  r64 wy2 = rot.w * y2;
+  r64 wz2 = rot.w * z2;
+  r64 xx2 = rot.x * x2;
+  r64 xy2 = rot.x * y2;
+  r64 xz2 = rot.x * z2;
+  r64 yy2 = rot.y * y2;
+  r64 yz2 = rot.y * z2;
+  r64 zz2 = rot.z * z2;
 
   return (vec3d){.x = value.x * (1.0 - yy2 - zz2) + value.y * (xy2 - wz2) + value.z * (xz2 + wy2),
                  .y = value.x * (xy2 + wz2) + value.y * (1.0 - xx2 - zz2) + value.z * (yz2 - wx2),
                  .z = value.x * (xz2 - wy2) + value.y * (yz2 + wx2) + value.z * (1.0 - xx2 - yy2)};
 }
 
-static inline vec3 vec3d_to_vec3(vec3d vec) {
-  return (vec3){.x = (float)vec.x, .y = (float)vec.y, .z = (float)vec.z};
+global inline vec3 vec3d_to_vec3(vec3d vec) {
+  return (vec3){.x = (r32)vec.x, .y = (r32)vec.y, .z = (r32)vec.z};
 }
 
-static inline vec3d vec3_to_vec3d(vec3 vec) {
-  return (vec3d){.x = (double)vec.x, .y = (double)vec.y, .z = (double)vec.z};
+global inline vec3d vec3_to_vec3d(vec3 vec) {
+  return (vec3d){.x = (r64)vec.x, .y = (r64)vec.y, .z = (r64)vec.z};
 }
 
-static inline mat4 mat4d_to_mat4(mat4d mat) {
-  return (mat4){.m00 = (float)mat.m00,
-                .m01 = (float)mat.m01,
-                .m02 = (float)mat.m02,
-                .m03 = (float)mat.m03,
-                .m10 = (float)mat.m10,
-                .m11 = (float)mat.m11,
-                .m12 = (float)mat.m12,
-                .m13 = (float)mat.m13,
-                .m20 = (float)mat.m20,
-                .m21 = (float)mat.m21,
-                .m22 = (float)mat.m22,
-                .m23 = (float)mat.m23,
-                .m30 = (float)mat.m30,
-                .m31 = (float)mat.m31,
-                .m32 = (float)mat.m32,
-                .m33 = (float)mat.m33};
+global inline mat4 mat4d_to_mat4(mat4d mat) {
+  return (mat4){.m00 = (r32)mat.m00,
+                .m01 = (r32)mat.m01,
+                .m02 = (r32)mat.m02,
+                .m03 = (r32)mat.m03,
+                .m10 = (r32)mat.m10,
+                .m11 = (r32)mat.m11,
+                .m12 = (r32)mat.m12,
+                .m13 = (r32)mat.m13,
+                .m20 = (r32)mat.m20,
+                .m21 = (r32)mat.m21,
+                .m22 = (r32)mat.m22,
+                .m23 = (r32)mat.m23,
+                .m30 = (r32)mat.m30,
+                .m31 = (r32)mat.m31,
+                .m32 = (r32)mat.m32,
+                .m33 = (r32)mat.m33};
 }

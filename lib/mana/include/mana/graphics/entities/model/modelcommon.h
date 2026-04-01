@@ -24,12 +24,12 @@ struct ModelAnimationUniformBufferObject {
 
 struct RawVertexModel {
   vec3 position;
-  int32_t texture_index;
-  int32_t normal_index;
-  int32_t color_index;
+  i32 texture_index;
+  i32 normal_index;
+  i32 color_index;
   struct RawVertexModel* duplicate_vertex;
-  uint32_t index;
-  float length;
+  u32 index;
+  r32 length;
   struct VertexSkinData* weights_data;
 };
 
@@ -45,12 +45,12 @@ struct ModelData {
 
 struct KeyFrame {
   struct Map* pose;
-  float time_step;
+  r32 time_step;
 };
 
 struct Animation {
   struct ArrayList* key_frames;
-  float length;
+  r32 length;
 };
 
 struct JointTransform {
@@ -61,17 +61,17 @@ struct JointTransform {
 struct Animator {
   struct ModelCommon* entity;
   struct Animation* current_animation;
-  float animation_time;
+  r32 animation_time;
 };
 
 struct AnimationData {
   struct ArrayList* key_frames;
-  float length_seconds;
+  r32 length_seconds;
 };
 
 struct KeyFrameData {
   struct ArrayList* joint_transforms;
-  float time;
+  r32 time;
 };
 
 struct JointTransformData {
@@ -85,7 +85,7 @@ struct ModelJoint {
   mat4 animation_transform;
   mat4 local_bind_transform;
   mat4 inverse_bind_transform;
-  int32_t index;
+  i32 index;
 };
 
 struct VertexSkinData {
@@ -102,12 +102,12 @@ struct JointData {
   struct ArrayList* children;
   char* name_id;
   mat4 bind_local_transform;
-  int32_t index;
+  i32 index;
 };
 
 struct SkeletonData {
   struct JointData* head_joint;
-  int32_t joint_count;
+  i32 joint_count;
 };
 
 enum {
@@ -115,7 +115,7 @@ enum {
   MODEL_SUCCESS = 1
 };
 
-static inline void joint_init(struct ModelJoint* joint, int32_t index, char* name, mat4 bind_local_transform) {
+internal inline void joint_init(struct ModelJoint* joint, i32 index, char* name, mat4 bind_local_transform) {
   joint->animation_transform = MAT4_IDENTITY;
   joint->inverse_bind_transform = MAT4_IDENTITY;
   joint->children = (struct ArrayList*)malloc(sizeof(struct ArrayList));
@@ -125,7 +125,7 @@ static inline void joint_init(struct ModelJoint* joint, int32_t index, char* nam
   joint->local_bind_transform = bind_local_transform;
 }
 
-static inline void joint_calc_inverse_bind_transform(struct ModelJoint* joint, mat4 parent_bind_transform) {
+internal inline void joint_calc_inverse_bind_transform(struct ModelJoint* joint, mat4 parent_bind_transform) {
   mat4 bind_transform = MAT4_ZERO;
   bind_transform = mat4_mul(parent_bind_transform, joint->local_bind_transform);
   joint->inverse_bind_transform = mat4_inverse(bind_transform);
@@ -135,7 +135,7 @@ static inline void joint_calc_inverse_bind_transform(struct ModelJoint* joint, m
   }
 }
 
-static inline struct ModelJoint* model_create_joints(struct JointData* root_joint_data) {
+internal inline struct ModelJoint* model_create_joints(struct JointData* root_joint_data) {
   struct ModelJoint* joint = (struct ModelJoint*)malloc(sizeof(struct ModelJoint));
   joint_init(joint, root_joint_data->index, root_joint_data->name_id, root_joint_data->bind_local_transform);
 
@@ -146,7 +146,7 @@ static inline struct ModelJoint* model_create_joints(struct JointData* root_join
   return joint;
 }
 
-static inline void model_delete_joints(struct ModelJoint* joint) {
+internal inline void model_delete_joints(struct ModelJoint* joint) {
   if (joint->children != NULL && !array_list_empty(joint->children)) {
     for (size_t joint_num = 0; joint_num < array_list_size(joint->children); joint_num++)
       model_delete_joints((struct ModelJoint*)array_list_get(joint->children, joint_num));
@@ -157,7 +157,7 @@ static inline void model_delete_joints(struct ModelJoint* joint) {
   free(joint);
 }
 
-static inline void model_delete_joints_data(struct JointData* joint_data) {
+internal inline void model_delete_joints_data(struct JointData* joint_data) {
   if (joint_data->children != NULL && !array_list_empty(joint_data->children)) {
     for (size_t joint_num = 0; joint_num < array_list_size(joint_data->children); joint_num++)
       model_delete_joints_data((struct JointData*)array_list_get(joint_data->children, joint_num));
@@ -168,7 +168,7 @@ static inline void model_delete_joints_data(struct JointData* joint_data) {
   free(joint_data);
 }
 
-static inline void model_delete_animation(struct Animation* animation) {
+internal inline void model_delete_animation(struct Animation* animation) {
   // Think memory bug is in here
   for (size_t frame_num = 0; frame_num < array_list_size(animation->key_frames); frame_num++) {
     struct KeyFrame* key_frame = (struct KeyFrame*)array_list_get(animation->key_frames, frame_num);
@@ -181,30 +181,30 @@ static inline void model_delete_animation(struct Animation* animation) {
   free(animation->key_frames);
 }
 
-static inline void key_frame_init(struct KeyFrame* key_frame, float time_stamp, struct Map* joint_key_frames) {
+internal inline void key_frame_init(struct KeyFrame* key_frame, r32 time_stamp, struct Map* joint_key_frames) {
   key_frame->time_step = time_stamp;
   key_frame->pose = joint_key_frames;
 }
 
-static inline void animation_init(struct Animation* animation, float length_in_seconds, struct ArrayList* frames) {
+internal inline void animation_init(struct Animation* animation, r32 length_in_seconds, struct ArrayList* frames) {
   animation->key_frames = frames;
   animation->length = length_in_seconds;
 }
 
-static inline struct JointTransform model_create_transform(struct JointTransformData* data) {
+internal inline struct JointTransform model_create_transform(struct JointTransformData* data) {
   mat4 mat = data->joint_local_transform;
   vec3 translation = (vec3){.data[0] = mat.vecs[3].data[0], .data[1] = mat.vecs[3].data[1], .data[2] = mat.vecs[3].data[2]};
   quat rot = mat4_to_quaternion(mat);
   return (struct JointTransform){.position = translation, .rotation = rot};
 }
 
-static inline void model_get_joint_transforms(struct ModelJoint* head_joint, mat4 dest[MAX_JOINTS]) {
+internal inline void model_get_joint_transforms(struct ModelJoint* head_joint, mat4 dest[MAX_JOINTS]) {
   dest[head_joint->index] = head_joint->animation_transform;
   for (size_t child_joint_num = 0; child_joint_num < array_list_size(head_joint->children); child_joint_num++)
     model_get_joint_transforms((struct ModelJoint*)array_list_get(head_joint->children, child_joint_num), dest);
 }
 
-static inline struct KeyFrame* model_create_key_frame(struct KeyFrameData* data) {
+internal inline struct KeyFrame* model_create_key_frame(struct KeyFrameData* data) {
   struct Map* map = (struct Map*)malloc(sizeof(struct Map));
   map_init(map, sizeof(struct JointTransform));
   for (size_t joint_num = 0; joint_num < array_list_size(data->joint_transforms); joint_num++) {
@@ -217,7 +217,7 @@ static inline struct KeyFrame* model_create_key_frame(struct KeyFrameData* data)
   return key_frame;
 }
 
-static inline struct ModelJoint* model_create_joints_clone(struct ModelJoint* root_joint) {
+internal inline struct ModelJoint* model_create_joints_clone(struct ModelJoint* root_joint) {
   struct ModelJoint* joint = (struct ModelJoint*)malloc(sizeof(struct ModelJoint));
   *joint = *root_joint;
   joint->name = _strdup(root_joint->name);
@@ -230,7 +230,7 @@ static inline struct ModelJoint* model_create_joints_clone(struct ModelJoint* ro
   return joint;
 }
 
-static inline void model_joints_clone_delete(struct ModelJoint* root_joint) {
+internal inline void model_joints_clone_delete(struct ModelJoint* root_joint) {
   if (root_joint->children != NULL && !array_list_empty(root_joint->children)) {
     for (size_t joint_num = 0; joint_num < array_list_size(root_joint->children); joint_num++)
       model_delete_joints((struct ModelJoint*)array_list_get(root_joint->children, joint_num));
@@ -250,7 +250,7 @@ struct ModelSettings {
   struct Texture* roughness_texture;
   struct Texture* ao_texture;
 
-  int32_t max_weights;
+  i32 max_weights;
 };
 
 #ifdef VULKAN_API_SUPPORTED
@@ -317,5 +317,5 @@ struct ModelCommon {
 #endif
   };
 
-  uint8_t animated;
+  u8 animated;
 };

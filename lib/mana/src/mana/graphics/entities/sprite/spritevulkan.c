@@ -1,6 +1,6 @@
 #include "mana/graphics/entities/sprite/spritevulkan.h"
 
-uint_fast8_t sprite_vulkan_init(struct SpriteCommon* sprite_common, struct APICommon* api_common, struct Shader* shader, struct Texture* texture, size_t sprite_num) {
+u8 sprite_vulkan_init(struct SpriteCommon* sprite_common, struct APICommon* api_common, struct Shader* shader, struct Texture* texture, size_t sprite_num) {
   vulkan_graphics_utils_setup_vertex_buffer(&api_common->vulkan_api, sprite_common->image_mesh->mesh_common.vertices, &sprite_common->sprite_vulkan.vertex_buffer, &sprite_common->sprite_vulkan.vertex_buffer_memory);
   vulkan_graphics_utils_setup_index_buffer(&api_common->vulkan_api, sprite_common->image_mesh->mesh_common.indices, &sprite_common->sprite_vulkan.index_buffer, &sprite_common->sprite_vulkan.index_buffer_memory);
   vulkan_graphics_utils_setup_uniform_buffer(&api_common->vulkan_api, sizeof(struct SpriteUniformBufferObject), &(sprite_common->sprite_vulkan.uniform_buffer), &(sprite_common->sprite_vulkan.uniform_buffers_memory));
@@ -39,9 +39,9 @@ void sprite_vulkan_render(struct SpriteCommon* sprite_common, struct GBufferComm
   vkCmdBindIndexBuffer(cmd, sprite_common->sprite_vulkan.index_buffer, 0, VK_INDEX_TYPE_UINT32);
 
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, sprite_common->shader->shader_common.shader_vulkan.pipeline_layout, 0, 1, sprite_common->sprite_vulkan.descriptor_set, 0, NULL);
-  struct SpritePushConstants pc = {.frame_layer = (int32_t)sprite_common->frame_layer};
+  struct SpritePushConstants pc = {.frame_layer = (i32)sprite_common->frame_layer};
   vkCmdPushConstants(cmd, sprite_common->shader->shader_common.shader_vulkan.pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(struct SpritePushConstants), &pc);
-  vkCmdDrawIndexed(cmd, (uint32_t)sprite_common->image_mesh->mesh_common.indices->size, 1, 0, 0, 0);
+  vkCmdDrawIndexed(cmd, (u32)sprite_common->image_mesh->mesh_common.indices->size, 1, 0, 0, 0);
 }
 
 void sprite_vulkan_update_uniforms(struct SpriteCommon* sprite_common, struct APICommon* api_common, struct GBufferCommon* gbuffer_common) {

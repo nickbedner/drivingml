@@ -12,29 +12,29 @@ struct ArrayList {
   void** items;     // Pointer to start of data
 };
 
-static inline void array_list_init(struct ArrayList* array_list) {
+global inline void array_list_init(struct ArrayList* array_list) {
   array_list->size = 0;
   array_list->capacity = ARRAY_LIST_INIT_CAPACITY;
   array_list->items = (void**)malloc(sizeof(void*) * ARRAY_LIST_INIT_CAPACITY);
 }
 
-static inline void array_list_delete(struct ArrayList* array_list) {
+global inline void array_list_delete(struct ArrayList* array_list) {
   free(array_list->items);
 }
 
-static inline size_t array_list_size(struct ArrayList* array_list) {
+global inline size_t array_list_size(struct ArrayList* array_list) {
   return array_list->size;
 }
 
-static inline size_t array_list_capactiy(struct ArrayList* array_list) {
+global inline size_t array_list_capactiy(struct ArrayList* array_list) {
   return array_list->capacity;
 }
 
-static inline int array_list_empty(struct ArrayList* array_list) {
+global inline int array_list_empty(struct ArrayList* array_list) {
   return array_list->size == 0;
 }
 
-static inline void array_list_resize(struct ArrayList* array_list, size_t capacity) {
+global inline void array_list_resize(struct ArrayList* array_list, size_t capacity) {
   void** new_items = (void**)realloc(array_list->items, sizeof(void*) * capacity);
 
   // If realloc fails array list will not be resized
@@ -44,14 +44,14 @@ static inline void array_list_resize(struct ArrayList* array_list, size_t capaci
   }
 }
 
-static inline void array_list_add(struct ArrayList* array_list, void* item) {
+global inline void array_list_add(struct ArrayList* array_list, void* item) {
   if (array_list->capacity == array_list->size)
     array_list_resize(array_list, array_list->capacity * ARRAY_LIST_RESIZE_FACTOR);
 
   array_list->items[array_list->size++] = item;
 }
 
-static inline void* array_list_pop_back(struct ArrayList* array_list) {
+global inline void* array_list_pop_back(struct ArrayList* array_list) {
   if (array_list->size == 0)
     return NULL;
 
@@ -61,7 +61,7 @@ static inline void* array_list_pop_back(struct ArrayList* array_list) {
   return array_list->items[--array_list->size];
 }
 
-static inline void array_list_insert(struct ArrayList* array_list, size_t index, void* item) {
+global inline void array_list_insert(struct ArrayList* array_list, size_t index, void* item) {
   if (index >= array_list->size)
     return;
 
@@ -73,28 +73,28 @@ static inline void array_list_insert(struct ArrayList* array_list, size_t index,
   array_list->size++;
 }
 
-static inline void array_list_set(struct ArrayList* array_list, size_t index, void* item) {
+global inline void array_list_set(struct ArrayList* array_list, size_t index, void* item) {
   if (index < array_list->size)
     array_list->items[index] = item;
 }
 
-static inline void* array_list_get(struct ArrayList* array_list, size_t index) {
+global inline void* array_list_get(struct ArrayList* array_list, size_t index) {
   if (index < array_list->size)
     return array_list->items[index];
   return NULL;
 }
 
-static inline void array_list_swap(struct ArrayList* array_list, size_t index1, size_t index2) {
+global inline void array_list_swap(struct ArrayList* array_list, size_t index1, size_t index2) {
   void* temp = array_list->items[index1];
   array_list->items[index1] = array_list->items[index2];
   array_list->items[index2] = temp;
 }
 
-static inline int array_list_exists(struct ArrayList* array_list, size_t index) {
+global inline int array_list_exists(struct ArrayList* array_list, size_t index) {
   return index < array_list->size;
 }
 
-static inline void array_list_remove(struct ArrayList* array_list, size_t index) {
+global inline void array_list_remove(struct ArrayList* array_list, size_t index) {
   if (index >= array_list->size)
     return;
 
@@ -105,13 +105,13 @@ static inline void array_list_remove(struct ArrayList* array_list, size_t index)
     array_list_resize(array_list, array_list->capacity / 2);
 }
 
-static inline void array_list_clear(struct ArrayList* array_list) {
+global inline void array_list_clear(struct ArrayList* array_list) {
   array_list->size = 0;
   array_list->capacity = ARRAY_LIST_INIT_CAPACITY;
   array_list_resize(array_list, ARRAY_LIST_INIT_CAPACITY);
 }
 
-static inline void array_list_clear_free(struct ArrayList* array_list) {
+global inline void array_list_clear_free(struct ArrayList* array_list) {
   for (size_t iterate_num = 0; iterate_num < array_list->size; iterate_num++)
     free(array_list->items[iterate_num]);
 

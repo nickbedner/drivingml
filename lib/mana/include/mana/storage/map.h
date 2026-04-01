@@ -21,12 +21,12 @@ struct MapIter {
   unsigned int bucket_idx;
 };
 
-static inline void map_init(struct Map* map, size_t memory_size) {
+global inline void map_init(struct Map* map, size_t memory_size) {
   memset(map, 0, sizeof(struct Map));
   map->memory_size = memory_size;
 }
 
-static inline void map_delete(struct Map* map) {
+global inline void map_delete(struct Map* map) {
   struct MapNode *next, *node;
   size_t i = map->num_buckets;
   while (i--) {
@@ -40,14 +40,14 @@ static inline void map_delete(struct Map* map) {
   free(map->buckets);
 }
 
-static inline unsigned int map_hash(const char* str) {
+global inline unsigned int map_hash(const char* str) {
   unsigned int hash = 5381;
   while (*str)
     hash = ((hash << 5) + hash) ^ (unsigned int)(*str++);
   return hash;
 }
 
-static inline struct MapNode* map_new_node(const char* key, void* value, size_t vsize) {
+global inline struct MapNode* map_new_node(const char* key, void* value, size_t vsize) {
   struct MapNode* node;
   size_t ksize = strlen(key) + 1;
   size_t voffset = ksize + ((sizeof(void*) - ksize) % sizeof(void*));
@@ -64,17 +64,17 @@ static inline struct MapNode* map_new_node(const char* key, void* value, size_t 
   return node;
 }
 
-static inline unsigned int map_bucket_idx(struct Map* map, unsigned int hash) {
+global inline unsigned int map_bucket_idx(struct Map* map, unsigned int hash) {
   return hash & (map->num_buckets - 1);
 }
 
-static inline void map_add_node(struct Map* map, struct MapNode* node) {
+global inline void map_add_node(struct Map* map, struct MapNode* node) {
   unsigned int n = map_bucket_idx(map, node->hash);
   node->next = map->buckets[n];
   map->buckets[n] = node;
 }
 
-static int map_resize(struct Map* map, unsigned int num_buckets) {
+global int map_resize(struct Map* map, unsigned int num_buckets) {
   struct MapNode *nodes, *node, *next;
   struct MapNode** buckets;
   unsigned int i;
@@ -111,7 +111,7 @@ static int map_resize(struct Map* map, unsigned int num_buckets) {
   return (buckets == NULL) ? -1 : 0;
 }
 
-static inline struct MapNode** map_get_ref(struct Map* map, const char* key) {
+global inline struct MapNode** map_get_ref(struct Map* map, const char* key) {
   unsigned hash = map_hash(key);
   if (map->num_buckets > 0) {
     struct MapNode** next = &map->buckets[map_bucket_idx(map, hash)];
@@ -125,12 +125,12 @@ static inline struct MapNode** map_get_ref(struct Map* map, const char* key) {
   return NULL;
 }
 
-static inline void* map_get(struct Map* map, const char* key) {
+global inline void* map_get(struct Map* map, const char* key) {
   struct MapNode** next = map_get_ref(map, key);
   return next ? (*next)->value : NULL;
 }
 
-static inline int map_set(struct Map* map, const char* key, void* value) {
+global inline int map_set(struct Map* map, const char* key, void* value) {
   int n, err;
   struct MapNode **next, *node;
 
@@ -159,7 +159,7 @@ fail:
   return -1;
 }
 
-static inline void map_remove(struct Map* map, const char* key) {
+global inline void map_remove(struct Map* map, const char* key) {
   struct MapNode** next = map_get_ref(map, key);
   if (next) {
     struct MapNode* node = *next;
@@ -169,14 +169,14 @@ static inline void map_remove(struct Map* map, const char* key) {
   }
 }
 
-static inline struct MapIter map_iter(void) {
+global inline struct MapIter map_iter(void) {
   struct MapIter iter;
   iter.bucket_idx = UINT_MAX;
   iter.node = NULL;
   return iter;
 }
 
-static inline char* map_next(struct Map* map, struct MapIter* iter) {
+global inline char* map_next(struct Map* map, struct MapIter* iter) {
   if (iter->node) {
     iter->node = iter->node->next;
     if (iter->node == NULL) goto nextBucket;
@@ -192,6 +192,6 @@ static inline char* map_next(struct Map* map, struct MapIter* iter) {
   return (char*)(iter->node + 1);
 }
 
-static inline void* map_get_by_index(struct Map* map, size_t index) {
+global inline void* map_get_by_index(struct Map* map, size_t index) {
   return (*(map->buckets + index))->value;
 }

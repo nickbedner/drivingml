@@ -1,6 +1,6 @@
 #include "mana/graphics/entities/water/water.h"
 
-uint_fast8_t water_init(struct Water* water, struct APICommon* api_common, struct Shader* shader, struct Texture* texture) {
+u8 water_init(struct Water* water, struct APICommon* api_common, struct Shader* shader, struct Texture* texture) {
 #ifdef VULKAN_API_SUPPORTED
   if (api_common->api_type == API_VULKAN)
     water->water_func = VULKAN_WATER;
@@ -19,11 +19,11 @@ uint_fast8_t water_init(struct Water* water, struct APICommon* api_common, struc
   water->water_common.rotation = QUAT_DEFAULT;
   water->water_common.time = 0.0f;
 
-  float width = 1.0f;
-  float height = 1.0f;
+  r32 width = 1.0f;
+  r32 height = 1.0f;
 
-  float half_w = width * 0.5f;
-  float half_h = height * 0.5f;
+  r32 half_w = width * 0.5f;
+  r32 half_h = height * 0.5f;
 
   vec3 pos1 = {.x = -half_w, .y = 0.0f, .z = -half_h};
   vec3 pos2 = {.x = half_w, .y = 0.0f, .z = -half_h};
@@ -68,7 +68,7 @@ void water_render(struct Water* water, struct GBufferCommon* gbuffer_common) {
   water->water_func.water_render(&water->water_common, gbuffer_common);
 }
 
-void water_update_uniforms(struct Water* water, struct APICommon* api_common, struct GBufferCommon* gbuffer_common, uint32_t width, uint32_t height) {
+void water_update_uniforms(struct Water* water, struct APICommon* api_common, struct GBufferCommon* gbuffer_common, u32 width, u32 height) {
   water->water_common.time += 0.016f;  // replace with delta time later
   water->water_func.water_update_uniforms(&water->water_common, api_common, gbuffer_common, width, height);
 }

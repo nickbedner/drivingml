@@ -1,6 +1,6 @@
 #include "mana/graphics/entities/water/watervulkan.h"
 
-uint_fast8_t water_vulkan_init(struct WaterCommon* water_common, struct APICommon* api_common, struct Shader* shader, struct Texture* texture) {
+u8 water_vulkan_init(struct WaterCommon* water_common, struct APICommon* api_common, struct Shader* shader, struct Texture* texture) {
   vulkan_graphics_utils_setup_vertex_buffer(&api_common->vulkan_api, water_common->water_mesh->mesh_common.vertices, &water_common->water_vulkan.vertex_buffer, &water_common->water_vulkan.vertex_buffer_memory);
   vulkan_graphics_utils_setup_index_buffer(&api_common->vulkan_api, water_common->water_mesh->mesh_common.indices, &water_common->water_vulkan.index_buffer, &water_common->water_vulkan.index_buffer_memory);
   vulkan_graphics_utils_setup_uniform_buffer(&api_common->vulkan_api, sizeof(struct WaterVertexUniformBufferObject), &water_common->water_vulkan.vertex_uniform_buffer, &water_common->water_vulkan.vertex_uniform_memory);
@@ -79,10 +79,10 @@ void water_vulkan_render(struct WaterCommon* water_common, struct GBufferCommon*
   vkCmdBindVertexBuffers(cmd, 0, 1, vertex_buffers, offsets);
   vkCmdBindIndexBuffer(cmd, water_common->water_vulkan.index_buffer, 0, VK_INDEX_TYPE_UINT32);
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, water_common->shader->shader_common.shader_vulkan.pipeline_layout, 0, 1, &water_common->water_vulkan.descriptor_set, 0, NULL);
-  vkCmdDrawIndexed(cmd, (uint32_t)water_common->water_mesh->mesh_common.indices->size, 1, 0, 0, 0);
+  vkCmdDrawIndexed(cmd, (u32)water_common->water_mesh->mesh_common.indices->size, 1, 0, 0, 0);
 }
 
-void water_vulkan_update_uniforms(struct WaterCommon* water_common, struct APICommon* api_common, struct GBufferCommon* gbuffer_common, uint32_t width, uint32_t height) {
+void water_vulkan_update_uniforms(struct WaterCommon* water_common, struct APICommon* api_common, struct GBufferCommon* gbuffer_common, u32 width, u32 height) {
   VkDevice device = api_common->vulkan_api.device;
   void* data;
 
@@ -103,8 +103,8 @@ void water_vulkan_update_uniforms(struct WaterCommon* water_common, struct APICo
   frag_ubo.params0.z = 0.0f;  // unused
   frag_ubo.params0.w = 0.0f;  // unused
   frag_ubo.params1 = (vec4){0};
-  float base_height = 548.0f;
-  float bias = log2f((float)height / base_height);
+  r32 base_height = 548.0f;
+  r32 bias = log2f((r32)height / base_height);
   frag_ubo.params1.x = bias;
 
   vkMapMemory(device, water_common->water_vulkan.fragment_uniform_memory, 0, sizeof(frag_ubo), 0, &data);

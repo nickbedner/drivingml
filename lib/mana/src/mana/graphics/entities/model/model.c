@@ -1,10 +1,10 @@
 #include "mana/graphics/entities/model/model.h"
 
-static inline bool xml_node_has_children(struct XmlNode* node) {
+internal inline b8 xml_node_has_children(struct XmlNode* node) {
   return node != NULL && node->child_nodes != NULL && node->child_nodes->num_buckets > 0;
 }
 
-uint_fast8_t model_init(struct Model* model, struct APICommon* api_common, struct ModelSettings* model_settings, size_t num) {
+u8 model_init(struct Model* model, struct APICommon* api_common, struct ModelSettings* model_settings, size_t num) {
 #ifdef VULKAN_API_SUPPORTED
   if (api_common->api_type == API_VULKAN)
     model->model_func = VULKAN_MODEL;
@@ -23,8 +23,8 @@ uint_fast8_t model_init(struct Model* model, struct APICommon* api_common, struc
   struct XmlNode* visual_scenes_node = xml_node_get_child(collada_node, "library_visual_scenes");
   struct XmlNode* anim_node = xml_node_get_child(collada_node, "library_animations");
 
-  bool has_skin = xml_node_has_children(library_controllers_node);
-  bool has_animation = xml_node_has_children(anim_node);
+  b8 has_skin = xml_node_has_children(library_controllers_node);
+  b8 has_animation = xml_node_has_children(anim_node);
 
   /* For this engine, only treat as animated if it has both skin and animation data */
   model->model_common.animated = has_skin && has_animation;
@@ -209,7 +209,7 @@ struct Model* model_get_clone(struct Model* model, struct APICommon* api_common)
 
   *new_model->model_common.model_mesh->mesh_common.indices = *model->model_common.model_mesh->mesh_common.indices;
   *new_model->model_common.model_mesh->mesh_common.vertices = *model->model_common.model_mesh->mesh_common.vertices;
-  //(new_model->animated) ? mesh_model_init(new_model->model_mesh) : mesh_model_static_init(new_model->model_mesh);
+  //(new_model->animated) ? mesh_model_init(new_model->model_mesh) : mesh_model_internal_init(new_model->model_mesh);
   new_model->model_common.model_mesh->mesh_common.indices->items = (void*)calloc(1, model->model_common.model_mesh->mesh_common.indices->capacity * model->model_common.model_mesh->mesh_common.indices->memory_size);
   memcpy(new_model->model_common.model_mesh->mesh_common.indices->items, model->model_common.model_mesh->mesh_common.indices->items, model->model_common.model_mesh->mesh_common.indices->capacity * model->model_common.model_mesh->mesh_common.indices->memory_size);
 
@@ -245,7 +245,7 @@ void model_clone_delete(struct Model* model, struct APICommon* api_common) {
   free(model->model_common.model_mesh);
 }
 
-void model_render(struct Model* model, struct GBuffer* gbuffer, double delta_time) {
+void model_render(struct Model* model, struct GBuffer* gbuffer, r64 delta_time) {
   if (model->model_common.animated && model->model_common.animator != NULL)
     animator_update(model->model_common.animator, delta_time);
 

@@ -1,6 +1,6 @@
 #pragma once
 
-static const double g_random_vectors[256 * 4] =
+global const r64 g_random_vectors[256 * 4] =
     {
         -0.763874, -0.596439, -0.246489, 0.0,
         0.396055, 0.904518, -0.158073, 0.0,

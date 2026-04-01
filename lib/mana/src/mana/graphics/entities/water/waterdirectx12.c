@@ -1,6 +1,6 @@
 #include "mana/graphics/entities/water/waterdirectx12.h"
 
-uint_fast8_t water_directx_12_init(struct WaterCommon* water_common, struct APICommon* api_common, struct Shader* shader, struct Texture* texture) {
+u8 water_directx_12_init(struct WaterCommon* water_common, struct APICommon* api_common, struct Shader* shader, struct Texture* texture) {
   water_common->shader = shader;
   water_common->wave_texture = texture;
 
@@ -74,7 +74,7 @@ void water_directx_12_render(struct WaterCommon* water_common, struct GBufferCom
   cmd->lpVtbl->DrawIndexedInstanced(cmd, (UINT)water_common->water_mesh->mesh_common.indices->size, 1, 0, 0, 0);
 }
 
-void water_directx_12_update_uniforms(struct WaterCommon* water_common, struct APICommon* api_common, struct GBufferCommon* gbuffer_common, uint32_t width, uint32_t height) {
+void water_directx_12_update_uniforms(struct WaterCommon* water_common, struct APICommon* api_common, struct GBufferCommon* gbuffer_common, u32 width, u32 height) {
   struct WaterVertexUniformBufferObject vubo = {0};
   vubo.proj = mat4_transpose(gbuffer_common->projection_matrix);
   vubo.view = mat4_transpose(gbuffer_common->view_matrix);
@@ -100,8 +100,8 @@ void water_directx_12_update_uniforms(struct WaterCommon* water_common, struct A
 
   fubo.params1 = (vec4){0};
   {
-    float base_height = 548.0f;
-    float bias = log2f((float)height / base_height);
+    r32 base_height = 548.0f;
+    r32 bias = log2f((r32)height / base_height);
     fubo.params1.x = bias;
   }
 

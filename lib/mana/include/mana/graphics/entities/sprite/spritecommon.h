@@ -15,7 +15,7 @@ struct SpriteUniformBufferObject {
 };
 
 struct SpritePushConstants {
-  int32_t frame_layer;
+  i32 frame_layer;
 };
 
 enum {
@@ -67,7 +67,7 @@ struct SpriteCommon {
   };
 
   // Small stuff last
-  float width;
-  float height;
-  uint32_t frame_layer;
+  r32 width;
+  r32 height;
+  u32 frame_layer;
 };

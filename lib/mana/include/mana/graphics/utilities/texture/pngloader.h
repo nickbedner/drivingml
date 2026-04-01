@@ -8,6 +8,6 @@
 #include "mana/utilities/zlib.h"
 
 #define PNG_SIGNATURE_SIZE 8
-static const bool PNG_DEBUG = false;
+global const b8 PNG_DEBUG = FALSE;
 
-void* png_loader_read_png(const char* filename, const char* asset_directory, uint32_t* tex_width, uint32_t* tex_height, uint32_t* tex_channels, uint8_t* bit_depth, uint8_t* color_type);
+void* png_loader_read_png(const char* filename, const char* asset_directory, u32* tex_width, u32* tex_height, u32* tex_channels, u8* bit_depth, u8* color_type);
