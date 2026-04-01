@@ -15,8 +15,8 @@
 #include <mmreg.h>
 #include <propsys.h>
 
-#include "mana/math/advmath.h"
-#include "mana/utilities/fileio.h"
+#include "mana/core/math/advmath.h"
+#include "mana/core/utilities/fileio.h"
 
 // clang-format off
 // And some GUID are never implemented (Ignoring the INITGUID define)

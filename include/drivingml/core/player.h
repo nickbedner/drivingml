@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drivingml/core/playercontroller.h"
-#include "mana/graphics/utilities/camera.h"
+#include "mana/core/graphics/utilities/camera.h"
 
 struct Player {
   // For this Unity went with OO over ECS

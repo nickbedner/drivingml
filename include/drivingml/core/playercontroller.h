@@ -2,8 +2,8 @@
 
 #include <mana/core/corecommon.h>
 #include <mana/core/input/controllers/controller.h>
-#include <mana/math/quatd.h>
-#include <mana/math/vec3d.h>
+#include <mana/core/math/quatd.h>
+#include <mana/core/math/vec3d.h>
 
 // TODO: This will have to be moved to a file for default loading
 

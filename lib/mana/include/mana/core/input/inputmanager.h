@@ -1,7 +1,8 @@
 #pragma once
 
+#include "mana/core/graphics/render/surface.h"
 #include "mana/core/input/controllers/controller.h"
-#include "mana/graphics/render/surface.h"
+
 
 struct InputManager {
   struct ArrayList controllers;

@@ -2,8 +2,8 @@
 
 #include <time.h>
 
-#include "mana/graphics/apis/api.h"
-#include "mana/graphics/render/window.h"
+#include "mana/core/graphics/apis/api.h"
+#include "mana/core/graphics/render/window.h"
 
 enum MANA_STATUS {
   MANA_SUCCESS = 0,

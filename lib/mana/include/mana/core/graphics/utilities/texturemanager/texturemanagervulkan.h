@@ -1,0 +1,8 @@
+#pragma once
+
+#include "mana/core/graphics/utilities/texture/texture.h"
+#include "mana/core/graphics/utilities/texturemanager/texturemanagercommon.h"
+
+u8 texture_manager_vulkan_init(struct TextureManagerCommon* texture_manager, struct APICommon* api_common);
+void texture_manager_vulkan_delete(struct TextureManagerCommon* texture_manager, struct APICommon* api_common);
+u8 texture_manager_vulkan_add(struct TextureManagerCommon* texture_manager, struct APICommon* api_common, struct TextureSettings texture_settings);

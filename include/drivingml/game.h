@@ -1,20 +1,21 @@
 #pragma once
 
 #include <float.h>
-#include <mana/graphics/entities/sprite/sprite.h>
-#include <mana/graphics/entities/water/water.h>
-#include <mana/graphics/shaders/modelshader.h>
-#include <mana/graphics/shaders/modelstaticshader.h>
-#include <mana/graphics/shaders/watershader.h>
-#include <mana/graphics/utilities/camera.h>
-#include <mana/graphics/utilities/modelcache.h>
-#include <mana/graphics/utilities/spritemanager/spritemanager.h>
-#include <mana/graphics/utilities/texturemanager/texturemanager.h>
+#include <mana/core/graphics/entities/sprite/sprite.h>
+#include <mana/core/graphics/entities/water/water.h>
+#include <mana/core/graphics/shaders/modelshader.h>
+#include <mana/core/graphics/shaders/modelstaticshader.h>
+#include <mana/core/graphics/shaders/watershader.h>
+#include <mana/core/graphics/utilities/camera.h>
+#include <mana/core/graphics/utilities/modelcache.h>
+#include <mana/core/graphics/utilities/spritemanager/spritemanager.h>
+#include <mana/core/graphics/utilities/texturemanager/texturemanager.h>
+#include <mana/core/utilities/xmlparser.h>
 #include <mana/mana.h>
-#include <mana/utilities/xmlparser.h>
 
 #include "drivingml/core/ac_model.h"
 #include "drivingml/core/player.h"
+
 
 #define EVAL_MODE TRUE
 

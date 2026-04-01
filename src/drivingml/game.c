@@ -394,18 +394,18 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->test_static_model->model_common.position = (vec3){.x = 5.0f, .y = 2.0f, .z = 0.0f};
 
   struct ModelSettings coin_settings = (struct ModelSettings){
-      .path = "./assets/models/coin/coin.dae",
+      .path = "./assets/models/coin/coino.dae",
       .shader = &(game->model_cache.model_static_shader.shader),
-      .diffuse_texture = texture_manager_get(&(game->texture_manager), "/models/coin/coin.png"),
-      .normal_texture = texture_manager_get(&(game->texture_manager), "/models/coin/coinom.png"),
-      .metallic_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/metallic.png"),
-      .roughness_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/roughness.png"),
+      .diffuse_texture = texture_manager_get(&(game->texture_manager), "/models/coin/coinod.png"),
+      .normal_texture = texture_manager_get(&(game->texture_manager), "/models/coin/coinon.png"),
+      .metallic_texture = texture_manager_get(&(game->texture_manager), "/models/coin/coinom.png"),
+      .roughness_texture = texture_manager_get(&(game->texture_manager), "/models/coin/coinom.png"),
       .ao_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/ao.png"),
       5};
   model_cache_add(&(game->model_cache), &(mana->api.api_common), &coin_settings, 1, FALSE);
-  game->coin_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/coin/coin.dae");
-  game->coin_model->model_common.scale = (vec3){.x = 10.0f, .y = 10.0f, .z = 10.0f};
-  game->coin_model->model_common.position = (vec3){.x = 15.0f, .y = 2.0f, .z = 0.0f};
+  game->coin_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/coin/coino.dae");
+  game->coin_model->model_common.scale = (vec3){.x = 0.1f, .y = 0.1f, .z = 0.1f};
+  game->coin_model->model_common.position = (vec3){.x = 15.0f, .y = 5.0f, .z = 0.0f};
 }
 
 void game_delete(struct Game* game, struct Mana* mana) {
