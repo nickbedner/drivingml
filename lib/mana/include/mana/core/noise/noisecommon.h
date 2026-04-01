@@ -1,15 +1,17 @@
 #pragma once
 
-#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "mana/core/math/advmath.h"
+
+
 // Make a sse 4.2 version of this that works on 4 unique values. It should have the same input and output as the reference implementation, so don't use intrinsics that could change the value AT ALL
 // Complete this function
 
-#include "mana/noise/randomvectors.h"
+#include "mana/core/noise/randomvectors.h"
 
 #ifdef __arm64__
 #include <arm_neon.h>

@@ -10,7 +10,7 @@
 #include <audiopolicy.h>
 #include <endpointvolume.h>
 // #include <functiondiscoverykeys_devpkey.h>
-#include <math.h>
+#include "mana/core/math/advmath.h"
 #include <mmdeviceapi.h>
 #include <mmreg.h>
 #include <propsys.h>

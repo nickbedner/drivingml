@@ -3,7 +3,6 @@
 #include "mana/core/corecommon.h"
 #include "mana/core/graphics/graphicscommon.h"
 #include "mana/core/graphics/render/window.h"
-#include "mana/core/math/advmath.h"
 
 // TODO: Add attached camera to hook onto entities like the player, other player, second person view, etc.
 enum CAMERA_STATE {

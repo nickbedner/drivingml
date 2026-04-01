@@ -1,5 +1,7 @@
-#include <math.h>
 #include <stdio.h>
+
+#include "mana/core/math/advmath.h"
+
 
 #define TABLE_SIZE 1000
 #define TABLE_NAME "SIN_TABLE"

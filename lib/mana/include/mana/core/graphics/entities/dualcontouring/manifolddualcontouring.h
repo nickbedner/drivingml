@@ -3,8 +3,8 @@
 // #include <mana/core/math/advmath.h>
 // #include <mana/noise/noise.h>
 // #include <mana/core/storage/storage.h>
-// #include <math.h>
-//
+
+#include "mana/core/math/advmath.h"
 // #include "mana/core/graphics/dualcontouring/manifoldtables.h"
 // #include "mana/core/graphics/dualcontouring/qef.h"
 // #include "mana/core/graphics/utilities/mesh.h"

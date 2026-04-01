@@ -1,12 +1,10 @@
 #pragma once
 
+#include <mana/core/graphics/entities/model/modelcommon.h>
+#include <mana/core/graphics/utilities/mesh/mesh.h>
 #include <mana/core/math/advmath.h>
 #include <mana/core/storage/storage.h>
-
-#include "mana/core/corecommon.h"
-#include "mana/core/graphics/entities/model/modelcommon.h"
-#include "mana/core/graphics/utilities/mesh/mesh.h"
-#include "mana/core/utilities/xmlparser.h"
+#include <mana/core/utilities/xmlparser.h>
 
 #define NO_INDEX -1
 

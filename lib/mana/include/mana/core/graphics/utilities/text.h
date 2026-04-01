@@ -1,11 +1,11 @@
 /*#pragma once
 
 #include <inttypes.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ubermath/ubermath.h>
+
+#include "mana/core/math/advmath.h"
 
 // #include "stb_truetype.h"
 
