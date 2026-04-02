@@ -36,6 +36,36 @@ global inline char* read_file(const char* filename) {
   return data;
 }
 
+global inline u32 file_size(const char* filename) {
+  FILE* fp;
+  long size;
+
+#ifdef _WIN32
+  if (fopen_s(&fp, filename, "rb") != 0)
+#else
+  fp = fopen(filename, "rb");
+  if (!fp)
+#endif
+  {
+    log_message(LOG_SEVERITY_ERROR, "Error opening file: %s\n", filename);
+    return 0;
+  }
+
+  if (fseek(fp, 0, SEEK_END) != 0) {
+    fclose(fp);
+    return 0;
+  }
+
+  size = ftell(fp);
+  fclose(fp);
+
+  if (size < 0) {
+    return 0;
+  }
+
+  return (u32)size;
+}
+
 global inline u32* read_shader_file(const char* filename, uint_fast64_t* file_length) {
   u32* data = NULL;
   FILE* fp;

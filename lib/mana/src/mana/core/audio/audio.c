@@ -1,232 +1,487 @@
-#include "mana/audio/audio.h"
-/*
-void outputSineWave(void) {
-  HRESULT hr = 0;
+#ifndef COBJMACROS
+#define COBJMACROS
+#endif
 
-  // Initialize COM
-  hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-  if (FAILED(hr))
-    return;
+#include "mana/core/audio/audio.h"
 
-  IMMDeviceEnumerator *enumerator = NULL;
-  IMMDevice *device = NULL;
-  IPropertyStore *propertyStore = NULL;
-  PROPVARIANT friendlyName;
-  PropVariantInit(&friendlyName);
+#include <objbase.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-  // Create the device enumerator
-  const CLSID clsid_MMDeviceEnumerator = CLSID_MMDeviceEnumerator;
-  const IID iid_IMMDeviceEnumerator = IID_IMMDeviceEnumerator;
-  hr = CoCreateInstance(&clsid_MMDeviceEnumerator, NULL, CLSCTX_ALL, &iid_IMMDeviceEnumerator, (void **)&enumerator);
-  if (FAILED(hr))
-    return;
-
-  // Get the default audio output device
-  hr = enumerator->lpVtbl->GetDefaultAudioEndpoint(enumerator, eRender, eConsole, &device);
-  if (FAILED(hr))
-    return;
-
-  // Get the device's property store
-  hr = device->lpVtbl->OpenPropertyStore(device, STGM_READ, &propertyStore);
-  if (FAILED(hr))
-    return;
-
-  // Get the device's friendly name
-  const PROPERTYKEY pkey_Device_FriendlyName = PKEY_Device_FriendlyName;
-  hr = propertyStore->lpVtbl->GetValue(propertyStore, &pkey_Device_FriendlyName, &friendlyName);
-  if (FAILED(hr))
-    return;
-
-  // Use the friendly name
-  wprintf(L"Device name: %s\n", friendlyName.pwszVal);
-  _flushall();
-  // log_message(LOG_SEVERITY_DEBUG, "Device name: %s\n", friendlyName.pwszVal);
-
-  // Release resources
-  PropVariantClear(&friendlyName);
-  propertyStore->lpVtbl->Release(propertyStore);
-  enumerator->lpVtbl->Release(enumerator);
-
-  // Open the audio device for output
-  IAudioClient *client = (IAudioClient *)calloc(1, sizeof(IAudioClient));
-  const IID iid_IAudioClient = IID_IAudioClient;
-  hr = IMMDevice_Activate(device, &iid_IAudioClient, CLSCTX_ALL, NULL, (void **)&client);
-  if (FAILED(hr))
-    return;
-
-  // Get the buffer size and format
-  // WAVEFORMATEX *format;
-  WAVEFORMATEX *format = (WAVEFORMATEX *)calloc(1, sizeof(WAVEFORMATEX));
-  hr = client->lpVtbl->GetMixFormat(client, &format);
-  if (FAILED(hr))
-    return;
-
-  // Initialize the audio stream
-  // Calculated by multiplying the sample rate (in samples per second) by the number of channels and by the desired buffer duration (in seconds).
-  // UINT32 bufferFrameCount = format->nSamplesPerSec * 2;
-  // UINT32 bufferFrameCount = 96000 * 2;
-  // Should be the same as the sample rate generally
-  // hr = client->lpVtbl->GetBufferSize(client, &bufferFrameCount);
-  // if (FAILED(hr))
-  //   return;
-
-  // Note: This is exactly one second of buffer format->nSamplesPerSec * format->nChannels * (format->wBitsPerSample / 8)
-  // Note: libsoundio uses 4 seconds of buffer so I'll do that because windows seems to freak out if it's too small
-  // UINT32 audio_buffer = format->nSamplesPerSec * format->nChannels * (format->wBitsPerSample / 8) * 4;  // to_reference_time(4.0);
-  UINT32 audio_buffer = to_reference_time(4.0);  // Note: This gives 192000 for max so that's probably why it's support
-  UINT32 periodicity = 0;
-  hr = client->lpVtbl->Initialize(client, AUDCLNT_SHAREMODE_SHARED, 0, audio_buffer, periodicity, format, NULL);
-  if (FAILED(hr))
-    return;
-
-  // Start the audio stream
-  hr = client->lpVtbl->Start(client);
-  if (FAILED(hr))
-    return;
-
-  // Get the buffer
-  INT32 *buffer;
-  IAudioRenderClient *renderClient;
-  const IID iid_IAudioRenderClient = IID_IAudioRenderClient;
-  hr = client->lpVtbl->GetService(client, &iid_IAudioRenderClient, (void **)&renderClient);
-  if (FAILED(hr))
-    return;
-
-  b8 stop = FALSE;
-  // Start time at 0
-  r64 time = 0.0;
-
-  UINT32 max_frames;
-  hr = client->lpVtbl->GetBufferSize(client, &max_frames);
-  if (FAILED(hr))
-    return;
-
-  // So I think send sound data to audio every frame and make sure to check if the buffer is full with GetCurrentPadding
-  while (!stop) {
-    // Get the number of frames that have not yet been played
-    UINT32 frames_used;
-    IAudioClient_GetCurrentPadding(client, &frames_used);
-
-    // Note: 2048 is what I randomly picked before but I'm guessing it should be format->nSamplesPerSec / fps
-    // UINT32 frames = format->nSamplesPerSec / 144;
-    // UINT32 frames = max_frames;
-    //
-    // if (frames > max_frames)
-    //  frames = max_frames;
-
-    // Note: Random size I'm choosing based on DAW, probably a better way to do this
-    UINT32 frames = 2048;
-
-    // Note: Keep some along this in mind because I may need calculation to make sure buffer is not overflowing
-    // UINT32 buffer_space_used = frames_used * 10
-
-    // Wait for audio to finish playing
-    // Note: This is what it should be but I'm guessing buffer fill delay if (frames_used > bufferFrameCount) {
-    // Note: frames seem to be gobbled up so I guess just pick something that isn't too crazy
-    // Note: I don't want to be ahead of the audio by more than 1/4 of a second and make sure to check not buffered more than a second
-    if (frames_used > format->nSamplesPerSec / 4 || (frames_used + frames) * format->nChannels * (format->wBitsPerSample / 8) > audio_buffer / 4)
-      continue;
-
-    // Get the buffer
-    hr = renderClient->lpVtbl->GetBuffer(renderClient, frames, (BYTE **)&buffer);
-    if (FAILED(hr)) {
-      // Note: Overflowed give time to cool off
-      if (hr == AUDCLNT_E_BUFFER_ERROR)
-        continue;
-      else if (hr == AUDCLNT_E_BUFFER_TOO_LARGE)
-        return;
-      else
-        return;
-    }
-    r64 float_sample_rate = format->nSamplesPerSec;
-    r64 seconds_per_frame = 1.0 / float_sample_rate;
-
-    // Generate a sine wave and output it to the buffer
-    r64 pitch = 220.0;
-    r64 radians_per_second = pitch * 2.0 * R32_PI;
-    for (u32 j = 0; j < frames; j++) {
-      // Generate a sample value using the real64_sin() function
-      // r32 frequency = MIN_FREQUENCY + (time * sweep_rate) * (MAX_FREQUENCY - MIN_FREQUENCY);
-      // r32 phase = frequency * j / format->nSamplesPerSec * 2 * PI;
-      // r32 sample = amplitude * real64_sin(phase);
-
-      r64 sample = real64_sin((time + j * seconds_per_frame) * radians_per_second);
-
-      // Note: Turns sine wave into square wave
-      // if (sample > 0.5)
-      //  sample = 1.0;
-      // else
-      //  sample = 0.0;
-
-      for (u8 channel = 0; channel < format->nChannels; channel++) {
-        if (format->wBitsPerSample == 8)
-          ((INT8 *)buffer)[j * format->nChannels + channel] = (INT8)(sample * 127);
-        else if (format->wBitsPerSample == 16)
-          ((INT16 *)buffer)[j * format->nChannels + channel] = (INT16)(sample * 32767);
-        else if (format->wBitsPerSample == 24) {
-          INT32 sample24 = (INT32)(sample * 8388607);
-          ((INT8 *)buffer)[(j * format->nChannels + channel) * 3 + 0] = (INT8)(sample24 & 0xFF);
-          ((INT8 *)buffer)[(j * format->nChannels + channel) * 3 + 1] = (INT8)((sample24 >> 8) & 0xFF);
-          ((INT8 *)buffer)[(j * format->nChannels + channel) * 3 + 2] = (INT8)((sample24 >> 16) & 0xFF);
-        } else if (format->wBitsPerSample == 32)
-          ((r32 *)buffer)[j * format->nChannels + channel] = (r32)(sample);
-      }
-    }
-
-    // Release the buffer
-    hr = renderClient->lpVtbl->ReleaseBuffer(renderClient, frames, 0);
-    if (FAILED(hr))
-      return;
-
-    // time += (r32)frames / (r32)format->nSamplesPerSec;
-    time += seconds_per_frame * frames;
-    Sleep(6);
-  }
-
-  // Stop the audio stream
-  hr = client->lpVtbl->Stop(client);
-  if (FAILED(hr))
-    return;
-
-  // Clean up
-  renderClient->lpVtbl->Release(renderClient);
-  client->lpVtbl->Release(client);
-  device->lpVtbl->Release(device);
-  CoUninitialize();
+internal REFERENCE_TIME to_reference_time(r64 seconds) {
+  return (REFERENCE_TIME)(seconds * 10000000.0 + 0.5);
 }
 
-int load_audio(char *file, struct AudioClip *clip) {
-  char *wav_file = read_file(file);
+internal u32 read_u32_le(const u8* p) {
+  return ((u32)p[0]) | ((u32)p[1] << 8) | ((u32)p[2] << 16) | ((u32)p[3] << 24);
+}
 
-  memcpy(&clip->header, wav_file, sizeof(struct WAVHeader));
+void audio_free_clip(struct AudioClip* clip) {
+  if (!clip)
+    return;
 
-  // Verify that the file is a valid WAV file
-  if (strncmp((const char *)clip->header.chunk_id, "RIFF", 4) || strncmp((const char *)clip->header.format, "WAVE", 4)) {
-    log_message(LOG_SEVERITY_WARNING, "Warning: Not a valid WAV file!\n");
-    return 1;
-  }
+  if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 8)
+    free(clip->samples.int8);
+  else if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 16)
+    free(clip->samples.int16);
+  else if (clip->header.audio_format == 1 && (clip->header.bits_per_sample == 24 || clip->header.bits_per_sample == 32))
+    free(clip->samples.int32);
+  else if (clip->header.audio_format == 3 && clip->header.bits_per_sample == 32)
+    free(clip->samples.float32);
 
-  // Allocate memory for samples
-  if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 8) {
-    clip->samples.int8 = (i8 *)malloc(clip->header.subchunk2_size);
-    memcpy(clip->samples.int8, wav_file + sizeof(struct WAVHeader), clip->header.subchunk2_size);
-  } else if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 16) {
-    clip->samples.int16 = (i16 *)malloc(clip->header.subchunk2_size);
-    memcpy(clip->samples.int16, wav_file + sizeof(struct WAVHeader), clip->header.subchunk2_size);
-  } else if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 24) {
-    clip->samples.int32 = (i32 *)malloc(clip->header.subchunk2_size);
-    memcpy(clip->samples.int32, wav_file + sizeof(struct WAVHeader), clip->header.subchunk2_size);
-    const size_t samples = (clip->header.subchunk2_size / (clip->header.bits_per_sample / 8)) / clip->header.num_channels;
-    for (size_t sample = 0; sample < samples; sample++)
-      clip->samples.int32[sample] >>= 8;
-  } else if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 32) {
-    clip->samples.int32 = (i32 *)malloc(clip->header.subchunk2_size);
-    memcpy(clip->samples.int8, wav_file + sizeof(struct WAVHeader), clip->header.subchunk2_size);
-  } else if (clip->header.audio_format == 3 && clip->header.bits_per_sample == 32) {
-    clip->samples.float32 = (r32 *)malloc(clip->header.subchunk2_size);
-    memcpy(clip->samples.int8, wav_file + sizeof(struct WAVHeader), clip->header.subchunk2_size);
+  memset(clip, 0, sizeof(*clip));
+}
+
+internal u32 audio_clip_frame_count(const struct AudioClip* clip) {
+  if (!clip || !clip->header.block_align)
+    return 0;
+  return clip->header.subchunk2_size / clip->header.block_align;
+}
+
+internal u32 audio_clip_sample_count(const struct AudioClip* clip) {
+  if (!clip)
+    return 0;
+  return audio_clip_frame_count(clip) * clip->header.num_channels;
+}
+
+internal b32 wav_find_data_chunk(const u8* wav_file, u32 file_size, u32* out_data_offset, u32* out_data_size) {
+  u32 offset;
+
+  if (!wav_file || !out_data_offset || !out_data_size)
+    return 0;
+  if (file_size < 12)
+    return 0;
+
+  if (memcmp(wav_file + 0, "RIFF", 4) != 0)
+    return 0;
+  if (memcmp(wav_file + 8, "WAVE", 4) != 0)
+    return 0;
+
+  offset = 12;
+
+  while (offset + 8 <= file_size) {
+    const u8* chunk = wav_file + offset;
+    u32 chunk_size = read_u32_le(chunk + 4);
+    u32 next_offset = offset + 8 + chunk_size + (chunk_size & 1u);
+
+    if (memcmp(chunk + 0, "data", 4) == 0) {
+      if (offset + 8 + chunk_size > file_size)
+        return 0;
+
+      *out_data_offset = offset + 8;
+      *out_data_size = chunk_size;
+      return 1;
+    }
+
+    if (next_offset <= offset || next_offset > file_size) break;
+    offset = next_offset;
   }
 
   return 0;
 }
-*/
+
+internal b32 wav_find_fmt_chunk(const u8* wav_file, u32 file_size, u32* out_fmt_offset, u32* out_fmt_size) {
+  u32 offset;
+
+  if (!wav_file || !out_fmt_offset || !out_fmt_size)
+    return 0;
+  if (file_size < 12)
+    return 0;
+
+  if (memcmp(wav_file + 0, "RIFF", 4) != 0)
+    return 0;
+  if (memcmp(wav_file + 8, "WAVE", 4) != 0)
+    return 0;
+
+  offset = 12;
+
+  while (offset + 8 <= file_size) {
+    const u8* chunk = wav_file + offset;
+    u32 chunk_size = read_u32_le(chunk + 4);
+    u32 next_offset = offset + 8 + chunk_size + (chunk_size & 1u);
+
+    if (memcmp(chunk + 0, "fmt ", 4) == 0) {
+      if (offset + 8 + chunk_size > file_size)
+        return 0;
+
+      *out_fmt_offset = offset + 8;
+      *out_fmt_size = chunk_size;
+      return 1;
+    }
+
+    if (next_offset <= offset || next_offset > file_size)
+      break;
+    offset = next_offset;
+  }
+
+  return 0;
+}
+
+int load_audio(char* file, struct AudioClip* clip) {
+  char* wav_file;
+  u32 wav_size;
+  u32 fmt_offset;
+  u32 fmt_size;
+  u32 data_offset;
+  u32 data_size;
+
+  if (!file || !clip) return 1;
+  memset(clip, 0, sizeof(*clip));
+
+  wav_file = read_file(file);
+  if (!wav_file) {
+    log_message(LOG_SEVERITY_WARNING, "Warning: Failed to read WAV file.\n");
+    return 1;
+  }
+
+  wav_size = (u32)file_size(file);
+  if (wav_size < 12) {
+    log_message(LOG_SEVERITY_WARNING, "Warning: WAV file too small.\n");
+    free(wav_file);
+    return 1;
+  }
+
+  if (memcmp(wav_file + 0, "RIFF", 4) != 0 || memcmp(wav_file + 8, "WAVE", 4) != 0) {
+    log_message(LOG_SEVERITY_WARNING, "Warning: Not a valid WAV file.\n");
+    free(wav_file);
+    return 1;
+  }
+
+  if (!wav_find_fmt_chunk((const u8*)wav_file, wav_size, &fmt_offset, &fmt_size)) {
+    log_message(LOG_SEVERITY_WARNING, "Warning: WAV fmt chunk not found.\n");
+    free(wav_file);
+    return 1;
+  }
+
+  if (fmt_size < 16) {
+    log_message(LOG_SEVERITY_WARNING, "Warning: WAV fmt chunk too small.\n");
+    free(wav_file);
+    return 1;
+  }
+
+  memset(&clip->header, 0, sizeof(clip->header));
+  memcpy(clip->header.chunk_id, wav_file + 0, 4);
+  clip->header.chunk_size = read_u32_le((const u8*)wav_file + 4);
+  memcpy(clip->header.format, wav_file + 8, 4);
+
+  memcpy(clip->header.subchunk1_id, "fmt ", 4);
+  clip->header.subchunk1_size = fmt_size;
+  clip->header.audio_format = (u16)(wav_file[fmt_offset + 0] | ((u8)wav_file[fmt_offset + 1] << 8));
+  clip->header.num_channels = (u16)(wav_file[fmt_offset + 2] | ((u8)wav_file[fmt_offset + 3] << 8));
+  clip->header.sample_rate = read_u32_le((const u8*)wav_file + fmt_offset + 4);
+  clip->header.byte_rate = read_u32_le((const u8*)wav_file + fmt_offset + 8);
+  clip->header.block_align = (u16)(wav_file[fmt_offset + 12] | ((u8)wav_file[fmt_offset + 13] << 8));
+  clip->header.bits_per_sample = (u16)(wav_file[fmt_offset + 14] | ((u8)wav_file[fmt_offset + 15] << 8));
+
+  if (!wav_find_data_chunk((const u8*)wav_file, wav_size, &data_offset, &data_size)) {
+    log_message(LOG_SEVERITY_WARNING, "Warning: WAV data chunk not found.\n");
+    free(wav_file);
+    return 1;
+  }
+
+  memcpy(clip->header.subchunk2_id, "data", 4);
+  clip->header.subchunk2_size = data_size;
+
+  if (clip->header.num_channels == 0 || clip->header.block_align == 0) {
+    log_message(LOG_SEVERITY_WARNING, "Warning: Invalid WAV channel/block alignment.\n");
+    free(wav_file);
+    return 1;
+  }
+
+  if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 8) {
+    clip->samples.int8 = (i8*)malloc(data_size);
+    if (!clip->samples.int8) {
+      free(wav_file);
+      return 1;
+    }
+    memcpy(clip->samples.int8, wav_file + data_offset, data_size);
+  } else if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 16) {
+    clip->samples.int16 = (i16*)malloc(data_size);
+    if (!clip->samples.int16) {
+      free(wav_file);
+      return 1;
+    }
+    memcpy(clip->samples.int16, wav_file + data_offset, data_size);
+
+  } else if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 24) {
+    u32 sample_count = data_size / 3;
+    const u8* src = (const u8*)(wav_file + data_offset);
+    u32 i;
+
+    clip->samples.int32 = (i32*)malloc(sample_count * sizeof(i32));
+    if (!clip->samples.int32) {
+      free(wav_file);
+      return 1;
+    }
+
+    for (i = 0; i < sample_count; ++i) {
+      u32 b0 = src[i * 3 + 0];
+      u32 b1 = src[i * 3 + 1];
+      u32 b2 = src[i * 3 + 2];
+      i32 sample = (i32)(b0 | (b1 << 8) | (b2 << 16));
+
+      if (sample & 0x00800000)
+        sample |= (i32)0xFF000000;
+
+      clip->samples.int32[i] = sample;
+    }
+
+  } else if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 32) {
+    clip->samples.int32 = (i32*)malloc(data_size);
+    if (!clip->samples.int32) {
+      free(wav_file);
+      return 1;
+    }
+    memcpy(clip->samples.int32, wav_file + data_offset, data_size);
+
+  } else if (clip->header.audio_format == 3 && clip->header.bits_per_sample == 32) {
+    clip->samples.float32 = (r32*)malloc(data_size);
+    if (!clip->samples.float32) {
+      free(wav_file);
+      return 1;
+    }
+    memcpy(clip->samples.float32, wav_file + data_offset, data_size);
+
+  } else {
+    log_message(LOG_SEVERITY_WARNING, "Warning: Unsupported WAV format.\n");
+    free(wav_file);
+    return 1;
+  }
+
+  free(wav_file);
+  return 0;
+}
+
+internal r32 clamp_sample_f32(r32 x) {
+  if (x < -1.0f)
+    return -1.0f;
+  if (x > 1.0f)
+    return 1.0f;
+  return x;
+}
+
+internal r32* audio_clip_to_float32_interleaved(const struct AudioClip* clip, u32* out_sample_count) {
+  u32 sample_count;
+  r32* out;
+  u32 i;
+
+  if (!clip || !out_sample_count)
+    return 0;
+
+  sample_count = audio_clip_sample_count(clip);
+  if (!sample_count)
+    return 0;
+
+  out = (r32*)malloc(sample_count * sizeof(r32));
+  if (!out)
+    return 0;
+
+  if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 8) {
+    for (i = 0; i < sample_count; i++) {
+      u8 s = (u8)clip->samples.int8[i];
+      out[i] = ((r32)s - 128.0f) / 128.0f;
+    }
+  } else if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 16) {
+    for (i = 0; i < sample_count; i++)
+      out[i] = (r32)clip->samples.int16[i] / 32768.0f;
+
+  } else if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 24) {
+    for (i = 0; i < sample_count; i++)
+      out[i] = (r32)clip->samples.int32[i] / 8388608.0f;
+
+  } else if (clip->header.audio_format == 1 && clip->header.bits_per_sample == 32) {
+    for (i = 0; i < sample_count; i++)
+      out[i] = (r32)clip->samples.int32[i] / 2147483648.0f;
+
+  } else if (clip->header.audio_format == 3 && clip->header.bits_per_sample == 32) {
+    for (i = 0; i < sample_count; i++)
+      out[i] = clamp_sample_f32(clip->samples.float32[i]);
+
+  } else {
+    free(out);
+    return 0;
+  }
+
+  *out_sample_count = sample_count;
+  return out;
+}
+
+int play_audio_wasapi(struct AudioClip* clip) {
+  HRESULT hr = S_OK;
+  IMMDeviceEnumerator* device_enumerator = 0;
+  IMMDevice* device = 0;
+  IAudioClient* audio_client = 0;
+  IAudioRenderClient* render_client = 0;
+  HANDLE buffer_event = 0;
+
+  r32* float_samples = 0;
+  u32 total_sample_count = 0;
+  u32 total_frame_count = 0;
+  u32 frames_written = 0;
+
+  UINT32 buffer_frame_count = 0;
+  UINT32 padding = 0;
+
+  WAVEFORMATEX wave_format;
+
+  UINT32 frames_to_write;
+  REFERENCE_TIME latency;
+
+  if (!clip) return 1;
+  if (clip->header.num_channels == 0)
+    return 1;
+  if (clip->header.sample_rate == 0)
+    return 1;
+
+  memset(&wave_format, 0, sizeof(wave_format));
+  wave_format.wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
+  wave_format.nChannels = clip->header.num_channels;
+  wave_format.nSamplesPerSec = clip->header.sample_rate;
+  wave_format.wBitsPerSample = 32;
+  wave_format.nBlockAlign = (WORD)(wave_format.nChannels * sizeof(r32));
+  wave_format.nAvgBytesPerSec = wave_format.nSamplesPerSec * wave_format.nBlockAlign;
+  wave_format.cbSize = 0;
+
+  float_samples = audio_clip_to_float32_interleaved(clip, &total_sample_count);
+  if (!float_samples)
+    return 1;
+
+  total_frame_count = total_sample_count / clip->header.num_channels;
+
+  hr = CoInitializeEx(0, COINIT_APARTMENTTHREADED);
+  if (FAILED(hr) && hr != RPC_E_CHANGED_MODE) {
+    free(float_samples);
+    return 1;
+  }
+
+  hr = CoCreateInstance(&MANA_CLSID_MMDeviceEnumerator, 0, CLSCTX_ALL, &MANA_IID_IMMDeviceEnumerator, (void**)&device_enumerator);
+  if (FAILED(hr))
+    goto fail;
+
+  hr = IMMDeviceEnumerator_GetDefaultAudioEndpoint(device_enumerator, eRender, eConsole, &device);
+  if (FAILED(hr))
+    goto fail;
+
+  hr = IMMDevice_Activate(device, &MANA_IID_IAudioClient, CLSCTX_ALL, 0, (void**)&audio_client);
+  if (FAILED(hr))
+    goto fail;
+
+  hr = IAudioClient_Initialize(audio_client, AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY, 0, 0, &wave_format, 0);
+  if (FAILED(hr))
+    goto fail;
+
+  hr = IAudioClient_GetBufferSize(audio_client, &buffer_frame_count);
+  if (FAILED(hr))
+    goto fail;
+
+  hr = IAudioClient_GetService(audio_client, &MANA_IID_IAudioRenderClient, (void**)&render_client);
+  if (FAILED(hr))
+    goto fail;
+
+  buffer_event = CreateEventA(0, FALSE, FALSE, 0);
+  if (!buffer_event)
+    goto fail;
+
+  hr = IAudioClient_SetEventHandle(audio_client, buffer_event);
+  if (FAILED(hr))
+    goto fail;
+
+  frames_to_write = buffer_frame_count;
+
+  if (frames_to_write > total_frame_count) {
+    frames_to_write = total_frame_count;
+  }
+
+  if (frames_to_write > 0) {
+    BYTE* dst = 0;
+
+    hr = IAudioRenderClient_GetBuffer(render_client, frames_to_write, &dst);
+    if (FAILED(hr)) goto fail;
+
+    memcpy(dst, float_samples, frames_to_write * wave_format.nBlockAlign);
+
+    frames_written += frames_to_write;
+
+    hr = IAudioRenderClient_ReleaseBuffer(render_client, frames_to_write, 0);
+    if (FAILED(hr))
+      goto fail;
+  }
+
+  hr = IAudioClient_Start(audio_client);
+  if (FAILED(hr))
+    goto fail;
+
+  while (frames_written < total_frame_count) {
+    DWORD wait_result = WaitForSingleObject(buffer_event, 2000);
+
+    if (wait_result != WAIT_OBJECT_0)
+      break;
+
+    hr = IAudioClient_GetCurrentPadding(audio_client, &padding);
+    if (FAILED(hr))
+      break;
+
+    UINT32 frames_available = buffer_frame_count - padding;
+    UINT32 frames_remaining = total_frame_count - frames_written;
+    UINT32 frames_to_write_int = frames_available < frames_remaining ? frames_available : frames_remaining;
+
+    if (!frames_to_write_int)
+      continue;
+
+    BYTE* dst = 0;
+
+    hr = IAudioRenderClient_GetBuffer(render_client, frames_to_write_int, &dst);
+    if (FAILED(hr))
+      break;
+
+    memcpy(dst, float_samples + (frames_written * clip->header.num_channels), frames_to_write_int * wave_format.nBlockAlign);
+
+    frames_written += frames_to_write_int;
+
+    hr = IAudioRenderClient_ReleaseBuffer(render_client, frames_to_write_int, 0);
+    if (FAILED(hr))
+      break;
+  }
+
+  latency = 0;
+  if (SUCCEEDED(IAudioClient_GetStreamLatency(audio_client, &latency)))
+    Sleep((DWORD)(latency / 10000) + 10);
+  else
+    Sleep(100);
+
+  IAudioClient_Stop(audio_client);
+
+  free(float_samples);
+  if (buffer_event)
+    CloseHandle(buffer_event);
+  if (render_client)
+    IAudioRenderClient_Release(render_client);
+  if (audio_client)
+    IAudioClient_Release(audio_client);
+  if (device)
+    IMMDevice_Release(device);
+  if (device_enumerator)
+    IMMDeviceEnumerator_Release(device_enumerator);
+  CoUninitialize();
+
+  return 0;
+
+fail:
+  if (audio_client)
+    IAudioClient_Stop(audio_client);
+  free(float_samples);
+  if (buffer_event)
+    CloseHandle(buffer_event);
+  if (render_client)
+    IAudioRenderClient_Release(render_client);
+  if (audio_client)
+    IAudioClient_Release(audio_client);
+  if (device)
+    IMMDevice_Release(device);
+  if (device_enumerator)
+    IMMDeviceEnumerator_Release(device_enumerator);
+  CoUninitialize();
+
+  return 1;
+}

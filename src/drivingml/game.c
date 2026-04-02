@@ -190,6 +190,11 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 
   game->previous_reward = 0.0f;
 
+  char fart_path[MAX_LENGTH_OF_PATH] = {0};
+  snprintf(fart_path, MAX_LENGTH_OF_PATH, "%s/audio/fart.wav", mana->api.api_common.asset_directory);
+  load_audio(fart_path, &(game->fart));
+  play_audio_wasapi(&(game->fart));
+
   // TODO: Engine should decide max anisotropy based on device capabilities, not hardcoded here, and also loaded from settings. So that whol part will likely be removed from struct?
   struct TextureSettings sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_NEAREST, .mode_type = MODE_CLAMP_TO_EDGE, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_GENERATE, .mip_count = 5, .premultiplied_alpha = TRUE, .max_anisotropy = 1.0f};
   texture_manager_init(&(game->texture_manager), &(mana->api.api_common));

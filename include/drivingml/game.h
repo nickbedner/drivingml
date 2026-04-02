@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mana/core/audio/audio.h>
 #include <mana/core/graphics/entities/sprite/sprite.h>
 #include <mana/core/graphics/entities/water/water.h>
 #include <mana/core/graphics/shaders/modelshader.h>
@@ -46,6 +47,8 @@ struct Game {
   struct Model* test_model;
   struct Model* test_static_model;
   struct Model* coin_model;
+
+  struct AudioClip fart;
 
   SOCKET sock;
 

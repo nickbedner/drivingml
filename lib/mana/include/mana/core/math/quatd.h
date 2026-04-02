@@ -1,8 +1,8 @@
 #pragma once
 
-#include <mana/core/corecommon.h>
-#include <mana/core/math/real64.h>
-#include <mana/core/math/vec3d.h>
+#include "mana/core/corecommon.h"
+#include "mana/core/math/real64.h"
+#include "mana/core/math/vec3d.h"
 
 typedef struct quatd {
   union {
