@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "mana/core/corecommon.h"
+
 #define ARRAY_LIST_INIT_CAPACITY 4
 #define ARRAY_LIST_RESIZE_FACTOR 2
 

@@ -193,7 +193,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   char fart_path[MAX_LENGTH_OF_PATH] = {0};
   snprintf(fart_path, MAX_LENGTH_OF_PATH, "%s/audio/fart.wav", mana->api.api_common.asset_directory);
   load_audio(fart_path, &(game->fart));
-  play_audio_wasapi(&(game->fart));
+  // play_audio_wasapi(&(game->fart));
 
   // TODO: Engine should decide max anisotropy based on device capabilities, not hardcoded here, and also loaded from settings. So that whol part will likely be removed from struct?
   struct TextureSettings sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_NEAREST, .mode_type = MODE_CLAMP_TO_EDGE, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_GENERATE, .mip_count = 5, .premultiplied_alpha = TRUE, .max_anisotropy = 1.0f};
@@ -224,6 +224,11 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/coin/coinod.png", TRUE);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/coin/coinon.png", TRUE);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/coin/coinom.png", TRUE);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/ssc/Textures/coina.png", TRUE);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/ssc/Textures/coinn.png", TRUE);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/ssc/Textures/coinr.png", TRUE);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/ssc/Textures/coinm.png", TRUE);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/ssc/Textures/coinao.png", TRUE);
   sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_TRILINEAR, .mode_type = MODE_REPEAT, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_CUSTOM, .mip_count = 5, .premultiplied_alpha = TRUE, .max_anisotropy = 1.0f};
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/waterm1.png", FALSE);
   sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_NEAREST, .mode_type = MODE_CLAMP_TO_EDGE, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_NONE, .mip_count = 1, .premultiplied_alpha = TRUE, .max_anisotropy = 1.0f};
@@ -399,18 +404,18 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->test_static_model->model_common.position = (vec3){.x = 5.0f, .y = 2.0f, .z = 0.0f};
 
   struct ModelSettings coin_settings = (struct ModelSettings){
-      .path = "./assets/models/coin/coino.dae",
+      .path = "./assets/models/ssc/Coin.dae",
       .shader = &(game->model_cache.model_static_shader.shader),
-      .diffuse_texture = texture_manager_get(&(game->texture_manager), "/models/coin/coinod.png"),
-      .normal_texture = texture_manager_get(&(game->texture_manager), "/models/coin/coinon.png"),
-      .metallic_texture = texture_manager_get(&(game->texture_manager), "/models/coin/coinom.png"),
-      .roughness_texture = texture_manager_get(&(game->texture_manager), "/models/coin/coinom.png"),
-      .ao_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/ao.png"),
+      .diffuse_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coina.png"),
+      .normal_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coinn.png"),
+      .metallic_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coinm.png"),
+      .roughness_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coinr.png"),
+      .ao_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coinao.png"),
       5};
   model_cache_add(&(game->model_cache), &(mana->api.api_common), &coin_settings, 1, FALSE);
-  game->coin_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/coin/coino.dae");
-  game->coin_model->model_common.scale = (vec3){.x = 0.1f, .y = 0.1f, .z = 0.1f};
-  game->coin_model->model_common.position = (vec3){.x = 15.0f, .y = 5.0f, .z = 0.0f};
+  game->coin_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/ssc/Coin.dae");
+  game->coin_model->model_common.scale = (vec3){.x = 0.05f, .y = 0.05f, .z = 0.05f};
+  game->coin_model->model_common.position = (vec3){.x = 15.0f, .y = 4.0f, .z = 0.0f};
 }
 
 void game_delete(struct Game* game, struct Mana* mana) {
@@ -880,7 +885,7 @@ void game_render(struct Game* game, struct Mana* mana, r64 delta_time) {
     // Diffuse sun directional light
     r32 sun_intensity = 4.0f;
     vec3 sun_dir = vec3_normalize((vec3){.x = 0.35f, .y = -0.90f, .z = 0.25f});
-    vec4 full_dir = (vec4){.x = sun_dir.x, .y = sun_dir.y, .z = sun_dir.z, .w = 0.15f};
+    vec4 full_dir = (vec4){.x = sun_dir.x, .y = sun_dir.y, .z = sun_dir.z, .w = 0.25f};
     vec4 diffuse_color = (vec4){.x = 1.0f * sun_intensity, .y = 0.96f * sun_intensity, .z = 0.86f * sun_intensity, .w = 0.0f};
     // Soft sky fill, not white
     vec4 ambient_color = (vec4){.x = 0.10f, .y = 0.14f, .z = 0.18f, .w = 0.0f};

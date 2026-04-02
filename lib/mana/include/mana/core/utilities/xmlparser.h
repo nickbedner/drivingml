@@ -12,6 +12,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "mana/core/corecommon.h"
+
 struct XmlNode {
   char* name;
   struct Map* attributes;
@@ -59,10 +61,14 @@ global inline void xml_node_delete(struct XmlNode* xml_node) {
 }
 
 global inline char* xml_node_get_attribute(struct XmlNode* xml_node, char* attr) {
-  if (xml_node == NULL || xml_node->attributes == NULL)
+  if (xml_node == NULL || xml_node->attributes == NULL || attr == NULL)
     return NULL;
-  else
-    return *(char**)map_get(xml_node->attributes, attr);
+
+  char** value = (char**)map_get(xml_node->attributes, attr);
+  if (value == NULL)
+    return NULL;
+
+  return *value;
 }
 
 global inline struct XmlNode* xml_node_get_child(struct XmlNode* xml_node, char* child_name) {
@@ -76,13 +82,13 @@ global inline struct XmlNode* xml_node_get_child(struct XmlNode* xml_node, char*
 
 global inline struct XmlNode* xml_node_get_child_with_attribute(struct XmlNode* xml_node, char* child_name, char* attr, const char* value) {
   struct ArrayList* children = xml_node_get_children(xml_node, child_name);
-  if (children == NULL || array_list_empty(children))
+  if (children == NULL || array_list_empty(children) || value == NULL)
     return NULL;
 
   for (size_t child_num = 0; child_num < array_list_size(children); child_num++) {
     struct XmlNode* child = (struct XmlNode*)array_list_get(children, child_num);
     char* val = xml_node_get_attribute(child, attr);
-    if (strcmp(value, val) == 0)
+    if (val != NULL && strcmp(value, val) == 0)
       return child;
   }
 

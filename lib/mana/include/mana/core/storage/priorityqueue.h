@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "mana/core/corecommon.h"
+
 struct PriorityQueueNode {
   void* data;
   size_t priority;

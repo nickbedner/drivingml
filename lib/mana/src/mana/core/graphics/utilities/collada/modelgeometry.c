@@ -1,5 +1,98 @@
 #include "mana/core/graphics/utilities/collada/modelgeometry.h"
 
+struct GeometryPrimitiveInputs {
+  i32 vertex_offset;
+  i32 normal_offset;
+  i32 tex_coord_offset;
+  i32 color_offset;
+  i32 stride;
+};
+
+static i32 geometry_loader_get_input_offset(struct XmlNode* primitive, const char* semantic) {
+  struct XmlNode* input = xml_node_get_child_with_attribute(primitive, "input", "semantic", semantic);
+  if (input == NULL)
+    return -1;
+
+  char* offset_str = xml_node_get_attribute(input, "offset");
+  if (offset_str == NULL)
+    return -1;
+
+  return atoi(offset_str);
+}
+
+static struct GeometryPrimitiveInputs geometry_loader_get_primitive_inputs(struct XmlNode* primitive) {
+  struct GeometryPrimitiveInputs inputs = {
+      .vertex_offset = -1,
+      .normal_offset = -1,
+      .tex_coord_offset = -1,
+      .color_offset = -1,
+      .stride = 0};
+
+  inputs.vertex_offset = geometry_loader_get_input_offset(primitive, "VERTEX");
+  inputs.normal_offset = geometry_loader_get_input_offset(primitive, "NORMAL");
+  inputs.tex_coord_offset = geometry_loader_get_input_offset(primitive, "TEXCOORD");
+  inputs.color_offset = geometry_loader_get_input_offset(primitive, "COLOR");
+
+  i32 max_offset = inputs.vertex_offset;
+  if (inputs.normal_offset > max_offset)
+    max_offset = inputs.normal_offset;
+  if (inputs.tex_coord_offset > max_offset)
+    max_offset = inputs.tex_coord_offset;
+  if (inputs.color_offset > max_offset)
+    max_offset = inputs.color_offset;
+
+  inputs.stride = max_offset + 1;
+  return inputs;
+}
+
+static struct Vector* geometry_loader_parse_i32_list(const char* text) {
+  struct Vector* values = (struct Vector*)malloc(sizeof(struct Vector));
+  vector_init(values, sizeof(i32));
+
+  if (text == NULL)
+    return values;
+
+  char* raw_data = _strdup(text);
+  char* next_token = NULL;
+  char* raw_part = strtok_s(raw_data, " \t\r\n", &next_token);
+
+  while (raw_part != NULL) {
+    i32 parsed_value = atoi(raw_part);
+    vector_push_back(values, &parsed_value);
+    raw_part = strtok_s(NULL, " \t\r\n", &next_token);
+  }
+
+  free(raw_data);
+  return values;
+}
+
+static i32 geometry_loader_get_corner_index(struct Vector* index_stream, size_t corner_index, i32 offset, i32 stride) {
+  if (offset < 0 || stride <= 0)
+    return -1;
+
+  size_t flat_index = corner_index * (size_t)stride + (size_t)offset;
+  if (flat_index >= vector_size(index_stream))
+    return -1;
+
+  return *(i32*)vector_get(index_stream, flat_index);
+}
+
+static void geometry_loader_emit_corner(struct ModelData* model_data, struct Vector* index_stream, size_t corner_index, struct GeometryPrimitiveInputs inputs) {
+  i32 position_index = geometry_loader_get_corner_index(index_stream, corner_index, inputs.vertex_offset, inputs.stride);
+  i32 normal_index = geometry_loader_get_corner_index(index_stream, corner_index, inputs.normal_offset, inputs.stride);
+  i32 tex_coord_index = geometry_loader_get_corner_index(index_stream, corner_index, inputs.tex_coord_offset, inputs.stride);
+  i32 color_index = geometry_loader_get_corner_index(index_stream, corner_index, inputs.color_offset, inputs.stride);
+
+  if (position_index < 0)
+    return;
+
+  geometry_loader_process_vertex(model_data, position_index, normal_index, tex_coord_index, color_index);
+}
+
+static b8 geometry_loader_vertex_matches(const struct RawVertexModel* vertex, i32 texture_index, i32 normal_index, i32 color_index) {
+  return vertex->texture_index == texture_index && vertex->normal_index == normal_index && vertex->color_index == color_index;
+}
+
 struct Mesh* geometry_loader_extract_model_data(struct APICommon* api_common, struct XmlNode* geometry_node, struct Vector* vertex_weights, b8 animated, b8 inverted_y) {
   struct XmlNode* mesh_data = xml_node_get_child(xml_node_get_child(geometry_node, "geometry"), "mesh");
   struct ModelData* model_data = (struct ModelData*)malloc(sizeof(struct ModelData));
@@ -37,28 +130,40 @@ void geometry_loader_read_raw_data(struct ModelData* model_data, struct XmlNode*
 
 void geometry_loader_read_positions(struct ModelData* model_data, struct XmlNode* mesh_data, struct Vector* vertex_weights) {
   char* positions_id = xml_node_get_attribute(xml_node_get_child(xml_node_get_child(mesh_data, "vertices"), "input"), "source") + 1;
-  struct XmlNode* positions_data = xml_node_get_child(xml_node_get_child_with_attribute(mesh_data, "source", "id", positions_id), "float_array");
-  i32 count = atoi(xml_node_get_attribute(positions_data, "count"));
-  i32 stride = atoi(xml_node_get_attribute(xml_node_get_child(xml_node_get_child(xml_node_get_child_with_attribute(mesh_data, "source", "id", positions_id), "technique_common"), "accessor"), "stride"));
+
+  struct XmlNode* source_node = xml_node_get_child_with_attribute(mesh_data, "source", "id", positions_id);
+  struct XmlNode* positions_data = xml_node_get_child(source_node, "float_array");
+  struct XmlNode* accessor = xml_node_get_child(xml_node_get_child(source_node, "technique_common"), "accessor");
+
+  i32 count = atoi(xml_node_get_attribute(accessor, "count"));
+  i32 stride = atoi(xml_node_get_attribute(accessor, "stride"));
 
   char* raw_data = _strdup(xml_node_get_data(positions_data));
   char* next_token = NULL;
-  char* raw_part = strtok_s(raw_data, " ", &next_token);
-  for (size_t position_num = 0; position_num < (size_t)count && raw_part != NULL; position_num++) {
+  char* raw_part = strtok_s(raw_data, " \t\r\n", &next_token);
+
+  for (i32 position_num = 0; position_num < count && raw_part != NULL; position_num++) {
     vec4 position = {0};
-    for (size_t dim_num = 0; dim_num < (size_t)stride; dim_num++) {
+
+    for (i32 dim_num = 0; dim_num < stride; dim_num++) {
       position.data[dim_num] = (r32)atof(raw_part);
-      raw_part = strtok_s(NULL, " ", &next_token);
+      raw_part = strtok_s(NULL, " \t\r\n", &next_token);
     }
 
     mat4 correction = mat4_rotate(MAT4_IDENTITY, degree_to_radian(-90.0f), (vec3){.data[0] = 1.0f, .data[1] = 0.0f, .data[2] = 0.0f});
     position = mat4_mul_vec4(correction, position);
-    vec3 position_corrected = (vec3){.data[0] = position.data[0], .data[1] = position.data[1], .data[2] = position.data[2]};
+
+    vec3 position_corrected = {
+        .data[0] = position.data[0],
+        .data[1] = position.data[1],
+        .data[2] = position.data[2]};
+
     struct RawVertexModel raw_vertex = {0};
     if (vertex_weights != NULL)
       raw_vertex_model_init(&raw_vertex, (u32)vector_size(model_data->vertices), position_corrected, (struct VertexSkinData*)vector_get(vertex_weights, vector_size(model_data->vertices)));
     else
       raw_vertex_model_init(&raw_vertex, (u32)vector_size(model_data->vertices), position_corrected, NULL);
+
     vector_push_back(model_data->vertices, &raw_vertex);
   }
 
@@ -69,28 +174,55 @@ void geometry_loader_read_normals(struct ModelData* model_data, struct XmlNode* 
   struct XmlNode* material_node = xml_node_get_child(mesh_data, "polylist");
   if (material_node == NULL)
     material_node = xml_node_get_child(mesh_data, "triangles");
-  // Note: Not sure why but Maya exports sphere mesh incorrectly
-  // if (xml_node_get_child_with_attribute(material_node, "input", "semantic", "NORMAL") == NULL)
-  //  material_node = xml_node_get_child(mesh_data, "vertices");
+  if (material_node == NULL)
+    return;
 
-  char* normals_id = xml_node_get_attribute(xml_node_get_child_with_attribute(material_node, "input", "semantic", "NORMAL"), "source") + 1;
-  struct XmlNode* normals_data = xml_node_get_child(xml_node_get_child_with_attribute(mesh_data, "source", "id", normals_id), "float_array");
-  i32 count = atoi(xml_node_get_attribute(normals_data, "count"));
-  i32 stride = atoi(xml_node_get_attribute(xml_node_get_child(xml_node_get_child(xml_node_get_child_with_attribute(mesh_data, "source", "id", normals_id), "technique_common"), "accessor"), "stride"));
+  struct XmlNode* normal_input = xml_node_get_child_with_attribute(material_node, "input", "semantic", "NORMAL");
+  if (normal_input == NULL)
+    return;
+
+  char* source_attr = xml_node_get_attribute(normal_input, "source");
+  if (source_attr == NULL || source_attr[0] != '#')
+    return;
+
+  char* normals_id = source_attr + 1;
+
+  struct XmlNode* source_node = xml_node_get_child_with_attribute(mesh_data, "source", "id", normals_id);
+  if (source_node == NULL)
+    return;
+
+  struct XmlNode* normals_data = xml_node_get_child(source_node, "float_array");
+  struct XmlNode* technique_common = xml_node_get_child(source_node, "technique_common");
+  struct XmlNode* accessor = xml_node_get_child(technique_common, "accessor");
+  if (normals_data == NULL || accessor == NULL)
+    return;
+
+  i32 count = atoi(xml_node_get_attribute(accessor, "count"));
+  i32 stride = atoi(xml_node_get_attribute(accessor, "stride"));
 
   char* raw_data = _strdup(xml_node_get_data(normals_data));
+  if (raw_data == NULL)
+    return;
+
   char* next_token = NULL;
-  char* raw_part = strtok_s(raw_data, " ", &next_token);
-  for (size_t normal_num = 0; normal_num < (size_t)count && raw_part != NULL; normal_num++) {
+  char* raw_part = strtok_s(raw_data, " \t\r\n", &next_token);
+
+  for (i32 normal_num = 0; normal_num < count && raw_part != NULL; normal_num++) {
     vec4 normal = {0};
-    for (size_t dim_num = 0; dim_num < (size_t)stride; dim_num++) {
+
+    for (i32 dim_num = 0; dim_num < stride; dim_num++) {
       normal.data[dim_num] = (r32)atof(raw_part);
-      raw_part = strtok_s(NULL, " ", &next_token);
+      raw_part = strtok_s(NULL, " \t\r\n", &next_token);
     }
 
     mat4 correction = mat4_rotate(MAT4_IDENTITY, degree_to_radian(-90.0f), (vec3){.data[0] = 1.0f, .data[1] = 0.0f, .data[2] = 0.0f});
     normal = mat4_mul_vec4(correction, normal);
-    vec3 normal_corrected = (vec3){.data[0] = normal.data[0], .data[1] = normal.data[1], .data[2] = normal.data[2]};
+
+    vec3 normal_corrected = {
+        .data[0] = normal.data[0],
+        .data[1] = normal.data[1],
+        .data[2] = normal.data[2]};
+
     vector_push_back(model_data->normals, &normal_corrected);
   }
 
@@ -172,7 +304,7 @@ void geometry_loader_read_colors(struct ModelData* model_data, struct XmlNode* m
 
   struct XmlNode* colors_location = xml_node_get_child_with_attribute(material_node, "input", "semantic", "COLOR");
   if (colors_location == NULL) {
-    vec3 color = (vec3){.r = 0.0, .g = 0.0, .b = 0.0};
+    vec3 color = (vec3){.r = 1.0f, .g = 1.0f, .b = 1.0f};
     vector_push_back(model_data->colors, &color);
     return;
   }
@@ -222,60 +354,69 @@ void geometry_loader_read_colors(struct ModelData* model_data, struct XmlNode* m
 // Note: All collada models must follow this format and can only be 1 object
 // Maybe add error checking to ignore any extras
 void geometry_loader_assemble_vertices(struct ModelData* model_data, struct XmlNode* mesh_data, b8 inverted_y) {
-  struct XmlNode* poly = xml_node_get_child(mesh_data, "polylist");
-  if (poly == NULL)
-    poly = xml_node_get_child(mesh_data, "triangles");
+  b8 is_polylist = FALSE;
+  struct XmlNode* primitive = xml_node_get_child(mesh_data, "polylist");
+  if (primitive != NULL) {
+    is_polylist = TRUE;
+  } else
+    primitive = xml_node_get_child(mesh_data, "triangles");
 
-  struct XmlNode* index_data = xml_node_get_child(poly, "p");
-  size_t type_count = array_list_size(xml_node_get_children(poly, "input"));
+  if (primitive == NULL)
+    return;
 
-  char* raw_data = _strdup(xml_node_get_data(index_data));
-  char* next_token = NULL;
-  char* raw_part = strtok_s(raw_data, " ", &next_token);
-  while (raw_part != NULL) {
-    i32 position_index = 0, normal_index = 0, tex_coord_index = 0, color_index = 0;
+  struct GeometryPrimitiveInputs inputs = geometry_loader_get_primitive_inputs(primitive);
+  if (inputs.vertex_offset < 0 || inputs.stride <= 0)
+    return;
 
-    for (size_t type_num = 0; type_num < type_count; type_num++) {
-      switch (type_num) {
-        case 0: {
-          position_index = atoi(raw_part);
-          break;
+  struct XmlNode* index_data = xml_node_get_child(primitive, "p");
+  if (index_data == NULL)
+    return;
+
+  struct Vector* index_stream = geometry_loader_parse_i32_list(xml_node_get_data(index_data));
+
+  if (is_polylist) {
+    struct XmlNode* vcount_node = xml_node_get_child(primitive, "vcount");
+    if (vcount_node != NULL) {
+      struct Vector* vcounts = geometry_loader_parse_i32_list(xml_node_get_data(vcount_node));
+      size_t corner_cursor = 0;
+
+      for (size_t polygon_num = 0; polygon_num < vector_size(vcounts); polygon_num++) {
+        i32 vertex_count = *(i32*)vector_get(vcounts, polygon_num);
+
+        if (vertex_count >= 3) {
+          for (size_t tri = 0; tri < (size_t)vertex_count - 2; tri++) {
+            geometry_loader_emit_corner(model_data, index_stream, corner_cursor + 0, inputs);
+            geometry_loader_emit_corner(model_data, index_stream, corner_cursor + tri + 1, inputs);
+            geometry_loader_emit_corner(model_data, index_stream, corner_cursor + tri + 2, inputs);
+          }
         }
-        case 1: {
-          normal_index = atoi(raw_part);
-          break;
-        }
-        case 2: {
-          tex_coord_index = atoi(raw_part);
-          break;
-        }
-        case 3: {
-          color_index = atoi(raw_part);
-          break;
-        }
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wcovered-switch-default"
-        default: {
-          __builtin_unreachable();
-        }
-#pragma clang diagnostic pop
+
+        corner_cursor += (size_t)vertex_count;
       }
-      raw_part = strtok_s(NULL, " ", &next_token);
+
+      vector_delete(vcounts);
+      free(vcounts);
     }
-    geometry_loader_process_vertex(model_data, position_index, normal_index, tex_coord_index, color_index);
+  } else {
+    size_t corner_count = vector_size(index_stream) / (size_t)inputs.stride;
+
+    for (size_t corner_index = 0; corner_index < corner_count; corner_index++) {
+      geometry_loader_emit_corner(model_data, index_stream, corner_index, inputs);
+    }
   }
-  free(raw_data);
 
+  vector_delete(index_stream);
+  free(index_stream);
+
+  // Flip winding per triangle if needed. Do NOT reverse the whole index list
   if (inverted_y == FALSE) {
-    size_t indices_count = vector_size(model_data->indices);
-    for (size_t i = 0; i < indices_count / 2; i++) {
-      i32* start_index = (i32*)vector_get(model_data->indices, i);
-      i32* end_index = (i32*)vector_get(model_data->indices, indices_count - 1 - i);
+    for (size_t i = 0; i + 2 < vector_size(model_data->indices); i += 3) {
+      i32* index1 = (i32*)vector_get(model_data->indices, i + 1);
+      i32* index2 = (i32*)vector_get(model_data->indices, i + 2);
 
-      // Swap indices
-      i32 temp = *start_index;
-      *start_index = *end_index;
-      *end_index = temp;
+      i32 temp = *index1;
+      *index1 = *index2;
+      *index2 = temp;
     }
   }
 }
@@ -310,29 +451,26 @@ r32 geometry_loader_convert_data_to_arrays(struct ModelData* model_data, struct 
     vec3 model_color = (vec3){.x = 1.0f, .y = 1.0f, .z = 1.0f};
     vec2 model_tex_coord = (vec2){.x = 0.0f, .y = 0.0f};
 
-    /* Normal */
+    // Normal
     if (current_vertex->normal_index >= 0 && (size_t)current_vertex->normal_index < vector_size(model_data->normals)) {
       vec3* normal_ptr = (vec3*)vector_get(model_data->normals, (size_t)current_vertex->normal_index);
       if (normal_ptr != NULL)
         model_normal = *normal_ptr;
     }
 
-    /* Color */
+    // Color
     if (current_vertex->color_index >= 0 && (size_t)current_vertex->color_index < vector_size(model_data->colors)) {
       vec3* color_ptr = (vec3*)vector_get(model_data->colors, (size_t)current_vertex->color_index);
       if (color_ptr != NULL)
         model_color = *color_ptr;
     }
 
-    /* Texture coordinates */
+    // Texture coordinates
     if (current_vertex->texture_index >= 0 && (size_t)current_vertex->texture_index < vector_size(model_data->tex_coords)) {
       vec2* tex_ptr = (vec2*)vector_get(model_data->tex_coords, (size_t)current_vertex->texture_index);
       if (tex_ptr != NULL)
         model_tex_coord = *tex_ptr;
     }
-
-    if (inverted_y)
-      model_tex_coord.v = 1.0f - model_tex_coord.v;
 
     if (animated) {
       ivec3 joint_ids = (ivec3){.x = 0, .y = 0, .z = 0};
@@ -360,22 +498,28 @@ r32 geometry_loader_convert_data_to_arrays(struct ModelData* model_data, struct 
 }
 
 void geometry_loader_deal_with_already_processed_vertex(struct ModelData* model_data, struct RawVertexModel* previous_vertex, i32 new_texture_index, i32 new_normal_index, i32 new_color_index) {
-  if (raw_vertex_model_has_same_texture_and_normal(previous_vertex, new_texture_index, new_normal_index)) {
+  if (geometry_loader_vertex_matches(previous_vertex, new_texture_index, new_normal_index, new_color_index)) {
     vector_push_back(model_data->indices, &previous_vertex->index);
   } else {
     struct RawVertexModel* another_vertex = previous_vertex->duplicate_vertex;
     if (another_vertex != NULL) {
       geometry_loader_deal_with_already_processed_vertex(model_data, another_vertex, new_texture_index, new_normal_index, new_color_index);
     } else {
+      size_t previous_vertex_index = previous_vertex->index;
+
       struct RawVertexModel duplicate_vertex = {0};
       raw_vertex_model_init(&duplicate_vertex, (u32)vector_size(model_data->vertices), previous_vertex->position, previous_vertex->weights_data);
       duplicate_vertex.texture_index = new_texture_index;
       duplicate_vertex.normal_index = new_normal_index;
       duplicate_vertex.color_index = new_color_index;
+
       vector_push_back(model_data->vertices, &duplicate_vertex);
       vector_push_back(model_data->indices, &duplicate_vertex.index);
-      // TODO: Watch could cause problems
-      previous_vertex->duplicate_vertex = (struct RawVertexModel*)vector_get(model_data->vertices, vector_size(model_data->vertices));
+
+      /* Re-acquire the previous vertex after push_back in case the vector moved. */
+      struct RawVertexModel* previous_vertex_reloaded = (struct RawVertexModel*)vector_get(model_data->vertices, previous_vertex_index);
+
+      previous_vertex_reloaded->duplicate_vertex = (struct RawVertexModel*)vector_get(model_data->vertices, vector_size(model_data->vertices) - 1);
     }
   }
 }

@@ -44,52 +44,40 @@ u8 model_init(struct Model* model, struct APICommon* api_common, struct ModelSet
       return MODEL_ERROR;
     }
 
-    model->model_common.joints =
-        skeleton_loader_extract_bone_data(visual_scenes_node, skinning_data->joint_order, api_common->inverted_y);
+    model->model_common.joints = skeleton_loader_extract_bone_data(visual_scenes_node, skinning_data->joint_order, api_common->inverted_y);
 
-    model->model_common.model_mesh =
-        geometry_loader_extract_model_data(api_common, library_geometries_node, skinning_data->vertices_skin_data, model->model_common.animated, api_common->inverted_y);
+    model->model_common.model_mesh = geometry_loader_extract_model_data(api_common, library_geometries_node, skinning_data->vertices_skin_data, model->model_common.animated, api_common->inverted_y);
 
-    if (model->model_common.joints != NULL &&
-        model->model_common.joints->head_joint != NULL) {
-      model->model_common.root_joint =
-          model_create_joints(model->model_common.joints->head_joint);
+    if (model->model_common.joints != NULL && model->model_common.joints->head_joint != NULL) {
+      model->model_common.root_joint = model_create_joints(model->model_common.joints->head_joint);
 
       if (model->model_common.root_joint != NULL)
         joint_calc_inverse_bind_transform(model->model_common.root_joint, MAT4_IDENTITY);
     }
 
-    /* Animator can exist even if there is no animation clip */
+    // Animator can exist even if there is no animation clip
     model->model_common.animator = (struct Animator*)malloc(sizeof(struct Animator));
     if (model->model_common.animator != NULL)
       animator_init(model->model_common.animator, &(model->model_common));
 
-    /* Only try to load animation if library_animations exists */
+    // Only try to load animation if library_animations exists
     if (anim_node != NULL && visual_scenes_node != NULL) {
-      struct AnimationData* animation_data =
-          animation_extract_animation(anim_node, visual_scenes_node, api_common->inverted_y);
+      struct AnimationData* animation_data = animation_extract_animation(anim_node, visual_scenes_node, api_common->inverted_y);
 
-      if (animation_data != NULL &&
-          animation_data->key_frames != NULL &&
-          array_list_size(animation_data->key_frames) > 0) {
+      if (animation_data != NULL && animation_data->key_frames != NULL && array_list_size(animation_data->key_frames) > 0) {
         struct ArrayList* frames = (struct ArrayList*)malloc(sizeof(struct ArrayList));
         if (frames != NULL) {
           array_list_init(frames);
 
-          for (size_t frame_num = 0; frame_num < array_list_size(animation_data->key_frames); frame_num++) {
-            array_list_add(
-                frames,
-                model_create_key_frame(
-                    (struct KeyFrameData*)array_list_get(animation_data->key_frames, frame_num)));
-          }
+          for (size_t frame_num = 0; frame_num < array_list_size(animation_data->key_frames); frame_num++)
+            array_list_add(frames, model_create_key_frame((struct KeyFrameData*)array_list_get(animation_data->key_frames, frame_num)));
 
           model->model_common.animation = (struct Animation*)malloc(sizeof(struct Animation));
           if (model->model_common.animation != NULL) {
             animation_init(model->model_common.animation, animation_data->length_seconds, frames);
 
             if (model->model_common.animator != NULL)
-              animator_do_animation(model->model_common.animator,
-                                    model->model_common.animation);
+              animator_do_animation(model->model_common.animator, model->model_common.animation);
           } else {
             array_list_delete(frames);
             free(frames);

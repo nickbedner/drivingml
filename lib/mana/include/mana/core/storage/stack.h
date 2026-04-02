@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "mana/core/corecommon.h"
+
 #define STACK_INIT_CAPACITY 4
 
 struct Stack {

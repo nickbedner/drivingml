@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "mana/core/corecommon.h"
+
 struct SinglyListNode {
   void* data;
   struct SinglyListNode* next;
