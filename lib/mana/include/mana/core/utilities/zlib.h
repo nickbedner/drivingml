@@ -208,7 +208,7 @@ global const int zdist_extra[32] = {0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6,
 global i32 parse_huffman_block(zbuf* a) {
   i8* zout = a->zout;
 
-  while (TRUE) {
+  for (;;) {
     i32 z = zhuffman_decode(a, &a->z_length);
 
     if (z < 256) {
