@@ -7,6 +7,142 @@
 
 #include "drivingml/game.h"
 
+internal const char* track_surface_type_name(i32 surface_type) {
+  switch (surface_type) {
+    case TRACK_SURFACE_GRASS:
+      return "grass";
+    case TRACK_SURFACE_ROAD:
+      return "road";
+    case TRACK_SURFACE_SAND_DRIVE:
+      return "sand_drive";
+    case TRACK_SURFACE_SAND:
+      return "sand";
+    case TRACK_SURFACE_WALL:
+      return "wall";
+    case TRACK_SURFACE_OOB:
+      return "out_of_bounds";
+    default:
+      return "unknown";
+  }
+}
+
+internal b8 point_in_triangle_xz(r32 px, r32 pz, vec3 a, vec3 b, vec3 c, r32* out_u, r32* out_v, r32* out_w) {
+  r32 v0x = b.x - a.x;
+  r32 v0z = b.z - a.z;
+  r32 v1x = c.x - a.x;
+  r32 v1z = c.z - a.z;
+  r32 v2x = px - a.x;
+  r32 v2z = pz - a.z;
+
+  r32 d00 = v0x * v0x + v0z * v0z;
+  r32 d01 = v0x * v1x + v0z * v1z;
+  r32 d11 = v1x * v1x + v1z * v1z;
+  r32 d20 = v2x * v0x + v2z * v0z;
+  r32 d21 = v2x * v1x + v2z * v1z;
+
+  r32 denom = d00 * d11 - d01 * d01;
+
+  if (real32_fabs(denom) < 0.00001f)
+    return FALSE;
+
+  r32 v = (d11 * d20 - d01 * d21) / denom;
+  r32 w = (d00 * d21 - d01 * d20) / denom;
+  r32 u = 1.0f - v - w;
+
+  const r32 eps = -0.0001f;
+
+  if (u >= eps && v >= eps && w >= eps) {
+    *out_u = u;
+    *out_v = v;
+    *out_w = w;
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+internal vec3 track_local_to_world(struct Model* track_model, vec3 p) {
+  vec3 pos = track_model->model_common.position;
+  vec3 scale = track_model->model_common.scale;
+
+  return (vec3){
+      .x = pos.x + p.x * scale.x,
+      .y = pos.y + p.y * scale.y,
+      .z = pos.z + p.z * scale.z};
+}
+
+internal b8 track_get_height_at(struct Model* track_model, r32 world_x, r32 world_z, r32* out_y, i32* out_surface_type) {
+  if (track_model == NULL || out_y == NULL)
+    return FALSE;
+
+  struct Mesh* mesh = track_model->model_common.model_mesh;
+  if (mesh == NULL)
+    return FALSE;
+
+  if (mesh->mesh_common.indices == NULL || mesh->mesh_common.vertices == NULL)
+    return FALSE;
+
+  vec3 track_pos = track_model->model_common.position;
+  vec3 track_scale = track_model->model_common.scale;
+
+  if (track_scale.x == 0.0f || track_scale.y == 0.0f || track_scale.z == 0.0f)
+    return FALSE;
+
+  // Convert world kart position into track-local space.
+  // This assumes the track has position + scale, but no rotation.
+  r32 local_x = (world_x - track_pos.x) / track_scale.x;
+  r32 local_z = (world_z - track_pos.z) / track_scale.z;
+
+  size_t index_count = vector_size(mesh->mesh_common.indices);
+  size_t vertex_count = vector_size(mesh->mesh_common.vertices);
+
+  for (size_t i = 0; i + 2 < index_count; i += 3) {
+    i32 ia = *(i32*)vector_get(mesh->mesh_common.indices, i + 0);
+    i32 ib = *(i32*)vector_get(mesh->mesh_common.indices, i + 1);
+    i32 ic = *(i32*)vector_get(mesh->mesh_common.indices, i + 2);
+
+    if (ia < 0 || ib < 0 || ic < 0)
+      continue;
+
+    if ((size_t)ia >= vertex_count || (size_t)ib >= vertex_count || (size_t)ic >= vertex_count)
+      continue;
+
+    struct VertexModelStatic* va = (struct VertexModelStatic*)vector_get(mesh->mesh_common.vertices, (size_t)ia);
+    struct VertexModelStatic* vb = (struct VertexModelStatic*)vector_get(mesh->mesh_common.vertices, (size_t)ib);
+    struct VertexModelStatic* vc = (struct VertexModelStatic*)vector_get(mesh->mesh_common.vertices, (size_t)ic);
+
+    if (va == NULL || vb == NULL || vc == NULL)
+      continue;
+
+    vec3 a = va->position;
+    vec3 b = vb->position;
+    vec3 c = vc->position;
+
+    r32 u, v, w;
+
+    // IMPORTANT: use local_x/local_z here, not world_x/world_z.
+    if (point_in_triangle_xz(local_x, local_z, a, b, c, &u, &v, &w)) {
+      r32 local_y = a.y * u + b.y * v + c.y * w;
+      *out_y = track_pos.y + local_y * track_scale.y;
+
+      if (out_surface_type != NULL) {
+        size_t triangle_index = i / 3;
+
+        if (mesh->mesh_common.triangle_surface_types != NULL &&
+            triangle_index < vector_size(mesh->mesh_common.triangle_surface_types)) {
+          *out_surface_type = *(i32*)vector_get(mesh->mesh_common.triangle_surface_types, triangle_index);
+        } else {
+          *out_surface_type = TRACK_SURFACE_UNKNOWN;
+        }
+      }
+
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
 internal r32 wrap_angle_0_2pi(r32 a) {
   const r32 tau = 2.0f * (r32)R32_PI;
 
@@ -110,8 +246,8 @@ internal void load_map_from_xml(struct Game* game, struct Mana* mana, const char
     r32 x = px ? (r32)atof(px) : 0.0f;
     r32 y = py ? (r32)atof(py) : 0.0f;
 
-    // game->track_model->model_common.position = (vec3){.x = x, .y = 0.0f, .z = y};
-    game->track_model->model_common.scale = (vec3){.x = scale, .y = 0, .z = scale};
+    game->track_model->model_common.position = (vec3){.x = x, .y = 0.0f, .z = y};
+    game->track_model->model_common.scale = (vec3){.x = scale, .y = scale, .z = scale};
 
     // game->track = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), tex);
     //
@@ -621,80 +757,15 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
     game->npcs[ai_num].position.x += forward_vel.x * game->npcs[ai_num].speed * (r32)delta_time;
     game->npcs[ai_num].position.z += forward_vel.z * game->npcs[ai_num].speed * (r32)delta_time;
 
-    const r32 TREE_RADIUS = 1.75f;
-    const r32 TREE_SKIN = 0.20f;  // extra push-out margin
-    const r32 BOUNCE_RESTITUTION = 1.5f;
-    const r32 MIN_BOUNCE_SPEED = 15.0f;
-    const r32 TREE_AVOID_TURN = 0.35f;  // about 20 degrees
-    const r32 TREE_SIDE_EPS = 0.05f;
+    // For following track
+    r32 track_y = 0.0f;
+    i32 surface_type = TRACK_SURFACE_UNKNOWN;
+    if (track_get_height_at(game->track_model, game->npcs[ai_num].position.x, game->npcs[ai_num].position.z, &track_y, &surface_type)) {
+      const r32 kart_ground_offset = 2.75f;
+      game->npcs[ai_num].position.y = track_y + kart_ground_offset;
 
-    for (i32 t = 0; t < game->total_trees; t++) {
-      vec3 tree_pos = game->trees[t]->sprite_common.position;
-
-      r32 dx = game->npcs[ai_num].position.x - tree_pos.x;
-      r32 dz = game->npcs[ai_num].position.z - tree_pos.z;
-      r32 dist = real32_sqrt(dx * dx + dz * dz);
-
-      if (dist < TREE_RADIUS) {
-        hit_tree = TRUE;
-
-        // Start from pre-move position so we do not stay embedded in the tree
-        r32 resolve_x = prev_pos.x;
-        r32 resolve_z = prev_pos.z;
-
-        r32 rdx = resolve_x - tree_pos.x;
-        r32 rdz = resolve_z - tree_pos.z;
-        r32 rdist = real32_sqrt(rdx * rdx + rdz * rdz);
-
-        r32 nx, nz;
-        if (rdist > 1e-4f) {
-          nx = rdx / rdist;
-          nz = rdz / rdist;
-        } else if (dist > 1e-4f) {
-          nx = dx / dist;
-          nz = dz / dist;
-        } else {
-          nx = -forward_vel.x;
-          nz = -forward_vel.z;
-        }
-
-        game->npcs[ai_num].position.x = tree_pos.x + nx * (TREE_RADIUS + TREE_SKIN);
-        game->npcs[ai_num].position.z = tree_pos.z + nz * (TREE_RADIUS + TREE_SKIN);
-
-        r32 vx = forward_vel.x * speed_before_move;
-        r32 vz = forward_vel.z * speed_before_move;
-        r32 impact_speed = real32_fabs(vx * nx + vz * nz);
-
-        // Bounce backward
-        game->npcs[ai_num].speed = -real32_fmax(MIN_BOUNCE_SPEED, impact_speed * BOUNCE_RESTITUTION);
-
-        // Turn slightly away from the tree so the AI does not keep rehitting it
-        r32 current_heading = game->npcs[ai_num].heading;
-
-        r32 rx = -real32_sin(current_heading);
-        r32 rz = -real32_cos(current_heading);
-
-        // Tree position in carspace
-        r32 to_tree_x = tree_pos.x - game->npcs[ai_num].position.x;
-        r32 to_tree_z = tree_pos.z - game->npcs[ai_num].position.z;
-        r32 tree_side = to_tree_x * rx + to_tree_z * rz;
-
-        if (real32_fabs(tree_side) < TREE_SIDE_EPS) {
-          r32 to_marker_x = marker_pos.x - game->npcs[ai_num].position.x;
-          r32 to_marker_z = marker_pos.z - game->npcs[ai_num].position.z;
-          tree_side = to_marker_x * rx + to_marker_z * rz;
-        }
-
-        if (tree_side > 0.0f)
-          game->npcs[ai_num].heading += TREE_AVOID_TURN;
-        else
-          game->npcs[ai_num].heading -= TREE_AVOID_TURN;
-
-        game->npcs[ai_num].heading = wrap_angle_0_2pi(game->npcs[ai_num].heading);
-
-        reward -= 4.0f;
-        break;
-      }
+      // if (ai_num == 0 && EVAL_MODE == TRUE)
+      //   printf("kart %d is on %s\n", ai_num, track_surface_type_name(surface_type));
     }
 
     heading = game->npcs[ai_num].heading;
@@ -789,29 +860,6 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
 
     r32 tree_dx = 1.0f;
     r32 tree_dy = 0.0f;
-    if (found_tree_ahead) {
-      tree_dx = best_forward / obstacle_norm;
-      tree_dy = best_right / obstacle_norm;
-    }
-
-    // Clamp to sane range
-    if (tree_dx > 1.0f)
-      tree_dx = 1.0f;
-    if (tree_dx < -1.0f)
-      tree_dx = -1.0f;
-    if (tree_dy > 1.0f)
-      tree_dy = 1.0f;
-    if (tree_dy < -1.0f)
-      tree_dy = -1.0f;
-
-    if (found_tree_ahead && tree_dx < 0.25f) {
-      r32 lateral = real32_fabs(tree_dy);
-      if (lateral < 0.15f) {
-        r32 forward_term = (0.25f - tree_dx) / 0.25f;
-        r32 lateral_term = (0.15f - lateral) / 0.15f;
-        reward -= 0.15f * forward_term * lateral_term;
-      }
-    }
 
     if (!EVAL_MODE) {
       struct Packet {
@@ -848,6 +896,13 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
 
         game->npcs[ai_num].speed = 0.0f;
         game->npcs[ai_num].position = game->starting_pos;
+
+        r32 reset_track_y = 0.0f;
+        i32 reset_surface_type = TRACK_SURFACE_UNKNOWN;
+
+        if (track_get_height_at(game->track_model, game->npcs[ai_num].position.x, game->npcs[ai_num].position.z, &reset_track_y, &reset_surface_type))
+          game->npcs[ai_num].position.y = reset_track_y + 0.75f;
+
         game->npcs[ai_num].sprite->sprite_common.position = game->npcs[ai_num].position;
         game->npcs[ai_num].sprite->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
         game->npcs[ai_num].heading = game->starting_heading;
@@ -942,12 +997,12 @@ void game_render(struct Game* game, struct Mana* mana, r64 delta_time) {
     // GBuffer, only texture that needs to be multisampled
     gbuffer_start(window->gbuffer, &(window->swap_chain->swap_chain_common), window->renderer.renderer_settings.msaa_samples);
 
-    water_render(&(game->water), &(window->gbuffer->gbuffer_common));
-
     model_render(game->test_model, window->gbuffer, delta_time);
     model_render(game->test_static_model, window->gbuffer, delta_time);
     model_render(game->coin_model, window->gbuffer, delta_time);
     model_render(game->track_model, window->gbuffer, delta_time);
+
+    water_render(&(game->water), &(window->gbuffer->gbuffer_common));
 
     // Transparent sprites
     vec3d cam_pos = camera_get_pos(&game->player.camera);

@@ -41,6 +41,7 @@ struct ModelData {
   struct Vector* indices;
   struct Vector* joint_ids;
   struct Vector* vertex_weights;
+  struct Vector* surface_types;
 };
 
 struct KeyFrame {

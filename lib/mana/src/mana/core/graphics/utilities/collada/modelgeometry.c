@@ -8,6 +8,33 @@ struct GeometryPrimitiveInputs {
   i32 stride;
 };
 
+static i32 geometry_loader_surface_type_from_primitive(struct XmlNode* primitive) {
+  char* material = xml_node_get_attribute(primitive, "material");
+
+  if (material == NULL)
+    return TRACK_SURFACE_UNKNOWN;
+
+  if (strstr(material, "grass") != NULL)
+    return TRACK_SURFACE_GRASS;
+
+  if (strstr(material, "road") != NULL)
+    return TRACK_SURFACE_ROAD;
+
+  if (strstr(material, "sand_drive") != NULL)
+    return TRACK_SURFACE_SAND_DRIVE;
+
+  if (strstr(material, "sand") != NULL)
+    return TRACK_SURFACE_SAND;
+
+  if (strstr(material, "wall") != NULL)
+    return TRACK_SURFACE_WALL;
+
+  if (strstr(material, "oob") != NULL || strstr(material, "out") != NULL)
+    return TRACK_SURFACE_OOB;
+
+  return TRACK_SURFACE_UNKNOWN;
+}
+
 static i32 geometry_loader_get_input_offset(struct XmlNode* primitive, const char* semantic) {
   struct XmlNode* input = xml_node_get_child_with_attribute(primitive, "input", "semantic", semantic);
   if (input == NULL)
@@ -93,8 +120,34 @@ static b8 geometry_loader_vertex_matches(const struct RawVertexModel* vertex, i3
   return vertex->texture_index == texture_index && vertex->normal_index == normal_index && vertex->color_index == color_index;
 }
 
+static void geometry_loader_copy_vector(struct Vector* dst, struct Vector* src) {
+  if (dst == NULL || src == NULL)
+    return;
+
+  if (dst->items != NULL)
+    free(dst->items);
+
+  *dst = *src;
+
+  size_t byte_count = src->memory_size * src->capacity;
+
+  if (byte_count > 0 && src->items != NULL) {
+    dst->items = malloc(byte_count);
+    memcpy(dst->items, src->items, byte_count);
+  } else {
+    dst->items = NULL;
+  }
+}
+
 struct Mesh* geometry_loader_extract_model_data(struct APICommon* api_common, struct XmlNode* geometry_node, struct Vector* vertex_weights, b8 animated, b8 inverted_y) {
-  struct XmlNode* mesh_data = xml_node_get_child(xml_node_get_child(geometry_node, "geometry"), "mesh");
+  struct XmlNode* geometry = xml_node_get_child(geometry_node, "geometry");
+  if (geometry == NULL)
+    return NULL;
+
+  struct XmlNode* mesh_data = xml_node_get_child(geometry, "mesh");
+  if (mesh_data == NULL)
+    return NULL;
+
   struct ModelData* model_data = (struct ModelData*)malloc(sizeof(struct ModelData));
   model_data_init(model_data);
 
@@ -102,18 +155,24 @@ struct Mesh* geometry_loader_extract_model_data(struct APICommon* api_common, st
   geometry_loader_assemble_vertices(model_data, mesh_data, inverted_y);
   geometry_loader_remove_unused_vertices(model_data);
 
+  printf("MODEL_DATA: triangles=%zu surface_types=%zu\n", vector_size(model_data->indices) / 3, vector_size(model_data->surface_types));
+
   struct Mesh* model_mesh = (struct Mesh*)malloc(sizeof(struct Mesh));
+
   animated ? mesh_init(model_mesh, MESH_TYPE_MODEL, api_common) : mesh_init(model_mesh, MESH_TYPE_MODEL_STATIC, api_common);
+
+  if (model_mesh->mesh_common.triangle_surface_types == NULL) {
+    model_mesh->mesh_common.triangle_surface_types = (struct Vector*)malloc(sizeof(struct Vector));
+    vector_init(model_mesh->mesh_common.triangle_surface_types, sizeof(i32));
+  }
 
   geometry_loader_convert_data_to_arrays(model_data, model_mesh, animated, inverted_y);
 
-  // TODO: Create copy function and memiry size od items for vector
-  // Todo: Also this code is whack
-  free(model_mesh->mesh_common.indices->items);
-  *(model_mesh->mesh_common.indices) = *(model_data->indices);
-  model_mesh->mesh_common.indices->items = malloc(model_mesh->mesh_common.indices->memory_size * model_mesh->mesh_common.indices->capacity);
-  memcpy(model_mesh->mesh_common.indices->items, model_data->indices->items, model_mesh->mesh_common.indices->memory_size * model_mesh->mesh_common.indices->capacity);
-  // model_mesh->indices = model_data->indices;
+  geometry_loader_copy_vector(model_mesh->mesh_common.indices, model_data->indices);
+
+  geometry_loader_copy_vector(model_mesh->mesh_common.triangle_surface_types, model_data->surface_types);
+
+  printf("MODEL_MESH: triangles=%zu surface_types=%zu\n", vector_size(model_mesh->mesh_common.indices) / 3, vector_size(model_mesh->mesh_common.triangle_surface_types));
 
   model_data_delete(model_data);
   free(model_data);
@@ -351,19 +410,19 @@ void geometry_loader_read_colors(struct ModelData* model_data, struct XmlNode* m
   free(raw_data);
 }
 
-// Note: All collada models must follow this format and can only be 1 object
-// Maybe add error checking to ignore any extras
-void geometry_loader_assemble_vertices(struct ModelData* model_data, struct XmlNode* mesh_data, b8 inverted_y) {
-  b8 is_polylist = FALSE;
-  struct XmlNode* primitive = xml_node_get_child(mesh_data, "polylist");
-  if (primitive != NULL) {
-    is_polylist = TRUE;
-  } else
-    primitive = xml_node_get_child(mesh_data, "triangles");
+static void geometry_loader_emit_triangle(struct ModelData* model_data, struct Vector* index_stream, size_t c0, size_t c1, size_t c2, struct GeometryPrimitiveInputs inputs, i32 surface_type) {
+  size_t index_count_before = vector_size(model_data->indices);
 
-  if (primitive == NULL)
-    return;
+  geometry_loader_emit_corner(model_data, index_stream, c0, inputs);
+  geometry_loader_emit_corner(model_data, index_stream, c1, inputs);
+  geometry_loader_emit_corner(model_data, index_stream, c2, inputs);
 
+  if (vector_size(model_data->indices) == index_count_before + 3) {
+    vector_push_back(model_data->surface_types, &surface_type);
+  }
+}
+
+static void geometry_loader_assemble_primitive(struct ModelData* model_data, struct XmlNode* primitive, b8 is_polylist) {
   struct GeometryPrimitiveInputs inputs = geometry_loader_get_primitive_inputs(primitive);
   if (inputs.vertex_offset < 0 || inputs.stride <= 0)
     return;
@@ -372,10 +431,13 @@ void geometry_loader_assemble_vertices(struct ModelData* model_data, struct XmlN
   if (index_data == NULL)
     return;
 
+  i32 surface_type = geometry_loader_surface_type_from_primitive(primitive);
+
   struct Vector* index_stream = geometry_loader_parse_i32_list(xml_node_get_data(index_data));
 
   if (is_polylist) {
     struct XmlNode* vcount_node = xml_node_get_child(primitive, "vcount");
+
     if (vcount_node != NULL) {
       struct Vector* vcounts = geometry_loader_parse_i32_list(xml_node_get_data(vcount_node));
       size_t corner_cursor = 0;
@@ -385,9 +447,14 @@ void geometry_loader_assemble_vertices(struct ModelData* model_data, struct XmlN
 
         if (vertex_count >= 3) {
           for (size_t tri = 0; tri < (size_t)vertex_count - 2; tri++) {
-            geometry_loader_emit_corner(model_data, index_stream, corner_cursor + 0, inputs);
-            geometry_loader_emit_corner(model_data, index_stream, corner_cursor + tri + 1, inputs);
-            geometry_loader_emit_corner(model_data, index_stream, corner_cursor + tri + 2, inputs);
+            geometry_loader_emit_triangle(
+                model_data,
+                index_stream,
+                corner_cursor + 0,
+                corner_cursor + tri + 1,
+                corner_cursor + tri + 2,
+                inputs,
+                surface_type);
           }
         }
 
@@ -400,15 +467,41 @@ void geometry_loader_assemble_vertices(struct ModelData* model_data, struct XmlN
   } else {
     size_t corner_count = vector_size(index_stream) / (size_t)inputs.stride;
 
-    for (size_t corner_index = 0; corner_index < corner_count; corner_index++) {
-      geometry_loader_emit_corner(model_data, index_stream, corner_index, inputs);
+    for (size_t corner_index = 0; corner_index + 2 < corner_count; corner_index += 3) {
+      geometry_loader_emit_triangle(
+          model_data,
+          index_stream,
+          corner_index + 0,
+          corner_index + 1,
+          corner_index + 2,
+          inputs,
+          surface_type);
     }
   }
 
   vector_delete(index_stream);
   free(index_stream);
+}
 
-  // Flip winding per triangle if needed. Do NOT reverse the whole index list
+void geometry_loader_assemble_vertices(struct ModelData* model_data, struct XmlNode* mesh_data, b8 inverted_y) {
+  struct ArrayList* polylists = xml_node_get_children(mesh_data, "polylist");
+
+  if (polylists != NULL) {
+    for (size_t i = 0; i < array_list_size(polylists); i++) {
+      struct XmlNode* primitive = (struct XmlNode*)array_list_get(polylists, i);
+      geometry_loader_assemble_primitive(model_data, primitive, TRUE);
+    }
+  }
+
+  struct ArrayList* triangles = xml_node_get_children(mesh_data, "triangles");
+
+  if (triangles != NULL) {
+    for (size_t i = 0; i < array_list_size(triangles); i++) {
+      struct XmlNode* primitive = (struct XmlNode*)array_list_get(triangles, i);
+      geometry_loader_assemble_primitive(model_data, primitive, FALSE);
+    }
+  }
+
   if (inverted_y == FALSE) {
     for (size_t i = 0; i + 2 < vector_size(model_data->indices); i += 3) {
       i32* index1 = (i32*)vector_get(model_data->indices, i + 1);
@@ -422,14 +515,27 @@ void geometry_loader_assemble_vertices(struct ModelData* model_data, struct XmlN
 }
 
 void geometry_loader_process_vertex(struct ModelData* model_data, i32 position_index, i32 normal_index, i32 tex_coord_index, i32 color_index) {
-  struct RawVertexModel* current_vertex = (struct RawVertexModel*)vector_get(model_data->vertices, (size_t)position_index);
+  if (position_index < 0 || (size_t)position_index >= vector_size(model_data->vertices)) {
+    printf("ERROR: position_index out of range: %d, vertices=%zu\n", position_index, vector_size(model_data->vertices));
+    return;
+  }
+
+  struct RawVertexModel* current_vertex =
+      (struct RawVertexModel*)vector_get(model_data->vertices, (size_t)position_index);
+
   if (raw_vertex_model_is_set(current_vertex) == FALSE) {
     current_vertex->texture_index = tex_coord_index;
     current_vertex->normal_index = normal_index;
     current_vertex->color_index = color_index;
     vector_push_back(model_data->indices, &position_index);
-  } else
-    geometry_loader_deal_with_already_processed_vertex(model_data, current_vertex, tex_coord_index, normal_index, color_index);
+  } else {
+    geometry_loader_deal_with_already_processed_vertex(
+        model_data,
+        current_vertex,
+        tex_coord_index,
+        normal_index,
+        color_index);
+  }
 }
 
 r32 geometry_loader_convert_data_to_arrays(struct ModelData* model_data, struct Mesh* model_mesh, b8 animated, b8 inverted_y) {
@@ -497,31 +603,34 @@ r32 geometry_loader_convert_data_to_arrays(struct ModelData* model_data, struct 
   return furthest_point;
 }
 
-void geometry_loader_deal_with_already_processed_vertex(struct ModelData* model_data, struct RawVertexModel* previous_vertex, i32 new_texture_index, i32 new_normal_index, i32 new_color_index) {
+void geometry_loader_deal_with_already_processed_vertex(
+    struct ModelData* model_data,
+    struct RawVertexModel* previous_vertex,
+    i32 new_texture_index,
+    i32 new_normal_index,
+    i32 new_color_index) {
   if (geometry_loader_vertex_matches(previous_vertex, new_texture_index, new_normal_index, new_color_index)) {
-    vector_push_back(model_data->indices, &previous_vertex->index);
-  } else {
-    struct RawVertexModel* another_vertex = previous_vertex->duplicate_vertex;
-    if (another_vertex != NULL) {
-      geometry_loader_deal_with_already_processed_vertex(model_data, another_vertex, new_texture_index, new_normal_index, new_color_index);
-    } else {
-      size_t previous_vertex_index = previous_vertex->index;
-
-      struct RawVertexModel duplicate_vertex = {0};
-      raw_vertex_model_init(&duplicate_vertex, (u32)vector_size(model_data->vertices), previous_vertex->position, previous_vertex->weights_data);
-      duplicate_vertex.texture_index = new_texture_index;
-      duplicate_vertex.normal_index = new_normal_index;
-      duplicate_vertex.color_index = new_color_index;
-
-      vector_push_back(model_data->vertices, &duplicate_vertex);
-      vector_push_back(model_data->indices, &duplicate_vertex.index);
-
-      /* Re-acquire the previous vertex after push_back in case the vector moved. */
-      struct RawVertexModel* previous_vertex_reloaded = (struct RawVertexModel*)vector_get(model_data->vertices, previous_vertex_index);
-
-      previous_vertex_reloaded->duplicate_vertex = (struct RawVertexModel*)vector_get(model_data->vertices, vector_size(model_data->vertices) - 1);
-    }
+    i32 index = (i32)previous_vertex->index;
+    vector_push_back(model_data->indices, &index);
+    return;
   }
+
+  struct RawVertexModel duplicate_vertex = {0};
+
+  raw_vertex_model_init(
+      &duplicate_vertex,
+      (u32)vector_size(model_data->vertices),
+      previous_vertex->position,
+      previous_vertex->weights_data);
+
+  duplicate_vertex.texture_index = new_texture_index;
+  duplicate_vertex.normal_index = new_normal_index;
+  duplicate_vertex.color_index = new_color_index;
+
+  i32 duplicate_index = (i32)duplicate_vertex.index;
+
+  vector_push_back(model_data->vertices, &duplicate_vertex);
+  vector_push_back(model_data->indices, &duplicate_index);
 }
 
 void geometry_loader_remove_unused_vertices(struct ModelData* model_data) {

@@ -8,6 +8,17 @@
 
 #define NO_INDEX -1
 
+// TODO: Figure this out to bring this out of the header
+enum TrackSurfaceType {
+  TRACK_SURFACE_UNKNOWN = 0,
+  TRACK_SURFACE_GRASS,
+  TRACK_SURFACE_ROAD,
+  TRACK_SURFACE_SAND,
+  TRACK_SURFACE_SAND_DRIVE,
+  TRACK_SURFACE_WALL,
+  TRACK_SURFACE_OOB
+};
+
 internal inline void raw_vertex_model_init(struct RawVertexModel* raw_vertex_model, u32 index, vec3 position, struct VertexSkinData* weights_data) {
   raw_vertex_model->texture_index = NO_INDEX;
   raw_vertex_model->normal_index = NO_INDEX;
@@ -48,6 +59,9 @@ internal inline void model_data_init(struct ModelData* model_data) {
 
   model_data->vertex_weights = (struct Vector*)malloc(sizeof(struct Vector));
   vector_init(model_data->vertex_weights, sizeof(vec3));
+
+  model_data->surface_types = malloc(sizeof(struct Vector));
+  vector_init(model_data->surface_types, sizeof(i32));
 }
 
 internal inline void model_data_delete(struct ModelData* model_data) {
@@ -71,6 +85,9 @@ internal inline void model_data_delete(struct ModelData* model_data) {
 
   vector_delete(model_data->vertices);
   free(model_data->vertices);
+
+  vector_delete(model_data->surface_types);
+  free(model_data->surface_types);
 }
 
 struct Mesh* geometry_loader_extract_model_data(struct APICommon* api_common, struct XmlNode* geometry_node, struct Vector* vertex_weights, b8 animated, b8 inverted_y);

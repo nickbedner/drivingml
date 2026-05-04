@@ -37,10 +37,17 @@ void main() {
  // Wrap instead of clamp
   v = fract(v);
 
+  // Original
+  //// Final alpha test
+  //if(v > 0.13 && v < 0.92)
+  //  discard;
+  //out_color = vec4(v, v, v, v);
+  //out_normal = vec4(0.0);
+
   // Final alpha test
   if(v > 0.13 && v < 0.92)
-    discard;
+    v = 0.0;
 
-  out_color = vec4(v, v, v, v);
+  out_color = vec4(v - 0.2, v + 0.45, v + 0.55, v + 0.65);
   out_normal = vec4(0.0);
 }

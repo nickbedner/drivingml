@@ -183,6 +183,22 @@ void model_update_uniforms(struct Model* model, struct APICommon* api_common, st
   model->model_func.model_update_uniforms(&model->model_common, api_common, gbuffer, position, light_pos, diffuse_color, ambient_color, specular_light);
 }
 
+internal inline void model_copy_vector_owned(struct Vector* dst, struct Vector* src) {
+  if (dst == NULL || src == NULL)
+    return;
+
+  *dst = *src;
+
+  size_t byte_count = src->capacity * src->memory_size;
+
+  if (byte_count > 0 && src->items != NULL) {
+    dst->items = calloc(1, byte_count);
+    memcpy(dst->items, src->items, byte_count);
+  } else {
+    dst->items = NULL;
+  }
+}
+
 struct Model* model_get_clone(struct Model* model, struct APICommon* api_common) {
   struct Model* new_model = (struct Model*)calloc(1, sizeof(struct Model));
   *new_model = *model;
@@ -192,24 +208,28 @@ struct Model* model_get_clone(struct Model* model, struct APICommon* api_common)
   new_model->model_common.scale = VEC3_ONE;
 
   new_model->model_common.model_mesh = (struct Mesh*)calloc(1, sizeof(struct Mesh));
+
   new_model->model_common.model_mesh->mesh_common.indices = (struct Vector*)calloc(1, sizeof(struct Vector));
+
   new_model->model_common.model_mesh->mesh_common.vertices = (struct Vector*)calloc(1, sizeof(struct Vector));
 
-  *new_model->model_common.model_mesh->mesh_common.indices = *model->model_common.model_mesh->mesh_common.indices;
-  *new_model->model_common.model_mesh->mesh_common.vertices = *model->model_common.model_mesh->mesh_common.vertices;
-  //(new_model->animated) ? mesh_model_init(new_model->model_mesh) : mesh_model_internal_init(new_model->model_mesh);
-  new_model->model_common.model_mesh->mesh_common.indices->items = (void*)calloc(1, model->model_common.model_mesh->mesh_common.indices->capacity * model->model_common.model_mesh->mesh_common.indices->memory_size);
-  memcpy(new_model->model_common.model_mesh->mesh_common.indices->items, model->model_common.model_mesh->mesh_common.indices->items, model->model_common.model_mesh->mesh_common.indices->capacity * model->model_common.model_mesh->mesh_common.indices->memory_size);
+  new_model->model_common.model_mesh->mesh_common.triangle_surface_types = (struct Vector*)calloc(1, sizeof(struct Vector));
 
-  new_model->model_common.model_mesh->mesh_common.vertices->items = (void*)calloc(1, model->model_common.model_mesh->mesh_common.vertices->capacity * model->model_common.model_mesh->mesh_common.vertices->memory_size);
-  memcpy(new_model->model_common.model_mesh->mesh_common.vertices->items, model->model_common.model_mesh->mesh_common.vertices->items, model->model_common.model_mesh->mesh_common.vertices->capacity * model->model_common.model_mesh->mesh_common.vertices->memory_size);
+  model_copy_vector_owned(new_model->model_common.model_mesh->mesh_common.indices, model->model_common.model_mesh->mesh_common.indices);
+
+  model_copy_vector_owned(new_model->model_common.model_mesh->mesh_common.vertices, model->model_common.model_mesh->mesh_common.vertices);
+
+  model_copy_vector_owned(new_model->model_common.model_mesh->mesh_common.triangle_surface_types, model->model_common.model_mesh->mesh_common.triangle_surface_types);
 
   new_model->model_common.model_mesh->mesh_common.mesh_type = model->model_common.model_mesh->mesh_common.mesh_type;
+
   new_model->model_common.model_mesh->mesh_common.mesh_memory_size = model->model_common.model_mesh->mesh_common.mesh_memory_size;
 
   if (new_model->model_common.animated) {
     new_model->model_common.root_joint = model_create_joints_clone(model->model_common.root_joint);
+
     new_model->model_common.animator = (struct Animator*)calloc(1, sizeof(struct Animator));
+
     animator_init(new_model->model_common.animator, &(new_model->model_common));
     animator_do_animation(new_model->model_common.animator, new_model->model_common.animation);
   }

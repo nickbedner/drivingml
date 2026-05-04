@@ -61,6 +61,9 @@ u8 mesh_init(struct Mesh* mesh, enum MESH_TYPE mesh_type, struct APICommon* api_
   mesh->mesh_common.indices = (struct Vector*)calloc(1, sizeof(struct Vector));
   vector_init(mesh->mesh_common.indices, sizeof(u32));
 
+  mesh->mesh_common.triangle_surface_types = malloc(sizeof(struct Vector));
+  vector_init(mesh->mesh_common.triangle_surface_types, sizeof(i32));
+
   mesh->mesh_func.mesh_init(&(mesh->mesh_common), mesh_type, api_common);
 
   return 0;

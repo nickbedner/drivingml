@@ -284,6 +284,7 @@ struct MeshCommon {
   struct Vector* vertices;
   struct Vector* indices;
   struct Vector* textures;
+  struct Vector* triangle_surface_types;
 
   //  union {
   // #ifdef VULKAN_API_SUPPORTED
