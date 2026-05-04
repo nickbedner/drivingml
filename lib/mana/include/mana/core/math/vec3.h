@@ -18,8 +18,8 @@ typedef struct vec3 {
   };
 } vec3;
 
-global const vec3 VEC3_ZERO = {.data[0] = 0.0f, .data[1] = 0.0f, .data[2] = 0.0f};
-global const vec3 VEC3_ONE = {.data[0] = 1.0f, .data[1] = 1.0f, .data[2] = 1.0f};
+#define VEC3_ZERO (vec3){.data[0] = 0.0f, .data[1] = 0.0f, .data[2] = 0.0f}
+#define VEC3_ONE (vec3){.data[0] = 1.0f, .data[1] = 1.0f, .data[2] = 1.0f}
 
 vec3 vec3_set(r32 s);
 vec3 vec3_add(vec3 a, vec3 b);

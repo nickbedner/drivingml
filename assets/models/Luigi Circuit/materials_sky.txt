@@ -1,0 +1,15 @@
+sky_tx_v
+========
+  Textures:
+    - real_sky
+        Offset: 0.4033333659172058, 0
+
+  Ambient Colors:
+    - 80, 80, 80, 50
+
+  Constant Colors:
+    - 224, 233, 255, 255
+
+  Steps:
+    1: RGB = ((vertex RGB) * (tex #1 RGB)), then add (tex #1 RGB), divide by 2
+         A = 0

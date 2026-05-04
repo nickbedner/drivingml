@@ -36,7 +36,6 @@ struct NPC {
 struct Game {
   struct Window* window;
 
-  struct Sprite* track;
   struct Sprite* floor_plane;
   struct Sprite* flag1;
   struct Sprite* flag2;
@@ -44,6 +43,7 @@ struct Game {
   struct Sprite* marker[MAX_MARKERS];
   struct Sprite* trees[MAX_TREES];
 
+  struct Model* track_model;
   struct Model* test_model;
   struct Model* test_static_model;
   struct Model* coin_model;

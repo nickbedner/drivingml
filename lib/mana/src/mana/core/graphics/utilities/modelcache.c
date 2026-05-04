@@ -25,6 +25,7 @@ void model_cache_delete(struct ModelCache* model_cache, struct APICommon* api_co
   map_delete(&model_cache->models);
 }
 
+// TODO: This badly needs int return for failure state
 void model_cache_add(struct ModelCache* model_cache, struct APICommon* api_common, struct ModelSettings* model_settings, size_t num, b8 animated) {
   struct Model* model = (struct Model*)malloc(sizeof(struct Model));
 

@@ -104,17 +104,26 @@ internal void load_map_from_xml(struct Game* game, struct Mana* mana, const char
   char* py = xml_node_get_attribute(track_node, "y");
 
   if (tex) {
-    game->track = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), tex);
+    game->track_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), tex);
 
     r32 scale = sx ? (r32)atof(sx) : 25.0f;
     r32 x = px ? (r32)atof(px) : 0.0f;
     r32 y = py ? (r32)atof(py) : 0.0f;
 
-    game->track->sprite_common.position = (vec3){.x = x, .y = 0.0f, .z = y};
-    game->track->sprite_common.scale = (vec3){.x = scale, .y = scale, .z = 0};
+    // game->track_model->model_common.position = (vec3){.x = x, .y = 0.0f, .z = y};
+    game->track_model->model_common.scale = (vec3){.x = scale, .y = 0, .z = scale};
 
-    mat4 rot = mat4_rotate(MAT4_IDENTITY, (r32)-R32_PI / 2.0f, (vec3){.x = 1.0f, .y = 0.0f, .z = 0.0f});
-    game->track->sprite_common.rotation = mat4_to_quaternion(rot);
+    // game->track = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), tex);
+    //
+    // r32 scale = sx ? (r32)atof(sx) : 25.0f;
+    // r32 x = px ? (r32)atof(px) : 0.0f;
+    // r32 y = py ? (r32)atof(py) : 0.0f;
+    //
+    // game->track->sprite_common.position = (vec3){.x = x, .y = 0.0f, .z = y};
+    // game->track->sprite_common.scale = (vec3){.x = scale, .y = scale, .z = 0};
+    //
+    // mat4 rot = mat4_rotate(MAT4_IDENTITY, (r32)-R32_PI / 2.0f, (vec3){.x = 1.0f, .y = 0.0f, .z = 0.0f});
+    // game->track->sprite_common.rotation = mat4_to_quaternion(rot);
   }
 
   struct XmlNode* markers_node = xml_node_get_child(map_node, "markers");
@@ -229,6 +238,13 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/ssc/Textures/coinr.png", TRUE);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/ssc/Textures/coinm.png", TRUE);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/ssc/Textures/coinao.png", TRUE);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/Watermelon/watermelona.png", TRUE);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/Watermelon/watermelonn.png", TRUE);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/track/diffuse.png", TRUE);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/track/normal.png", TRUE);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/track/metallic.png", TRUE);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/track/roughness.png", TRUE);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/track/ao.png", TRUE);
   sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_TRILINEAR, .mode_type = MODE_REPEAT, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_CUSTOM, .mip_count = 5, .premultiplied_alpha = TRUE, .max_anisotropy = 1.0f};
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/waterm1.png", FALSE);
   sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_NEAREST, .mode_type = MODE_CLAMP_TO_EDGE, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_NONE, .mip_count = 1, .premultiplied_alpha = TRUE, .max_anisotropy = 1.0f};
@@ -294,10 +310,6 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   texture_manager_add_array(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/aikartpurple", purple_kart_frames, 10);
 
   sprite_manager_init(&(game->sprite_manager), &(game->texture_manager), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 128);
-
-  char path[MAX_LENGTH_OF_PATH] = {0};
-  snprintf(path, MAX_LENGTH_OF_PATH, "%s/maps.xml", mana->api.api_common.asset_directory);
-  load_map_from_xml(game, mana, path, "track0");
 
   if (!EVAL_MODE) {
     WSADATA wsa;
@@ -398,24 +410,50 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
       .roughness_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/roughness.png"),
       .ao_texture = texture_manager_get(&(game->texture_manager), "/models/testmodel/ao.png"),
       5};
-  model_cache_add(&(game->model_cache), &(mana->api.api_common), &model_static_settings, 0, FALSE);
+  model_cache_add(&(game->model_cache), &(mana->api.api_common), &model_static_settings, 1, FALSE);
   game->test_static_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/cube/cube.dae");
   game->test_static_model->model_common.scale = (vec3){.x = 1.0f, .y = 1.0f, .z = 1.0f};
   game->test_static_model->model_common.position = (vec3){.x = 5.0f, .y = 2.0f, .z = 0.0f};
 
-  struct ModelSettings coin_settings = (struct ModelSettings){
-      .path = "./assets/models/ssc/Coin.dae",
+  struct ModelSettings model_track_settings = (struct ModelSettings){
+      .path = "./assets/models/track/track.dae",
       .shader = &(game->model_cache.model_static_shader.shader),
-      .diffuse_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coina.png"),
-      .normal_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coinn.png"),
+      .diffuse_texture = texture_manager_get(&(game->texture_manager), "/models/track/diffuse.png"),
+      .normal_texture = texture_manager_get(&(game->texture_manager), "/models/track/normal.png"),
+      .metallic_texture = texture_manager_get(&(game->texture_manager), "/models/track/metallic.png"),
+      .roughness_texture = texture_manager_get(&(game->texture_manager), "/models/track/roughness.png"),
+      .ao_texture = texture_manager_get(&(game->texture_manager), "/models/track/ao.png"),
+      5};
+  model_cache_add(&(game->model_cache), &(mana->api.api_common), &model_track_settings, 2, FALSE);
+
+  // struct ModelSettings coin_settings = (struct ModelSettings){
+  //     .path = "./assets/models/ssc/Coin.dae",
+  //     .shader = &(game->model_cache.model_static_shader.shader),
+  //     .diffuse_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coina.png"),
+  //     .normal_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coinn.png"),
+  //     .metallic_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coinm.png"),
+  //     .roughness_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coinr.png"),
+  //     .ao_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coinao.png"),
+  //     5};
+  // model_cache_add(&(game->model_cache), &(mana->api.api_common), &coin_settings, 1, FALSE);
+  // game->coin_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/ssc/Coin.dae");
+  struct ModelSettings coin_settings = (struct ModelSettings){
+      .path = "./assets/models/Watermelon/watermelon.dae",
+      .shader = &(game->model_cache.model_static_shader.shader),
+      .diffuse_texture = texture_manager_get(&(game->texture_manager), "/models/Watermelon/watermelona.png"),
+      .normal_texture = texture_manager_get(&(game->texture_manager), "/models/Watermelon/watermelonn.png"),
       .metallic_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coinm.png"),
       .roughness_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coinr.png"),
       .ao_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coinao.png"),
       5};
-  model_cache_add(&(game->model_cache), &(mana->api.api_common), &coin_settings, 1, FALSE);
-  game->coin_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/ssc/Coin.dae");
-  game->coin_model->model_common.scale = (vec3){.x = 0.05f, .y = 0.05f, .z = 0.05f};
+  model_cache_add(&(game->model_cache), &(mana->api.api_common), &coin_settings, 3, FALSE);
+  game->coin_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/Watermelon/watermelon.dae");
+  game->coin_model->model_common.scale = (vec3){.x = 1.5f, .y = 1.5f, .z = 1.5f};
   game->coin_model->model_common.position = (vec3){.x = 15.0f, .y = 4.0f, .z = 0.0f};
+
+  char path[MAX_LENGTH_OF_PATH] = {0};
+  snprintf(path, MAX_LENGTH_OF_PATH, "%s/maps.xml", mana->api.api_common.asset_directory);
+  load_map_from_xml(game, mana, path, "track0");
 }
 
 void game_delete(struct Game* game, struct Mana* mana) {
@@ -885,7 +923,7 @@ void game_render(struct Game* game, struct Mana* mana, r64 delta_time) {
     // Diffuse sun directional light
     r32 sun_intensity = 4.0f;
     vec3 sun_dir = vec3_normalize((vec3){.x = 0.35f, .y = -0.90f, .z = 0.25f});
-    vec4 full_dir = (vec4){.x = sun_dir.x, .y = sun_dir.y, .z = sun_dir.z, .w = 0.25f};
+    vec4 full_dir = (vec4){.x = sun_dir.x, .y = sun_dir.y, .z = sun_dir.z, .w = 0.15f};
     vec4 diffuse_color = (vec4){.x = 1.0f * sun_intensity, .y = 0.96f * sun_intensity, .z = 0.86f * sun_intensity, .w = 0.0f};
     // Soft sky fill, not white
     vec4 ambient_color = (vec4){.x = 0.10f, .y = 0.14f, .z = 0.18f, .w = 0.0f};
@@ -894,7 +932,10 @@ void game_render(struct Game* game, struct Mana* mana, r64 delta_time) {
     model_update_uniforms(game->test_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
     model_update_uniforms(game->test_static_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
     model_update_uniforms(game->coin_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
+    model_update_uniforms(game->track_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
+
     water_update_uniforms(&(game->water), api_common, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height);
+
     sprite_manager_update(&(game->sprite_manager), delta_time);
     sprite_manager_update_uniforms(&(game->sprite_manager), api_common, &(window->gbuffer->gbuffer_common));
 
@@ -906,6 +947,7 @@ void game_render(struct Game* game, struct Mana* mana, r64 delta_time) {
     model_render(game->test_model, window->gbuffer, delta_time);
     model_render(game->test_static_model, window->gbuffer, delta_time);
     model_render(game->coin_model, window->gbuffer, delta_time);
+    model_render(game->track_model, window->gbuffer, delta_time);
 
     // Transparent sprites
     vec3d cam_pos = camera_get_pos(&game->player.camera);

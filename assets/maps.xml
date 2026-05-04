@@ -1,6 +1,6 @@
 <game>
 	<map name="track0">
-		<track texture="/textures/track.png" x="0" y="0" scale="20"/>
+		<track texture="./assets/models/track/track.dae" x="0" y="0" scale="20"/>
 		<markers>
 			<marker x="-175" y="25"/>
 			<marker x="-171" y="-25"/>

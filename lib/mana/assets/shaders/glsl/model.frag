@@ -94,6 +94,7 @@ void main() {
   vec3 h = normalize(v + l);
 
   float n_dot_l = max(dot(n, l), 0.0);
+  float wrapped_n_dot_l = clamp((n_dot_l + 0.2) / 1.2, 0.0, 1.0);
   float n_dot_v = max(dot(n, v), 0.0);
 
   vec3 f0 = mix(vec3(0.04), albedo, metallic);
@@ -112,9 +113,10 @@ void main() {
   vec3 diffuse_radiance = lighting.light.diffuse_color.rgb;
   vec3 specular_radiance = lighting.light.specular_color.rgb;
 
-  vec3 diffuse_term = (k_d * albedo / pi) * diffuse_radiance * n_dot_l;
+  vec3 diffuse_term = (k_d * albedo / pi) * diffuse_radiance * wrapped_n_dot_l;
   vec3 specular_term = specular * specular_radiance * n_dot_l;
-  vec3 ambient = lighting.light.ambient_color.rgb * albedo * ao;
+  float ao_influence = mix(1.0, ao, 0.35);
+  vec3 ambient = lighting.light.ambient_color.rgb * albedo * ao_influence;
 
   vec3 color = ambient + diffuse_term + specular_term;
 
@@ -134,6 +136,7 @@ void main() {
   vec3 rim_color = mix(lighting.light.diffuse_color.rgb, lighting.light.specular_color.rgb, 0.5);
   color += rim * rim_color;
 
+  color *= 1.15;
   color = color / (color + vec3(1.0));
   color = pow(color, vec3(1.0 / 2.2));
 

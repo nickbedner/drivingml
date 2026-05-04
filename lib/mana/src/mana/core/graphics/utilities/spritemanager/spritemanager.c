@@ -95,7 +95,7 @@ void sprite_manager_render(struct SpriteManager* sprite_manager, struct GBufferC
   for (size_t i = 0; i < array_list_size(&(sprite_manager->sprite_manager_common.sprites)); i++)
     ordered_sprites[i] = (struct Sprite*)array_list_get(&sprite_manager->sprite_manager_common.sprites, i);
 
-  sprite_insertion_sort(ordered_sprites + 2, array_list_size(&(sprite_manager->sprite_manager_common.sprites)) - 2, sort_key);
+  sprite_insertion_sort(ordered_sprites, array_list_size(&(sprite_manager->sprite_manager_common.sprites)) - 2, sort_key);
   for (size_t i = 0; i < array_list_size(&(sprite_manager->sprite_manager_common.sprites)); i++)
     sprite_render(ordered_sprites[i], gbuffer_common);
 }
