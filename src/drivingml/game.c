@@ -353,6 +353,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/barrel1.png", TRUE);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/barrel2.png", TRUE);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/tree.png", TRUE);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/boats/boat1.png", TRUE);
   sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_ANISOTROPIC, .mode_type = MODE_CLAMP_TO_EDGE, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_GENERATE, .mip_count = 5, .premultiplied_alpha = TRUE, .max_anisotropy = 16.0f};
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/track.png", TRUE);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/circuit.png", TRUE);
@@ -590,6 +591,13 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   char path[MAX_LENGTH_OF_PATH] = {0};
   snprintf(path, MAX_LENGTH_OF_PATH, "%s/maps.xml", mana->api.api_common.asset_directory);
   load_map_from_xml(game, mana, path, "track0");
+
+  game->boat1 = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/boats/boat1.png");
+  game->boat1->sprite_common.position = (vec3){.x = 45.0f, .y = 16.0f, .z = 50.0f};
+  game->boat1->sprite_common.scale = (vec3){.x = 25.0f, .y = 25.0f, .z = 25.0f};
+
+  // mat4 rot = mat4_rotate(MAT4_IDENTITY, (r32)-R32_PI / 2.0f, (vec3){.x = 1.0f, .y = 0.0f, .z = 0.0f});
+  // game->boat1->sprite_common.rotation = mat4_to_quaternion(rot);
 }
 
 void game_delete(struct Game* game, struct Mana* mana) {
@@ -635,10 +643,11 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
   r32 rotation_speed = 1.5f * speed_scale;
   vec3d cam_pos = camera_get_pos(&game->player.camera);
 
-  for (i32 t = 0; t < game->total_trees; t++) {
-    game->trees[t]->sprite_common.rotation =
-        sprite_billboard_rotation(game->trees[t]->sprite_common.position, cam_pos);
-  }
+  game->boat1->sprite_common.rotation = sprite_billboard_rotation(game->boat1->sprite_common.position, cam_pos);
+  game->boat1->sprite_common.position.z -= 1.0f * delta_time;
+
+  for (i32 t = 0; t < game->total_trees; t++)
+    game->trees[t]->sprite_common.rotation = sprite_billboard_rotation(game->trees[t]->sprite_common.position, cam_pos);
 
   persist b8 prev_left_pressed = FALSE;
   persist b8 prev_right_pressed = FALSE;

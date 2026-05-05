@@ -43,6 +43,8 @@ struct Game {
   struct Sprite* marker[MAX_MARKERS];
   struct Sprite* trees[MAX_TREES];
 
+  struct Sprite* boat1;
+
   struct Model* track_model;
   struct Model* test_model;
   struct Model* test_static_model;
