@@ -423,7 +423,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
     }
   }
 
-  if (update_state) {
+  if (update_state || (!DEPLOY_MODE && !DRIVE_OVERRIDE)) {
     float sim_delta_time = 0.01666666666;
     b8 done = FALSE;
 
