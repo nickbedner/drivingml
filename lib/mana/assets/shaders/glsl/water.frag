@@ -16,7 +16,7 @@ layout(location = 1) out vec4 out_normal;
 void main() {
   float time = wp.params0.x;
   // TODO: Will likely need to change base on size of quad
-  float tiling = 128.0;
+  float tiling = 256.0 * 64.0; // 32 is the scale of the water plane, should ideally be passed in as a uniform instead of hardcoded
 
   vec2 baseUV = frag_uv * tiling;
 

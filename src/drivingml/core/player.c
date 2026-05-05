@@ -26,15 +26,8 @@ void player_update(struct Player* player, struct ControllerAction* controller_ac
   // player->camera.fly_pos = player->player_controller.pos;
   player->camera.look_at_center_point = player->look_at_pos;
   player->camera.look_at_zoom_factor = 30.0;
-  player->camera.look_at_elevation = -R64_PI / 16.0;
-  // player->camera.look_at_azimuth += 0.01f;
-
-  // camera_rotate(&(player->camera), -1.1f, 0.0f, 1920, 1080);
-  // camera_fly_move_forward(&(player->camera), 0.1f);
-
-  // camera_update_parameters_from_camera(&(player->camera));
-
-  // Do camera stuff with inputs
+  player->camera.look_at_elevation = player->look_at_elevation;
+  player->camera.look_at_azimuth = player->look_at_azimuth;
 
   camera_update_camera_from_parameters(&(player->camera));
   camera_update(&(player->camera));

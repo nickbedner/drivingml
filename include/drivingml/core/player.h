@@ -9,6 +9,8 @@ struct Player {
   struct Camera camera;
   // This should all be ECS stuff I'm guessing, attach a camera to the player entity
   vec3d look_at_pos;
+  r64 look_at_azimuth;
+  r64 look_at_elevation;
   u8 player_num;
 };
 

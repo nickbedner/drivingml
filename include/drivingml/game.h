@@ -29,8 +29,16 @@ struct NPC {
   r32 heading;
   r32 last_action[2];
   r32 prev_y;
-  int current_marker;
+  i32 current_marker;
   struct Sprite* sprite;
+};
+
+struct Tentacle {
+  struct Sprite* sprite;
+  r32 accum;
+  r32 accum_limit;
+  u8 frame;
+  u8 max_frames;
 };
 
 struct Game {
@@ -45,7 +53,15 @@ struct Game {
 
   struct Sprite* boat1;
 
+  struct Sprite* cloud1;
+  struct Sprite* cloud2;
+
+  struct Sprite* aero;
+
+  struct Tentacle tentacle;
+
   struct Model* track_model;
+  struct Model* plane_model;
   struct Model* test_model;
   struct Model* test_static_model;
   struct Model* coin_model;

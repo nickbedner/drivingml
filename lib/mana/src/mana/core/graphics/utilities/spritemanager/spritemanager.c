@@ -78,7 +78,6 @@ internal void sprite_insertion_sort(struct Sprite** sprites, size_t count, vec4d
     while (j > 0) {
       r64 prev_depth = sprite_depth(sprites[j - 1], sort_key);
 
-      /* Back -> Front(larger depth first) */
       if (prev_depth < key_depth) {
         sprites[j] = sprites[j - 1];
         j--;

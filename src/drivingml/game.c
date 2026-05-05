@@ -311,10 +311,7 @@ internal void load_map_from_xml(struct Game* game, struct Mana* mana, const char
         r32 x = (r32)atof(x_str);
         r32 y = (r32)atof(y_str);
 
-        game->trees[i] = sprite_manager_add_sprite(
-            &(game->sprite_manager),
-            &(mana->api.api_common),
-            "/textures/tree.png");
+        game->trees[i] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/tree.png");
 
         game->trees[i]->sprite_common.position = (vec3){.x = x, .y = 4.5f, .z = y};
         game->trees[i]->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
@@ -359,6 +356,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/circuit.png", TRUE);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/startfinish.png", TRUE);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/cloud.png", TRUE);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/aero.png", TRUE);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/map.png", TRUE);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/testmodel/diffuse.png", TRUE);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/testmodel/albedo.png", TRUE);
@@ -382,6 +380,8 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/track/metallic.png", TRUE);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/track/roughness.png", TRUE);
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/track/ao.png", TRUE);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/plane/diffuse.png", TRUE);
+  texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/models/plane/normal.png", TRUE);
   sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_TRILINEAR, .mode_type = MODE_REPEAT, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_CUSTOM, .mip_count = 5, .premultiplied_alpha = TRUE, .max_anisotropy = 1.0f};
   texture_manager_add(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/waterm1.png", FALSE);
   sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_NEAREST, .mode_type = MODE_CLAMP_TO_EDGE, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_NONE, .mip_count = 1, .premultiplied_alpha = TRUE, .max_anisotropy = 1.0f};
@@ -446,6 +446,17 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
       "/textures/aikartpurple/tile009.png"};
   texture_manager_add_array(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/aikartpurple", purple_kart_frames, 10);
 
+  const char* tentacle_frames[] = {
+      "/textures/tentacle/tile000.png",
+      "/textures/tentacle/tile001.png",
+      "/textures/tentacle/tile002.png",
+      "/textures/tentacle/tile003.png",
+      "/textures/tentacle/tile004.png",
+      "/textures/tentacle/tile005.png",
+      "/textures/tentacle/tile006.png",
+      "/textures/tentacle/tile007.png"};
+  texture_manager_add_array(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/tentacle", tentacle_frames, 8);
+
   sprite_manager_init(&(game->sprite_manager), &(game->texture_manager), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 128);
 
   if (!EVAL_MODE) {
@@ -479,7 +490,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->timer = 0;
   game->start_timer = 0;
 
-  game->starting_pos = (vec3){.x = 175.0f, .y = 0.75f, .z = 20.0f};
+  game->starting_pos = (vec3){.x = 0.0f, .y = 0.0f, .z = 0.0f};
   game->starting_heading = 0.0f;
 
   if (EVAL_MODE)
@@ -523,7 +534,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   water_shader_init(&(game->water_shader), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 3);
   water_init(&(game->water), &(mana->api.api_common), &(game->water_shader.shader), texture_manager_get(game->sprite_manager.sprite_manager_common.texture_manager, "/textures/waterm1.png"));
   game->water.water_common.position = (vec3){.x = 0.0f, .y = -5.0f, .z = 0.0f};
-  game->water.water_common.scale = (vec3){.x = 1024.0f, .y = 1.0f, .z = 1024.0f};
+  game->water.water_common.scale = (vec3){.x = 2048.0f * 64.0f, .y = 1.0f, .z = 2048.0f * 64.0f};
 
   model_cache_init(&(game->model_cache), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 128);
   struct ModelSettings model_settings = (struct ModelSettings){
@@ -563,6 +574,20 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
       5};
   model_cache_add(&(game->model_cache), &(mana->api.api_common), &model_track_settings, 2, FALSE);
 
+  struct ModelSettings model_plane_settings = (struct ModelSettings){
+      .path = "./assets/models/plane/plane.dae",
+      .shader = &(game->model_cache.model_static_shader.shader),
+      .diffuse_texture = texture_manager_get(&(game->texture_manager), "/models/plane/diffuse.png"),
+      .normal_texture = texture_manager_get(&(game->texture_manager), "/models/plane/normal.png"),
+      .metallic_texture = texture_manager_get(&(game->texture_manager), "/models/track/metallic.png"),
+      .roughness_texture = texture_manager_get(&(game->texture_manager), "/models/track/roughness.png"),
+      .ao_texture = texture_manager_get(&(game->texture_manager), "/models/track/ao.png"),
+      5};
+  model_cache_add(&(game->model_cache), &(mana->api.api_common), &model_plane_settings, 3, FALSE);
+  game->plane_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/plane/plane.dae");
+  game->plane_model->model_common.position = (vec3){.x = 0.0f, .y = -50.0f, .z = 0.0f};
+  game->plane_model->model_common.scale = (vec3){.x = 100000.0f, .y = 1.0f, .z = 100000.0f};
+
   // struct ModelSettings coin_settings = (struct ModelSettings){
   //     .path = "./assets/models/ssc/Coin.dae",
   //     .shader = &(game->model_cache.model_static_shader.shader),
@@ -583,10 +608,25 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
       .roughness_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coinr.png"),
       .ao_texture = texture_manager_get(&(game->texture_manager), "/models/ssc/Textures/coinao.png"),
       5};
-  model_cache_add(&(game->model_cache), &(mana->api.api_common), &coin_settings, 3, FALSE);
+  model_cache_add(&(game->model_cache), &(mana->api.api_common), &coin_settings, 4, FALSE);
   game->coin_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/Watermelon/watermelon.dae");
   game->coin_model->model_common.scale = (vec3){.x = 1.5f, .y = 1.5f, .z = 1.5f};
   game->coin_model->model_common.position = (vec3){.x = 15.0f, .y = 4.0f, .z = 0.0f};
+
+  game->cloud1 = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/cloud.png");
+  game->cloud1->sprite_common.position = (vec3){.x = 2000.0f, .y = 1500.0f, .z = -10000.0f};
+  game->cloud1->sprite_common.scale = (vec3){.x = 2000.0f, .y = 2000.0f, .z = 1.0f};
+
+  game->cloud2 = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/cloud.png");
+  game->cloud2->sprite_common.position = (vec3){.x = 4250.0f, .y = 750.0f, .z = -9500.0f};
+  game->cloud2->sprite_common.scale = (vec3){.x = 1000.0f, .y = 1000.0f, .z = 1.0f};
+
+  game->aero = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aero.png");
+  game->aero->sprite_common.position = (vec3){.x = -500.0f, .y = 500.0f, .z = -5000.0f};
+  game->aero->sprite_common.scale = (vec3){.x = 75.0f, .y = 7500.0f, .z = 1.0f};
+  mat4 rot = mat4_rotate(MAT4_IDENTITY, (r32)R32_PI / 2.0f, (vec3){.x = 1.0f, .y = 0.0f, .z = 0.0f});
+  // rot = mat4_rotate(rot, (r32)R32_PI / 2.0f, (vec3){.x = 0.0f, .y = 0.0f, .z = 0.0f});
+  game->aero->sprite_common.rotation = mat4_to_quaternion(rot);
 
   char path[MAX_LENGTH_OF_PATH] = {0};
   snprintf(path, MAX_LENGTH_OF_PATH, "%s/maps.xml", mana->api.api_common.asset_directory);
@@ -594,10 +634,15 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 
   game->boat1 = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/boats/boat1.png");
   game->boat1->sprite_common.position = (vec3){.x = 45.0f, .y = 16.0f, .z = 50.0f};
-  game->boat1->sprite_common.scale = (vec3){.x = 25.0f, .y = 25.0f, .z = 25.0f};
+  game->boat1->sprite_common.scale = (vec3){.x = 25.0f, .y = 25.0f, .z = 1.0f};
 
-  // mat4 rot = mat4_rotate(MAT4_IDENTITY, (r32)-R32_PI / 2.0f, (vec3){.x = 1.0f, .y = 0.0f, .z = 0.0f});
-  // game->boat1->sprite_common.rotation = mat4_to_quaternion(rot);
+  game->tentacle.sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/tentacle");
+  game->tentacle.sprite->sprite_common.position = (vec3){.x = 30.0f, .y = 3.25f, .z = -138.0f};
+  game->tentacle.sprite->sprite_common.scale = (vec3){.x = 10.0f, .y = 10.0f, .z = 1.0f};
+  game->tentacle.frame = 0;
+  game->tentacle.max_frames = 8;
+  game->tentacle.accum = 0.0f;
+  game->tentacle.accum_limit = 0.5f;
 }
 
 void game_delete(struct Game* game, struct Mana* mana) {
@@ -643,8 +688,12 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
   r32 rotation_speed = 1.5f * speed_scale;
   vec3d cam_pos = camera_get_pos(&game->player.camera);
 
+  // game->cloud->sprite_common.rotation = sprite_billboard_rotation(game->boat1->sprite_common.position, cam_pos);
+
   game->boat1->sprite_common.rotation = sprite_billboard_rotation(game->boat1->sprite_common.position, cam_pos);
-  game->boat1->sprite_common.position.z -= 1.0f * delta_time;
+  game->boat1->sprite_common.position.z -= 2.5f * (r32)delta_time;
+
+  game->aero->sprite_common.position.z += 50.0f * (r32)delta_time;
 
   for (i32 t = 0; t < game->total_trees; t++)
     game->trees[t]->sprite_common.rotation = sprite_billboard_rotation(game->trees[t]->sprite_common.position, cam_pos);
@@ -942,8 +991,10 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
     if (follow >= game->current_npcs)
       follow = game->current_npcs - 1;
 
-    game->player.look_at_pos = (vec3d){.x = (r64)game->npcs[follow].position.x, .y = (r64)game->npcs[follow].position.y, .z = (r64)game->npcs[follow].position.z};
-    game->player.camera.look_at_azimuth = -(r64)game->npcs[follow].heading;
+    game->player.look_at_pos = (vec3d){.x = (r64)game->npcs[follow].position.x, .y = (r64)game->npcs[follow].position.y + 1.5, .z = (r64)game->npcs[follow].position.z};
+    game->player.look_at_azimuth = -(r64)game->npcs[follow].heading;
+    game->player.look_at_elevation = -R64_PI / 32.0;
+    game->player.camera.look_at_elevation = 1.25;
   }
 
   player_update(&(game->player), input_manager_get_controller_actions(input_manager), input_manager_get_controller_action_list_length(input_manager));
@@ -963,6 +1014,14 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
   mat4 flag2_rotation = mat4_rotate(MAT4_IDENTITY, -(r32)R32_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
   flag2_rotation = mat4_rotate(flag2_rotation, (r32)R32_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
   game->flag2->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(flag2_rotation, (r32)-game->player.camera.look_at_azimuth, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f}));
+
+  game->tentacle.accum += (r32)delta_time;
+  if (game->tentacle.accum > game->tentacle.accum_limit) {
+    game->tentacle.frame = (game->tentacle.frame + 1) % game->tentacle.max_frames;
+    game->tentacle.accum = 0.0f;
+    game->tentacle.sprite->sprite_common.frame_layer = game->tentacle.frame;
+  }
+  game->tentacle.sprite->sprite_common.rotation = sprite_billboard_rotation(game->tentacle.sprite->sprite_common.position, cam_pos);
 }
 
 void game_render(struct Game* game, struct Mana* mana, r64 delta_time) {
@@ -978,6 +1037,8 @@ void game_render(struct Game* game, struct Mana* mana, r64 delta_time) {
       renderer_wait_for_device(&(window->renderer), window->api_common);
 
       shader_resize(&(game->water_shader.shader), api_common, window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale);
+      shader_resize(&(game->model_cache.model_shader.shader), api_common, window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale);
+      shader_resize(&(game->model_cache.model_static_shader.shader), api_common, window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale);
 
       sprite_manager_resize(&(game->sprite_manager), api_common, window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->renderer.renderer_settings.supersample_scale);
 
@@ -997,6 +1058,7 @@ void game_render(struct Game* game, struct Mana* mana, r64 delta_time) {
     model_update_uniforms(game->test_static_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
     model_update_uniforms(game->coin_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
     model_update_uniforms(game->track_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
+    model_update_uniforms(game->plane_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
 
     water_update_uniforms(&(game->water), api_common, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height);
 
@@ -1010,6 +1072,7 @@ void game_render(struct Game* game, struct Mana* mana, r64 delta_time) {
     model_render(game->test_static_model, window->gbuffer, delta_time);
     model_render(game->coin_model, window->gbuffer, delta_time);
     model_render(game->track_model, window->gbuffer, delta_time);
+    model_render(game->plane_model, window->gbuffer, delta_time);
 
     water_render(&(game->water), &(window->gbuffer->gbuffer_common));
 
