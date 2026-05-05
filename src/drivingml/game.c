@@ -7,324 +7,6 @@
 
 #include "drivingml/game.h"
 
-internal const char* track_surface_type_name(i32 surface_type) {
-  switch (surface_type) {
-    case TRACK_SURFACE_GRASS:
-      return "grass";
-    case TRACK_SURFACE_ROAD:
-      return "road";
-    case TRACK_SURFACE_SAND_DRIVE:
-      return "sand_drive";
-    case TRACK_SURFACE_SAND:
-      return "sand";
-    case TRACK_SURFACE_WALL:
-      return "wall";
-    case TRACK_SURFACE_OOB:
-      return "out_of_bounds";
-    default:
-      return "unknown";
-  }
-}
-
-internal b8 point_in_triangle_xz(r32 px, r32 pz, vec3 a, vec3 b, vec3 c, r32* out_u, r32* out_v, r32* out_w) {
-  r32 v0x = b.x - a.x;
-  r32 v0z = b.z - a.z;
-  r32 v1x = c.x - a.x;
-  r32 v1z = c.z - a.z;
-  r32 v2x = px - a.x;
-  r32 v2z = pz - a.z;
-
-  r32 d00 = v0x * v0x + v0z * v0z;
-  r32 d01 = v0x * v1x + v0z * v1z;
-  r32 d11 = v1x * v1x + v1z * v1z;
-  r32 d20 = v2x * v0x + v2z * v0z;
-  r32 d21 = v2x * v1x + v2z * v1z;
-
-  r32 denom = d00 * d11 - d01 * d01;
-
-  if (real32_fabs(denom) < 0.00001f)
-    return FALSE;
-
-  r32 v = (d11 * d20 - d01 * d21) / denom;
-  r32 w = (d00 * d21 - d01 * d20) / denom;
-  r32 u = 1.0f - v - w;
-
-  const r32 eps = -0.0001f;
-
-  if (u >= eps && v >= eps && w >= eps) {
-    *out_u = u;
-    *out_v = v;
-    *out_w = w;
-    return TRUE;
-  }
-
-  return FALSE;
-}
-
-internal vec3 track_local_to_world(struct Model* track_model, vec3 p) {
-  vec3 pos = track_model->model_common.position;
-  vec3 scale = track_model->model_common.scale;
-
-  return (vec3){
-      .x = pos.x + p.x * scale.x,
-      .y = pos.y + p.y * scale.y,
-      .z = pos.z + p.z * scale.z};
-}
-
-internal b8 track_get_height_at(struct Model* track_model, r32 world_x, r32 world_z, r32* out_y, i32* out_surface_type) {
-  if (track_model == NULL || out_y == NULL)
-    return FALSE;
-
-  struct Mesh* mesh = track_model->model_common.model_mesh;
-  if (mesh == NULL)
-    return FALSE;
-
-  if (mesh->mesh_common.indices == NULL || mesh->mesh_common.vertices == NULL)
-    return FALSE;
-
-  vec3 track_pos = track_model->model_common.position;
-  vec3 track_scale = track_model->model_common.scale;
-
-  if (track_scale.x == 0.0f || track_scale.y == 0.0f || track_scale.z == 0.0f)
-    return FALSE;
-
-  // Convert world kart position into track-local space.
-  // This assumes the track has position + scale, but no rotation.
-  r32 local_x = (world_x - track_pos.x) / track_scale.x;
-  r32 local_z = (world_z - track_pos.z) / track_scale.z;
-
-  size_t index_count = vector_size(mesh->mesh_common.indices);
-  size_t vertex_count = vector_size(mesh->mesh_common.vertices);
-
-  for (size_t i = 0; i + 2 < index_count; i += 3) {
-    i32 ia = *(i32*)vector_get(mesh->mesh_common.indices, i + 0);
-    i32 ib = *(i32*)vector_get(mesh->mesh_common.indices, i + 1);
-    i32 ic = *(i32*)vector_get(mesh->mesh_common.indices, i + 2);
-
-    if (ia < 0 || ib < 0 || ic < 0)
-      continue;
-
-    if ((size_t)ia >= vertex_count || (size_t)ib >= vertex_count || (size_t)ic >= vertex_count)
-      continue;
-
-    struct VertexModelStatic* va = (struct VertexModelStatic*)vector_get(mesh->mesh_common.vertices, (size_t)ia);
-    struct VertexModelStatic* vb = (struct VertexModelStatic*)vector_get(mesh->mesh_common.vertices, (size_t)ib);
-    struct VertexModelStatic* vc = (struct VertexModelStatic*)vector_get(mesh->mesh_common.vertices, (size_t)ic);
-
-    if (va == NULL || vb == NULL || vc == NULL)
-      continue;
-
-    vec3 a = va->position;
-    vec3 b = vb->position;
-    vec3 c = vc->position;
-
-    r32 u, v, w;
-
-    // IMPORTANT: use local_x/local_z here, not world_x/world_z.
-    if (point_in_triangle_xz(local_x, local_z, a, b, c, &u, &v, &w)) {
-      r32 local_y = a.y * u + b.y * v + c.y * w;
-      *out_y = track_pos.y + local_y * track_scale.y;
-
-      if (out_surface_type != NULL) {
-        size_t triangle_index = i / 3;
-
-        if (mesh->mesh_common.triangle_surface_types != NULL &&
-            triangle_index < vector_size(mesh->mesh_common.triangle_surface_types)) {
-          *out_surface_type = *(i32*)vector_get(mesh->mesh_common.triangle_surface_types, triangle_index);
-        } else {
-          *out_surface_type = TRACK_SURFACE_UNKNOWN;
-        }
-      }
-
-      return TRUE;
-    }
-  }
-
-  return FALSE;
-}
-
-internal r32 wrap_angle_0_2pi(r32 a) {
-  const r32 tau = 2.0f * (r32)R32_PI;
-
-  while (a < 0.0f) a += tau;
-  while (a >= tau) a -= tau;
-
-  return a;
-}
-
-internal r32 yaw_from_xz(r32 x, r32 z) {
-  return real32_atan2(z, x);
-}
-
-internal u32 car_frame_from_camera(r32 heading, r32 steer, vec3 car_pos, vec3d camera_pos) {
-  const u32 BASE_FRAME_COUNT = 8;
-  const u32 TURN_LEFT_FRAME = 8;
-  const u32 TURN_RIGHT_FRAME = 9;
-  const u32 FRONT_FRAME = 4;
-
-  const r32 TURN_DEADZONE = 0.25f;
-
-  // Direction from car -> camera in world XZ
-  r32 to_cam_x = (r32)(camera_pos.x - (r64)car_pos.x);
-  r32 to_cam_z = (r32)(camera_pos.z - (r64)car_pos.z);
-  r32 camera_yaw = yaw_from_xz(to_cam_x, to_cam_z);
-
-  // Car forward direction in world XZ
-  r32 car_back_yaw = yaw_from_xz(real32_cos(heading), -real32_sin(heading));
-  r32 relative_yaw = wrap_angle_0_2pi(car_back_yaw - camera_yaw);
-  r32 step = (2.0f * (r32)R32_PI) / (r32)BASE_FRAME_COUNT;
-
-  u32 frame = (u32)((relative_yaw + 0.5f * step) / step);
-  frame %= BASE_FRAME_COUNT;
-
-  if (frame == FRONT_FRAME) {
-    if (steer < -TURN_DEADZONE)
-      return TURN_LEFT_FRAME;
-    if (steer > TURN_DEADZONE)
-      return TURN_RIGHT_FRAME;
-  }
-
-  return frame;
-}
-
-internal quat sprite_billboard_rotation(vec3 car_pos, vec3d camera_pos) {
-  r32 to_cam_x = (r32)(camera_pos.x - (r64)car_pos.x);
-  r32 to_cam_z = (r32)(camera_pos.z - (r64)car_pos.z);
-  r32 yaw = real32_atan2(to_cam_x, to_cam_z);
-
-  mat4 rot = mat4_rotate(MAT4_IDENTITY, yaw, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
-  return mat4_to_quaternion(rot);
-}
-
-internal i32 recv_all(SOCKET sock, char* buffer, i32 size) {
-  i32 total = 0;
-  i32 bytes;
-
-  while (total < size) {
-    bytes = recv(sock, buffer + total, size - total, 0);
-    if (bytes <= 0) return bytes;
-    total += bytes;
-  }
-  return total;
-}
-
-internal inline void place_marker(struct Sprite* marker, r32 x, r32 y) {
-  marker->sprite_common.position = (vec3){.x = x, .y = 2.35f * 2.5f, .z = y};
-  marker->sprite_common.scale = (vec3){.x = 2.5f, .y = 2.5f, .z = 0.0f};
-  mat4 marker_rotation_0 = mat4_rotate(MAT4_IDENTITY, (r32)-R32_PI / 2, (vec3){.x = 0.5, .y = 0.0, .z = 0.0});
-  marker_rotation_0 = mat4_rotate(marker_rotation_0, (r32)R32_PI, (vec3){.x = 0.0, .y = 1.0, .z = 0.0});
-  marker->sprite_common.rotation = mat4_to_quaternion(marker_rotation_0);
-}
-
-internal void load_map_from_xml(struct Game* game, struct Mana* mana, const char* xml_path, const char* map_name) {
-  struct XmlNode* root = xml_parser_load_xml_file(xml_path);
-  if (!root)
-    return;
-
-  struct XmlNode* map_node = xml_node_get_child_with_attribute(root, "map", "name", map_name);
-
-  if (!map_node) {
-    xml_parser_delete(root);
-    return;
-  }
-
-  struct XmlNode* track_node = xml_node_get_child(map_node, "track");
-  if (!track_node) {
-    xml_parser_delete(root);
-    return;
-  }
-
-  char* tex = xml_node_get_attribute(track_node, "texture");
-  char* sx = xml_node_get_attribute(track_node, "scale");
-  char* px = xml_node_get_attribute(track_node, "x");
-  char* py = xml_node_get_attribute(track_node, "y");
-
-  if (tex) {
-    game->track_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), tex);
-
-    r32 scale = sx ? (r32)atof(sx) : 25.0f;
-    r32 x = px ? (r32)atof(px) : 0.0f;
-    r32 y = py ? (r32)atof(py) : 0.0f;
-
-    game->track_model->model_common.position = (vec3){.x = x, .y = 0.0f, .z = y};
-    game->track_model->model_common.scale = (vec3){.x = scale, .y = scale, .z = scale};
-
-    // game->track = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), tex);
-    //
-    // r32 scale = sx ? (r32)atof(sx) : 25.0f;
-    // r32 x = px ? (r32)atof(px) : 0.0f;
-    // r32 y = py ? (r32)atof(py) : 0.0f;
-    //
-    // game->track->sprite_common.position = (vec3){.x = x, .y = 0.0f, .z = y};
-    // game->track->sprite_common.scale = (vec3){.x = scale, .y = scale, .z = 0};
-    //
-    // mat4 rot = mat4_rotate(MAT4_IDENTITY, (r32)-R32_PI / 2.0f, (vec3){.x = 1.0f, .y = 0.0f, .z = 0.0f});
-    // game->track->sprite_common.rotation = mat4_to_quaternion(rot);
-  }
-
-  struct XmlNode* markers_node = xml_node_get_child(map_node, "markers");
-
-  if (markers_node) {
-    struct ArrayList* marker_list = xml_node_get_children(markers_node, "marker");
-
-    if (marker_list) {
-      size_t count = array_list_size(marker_list);
-      game->total_markers = (i32)count;
-
-      for (size_t i = 0; i < count; i++) {
-        struct XmlNode* marker = (struct XmlNode*)array_list_get(marker_list, i);
-
-        char* x_str = xml_node_get_attribute(marker, "x");
-        char* y_str = xml_node_get_attribute(marker, "y");
-
-        if (!x_str || !y_str)
-          continue;
-
-        r32 x = (r32)atof(x_str);
-        r32 y = (r32)atof(y_str);
-
-        game->marker[i] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/marker.png");
-
-        place_marker(game->marker[i], x, y);
-      }
-    }
-  }
-
-  struct XmlNode* obstacle_node = xml_node_get_child(map_node, "obstacle");
-
-  if (obstacle_node) {
-    struct ArrayList* tree_list = xml_node_get_children(obstacle_node, "tree");
-
-    if (tree_list) {
-      size_t count = array_list_size(tree_list);
-      game->total_trees = (i32)count;
-
-      for (size_t i = 0; i < count && i < MAX_TREES; i++) {
-        struct XmlNode* tree = (struct XmlNode*)array_list_get(tree_list, i);
-
-        char* x_str = xml_node_get_attribute(tree, "x");
-        char* y_str = xml_node_get_attribute(tree, "y");
-
-        if (!x_str || !y_str)
-          continue;
-
-        r32 x = (r32)atof(x_str);
-        r32 y = (r32)atof(y_str);
-
-        game->trees[i] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/tree.png");
-
-        game->trees[i]->sprite_common.position = (vec3){.x = x, .y = 4.5f, .z = y};
-        game->trees[i]->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
-
-        mat4 rot = mat4_rotate(MAT4_IDENTITY, -(r32)R32_PI / 2, (vec3){.x = 0.5, .y = 0, .z = 0});
-        game->trees[i]->sprite_common.rotation = mat4_to_quaternion(rot);
-      }
-    }
-  }
-
-  xml_parser_delete(root);
-}
-
 void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->window = window;
 
@@ -332,10 +14,22 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 
   game->previous_reward = 0.0f;
 
-  char fart_path[MAX_LENGTH_OF_PATH] = {0};
-  snprintf(fart_path, MAX_LENGTH_OF_PATH, "%s/audio/fart.wav", mana->api.api_common.asset_directory);
-  load_audio(fart_path, &(game->fart));
-  // play_audio_wasapi(&(game->fart));
+  game->audio_volome = 0.1f;
+
+  if (DEPLOY_MODE || DRIVE_OVERRIDE) {
+    audio_engine_start(&(game->audio_engine));
+    char fart_path[MAX_LENGTH_OF_PATH] = {0};
+    snprintf(fart_path, MAX_LENGTH_OF_PATH, "%s/audio/fart.wav", mana->api.api_common.asset_directory);
+    load_audio(fart_path, &(game->raw_fart_sfx));
+    audio_prepare_clip(&game->raw_fart_sfx, &game->fart_sfx);
+    audio_play_sfx(&(game->audio_engine), &game->fart_sfx, game->audio_volome);
+
+    char music_path[MAX_LENGTH_OF_PATH] = {0};
+    snprintf(music_path, MAX_LENGTH_OF_PATH, "%s/audio/Koopa Troopa Beach.wav", mana->api.api_common.asset_directory);
+    load_audio(music_path, &(game->raw_music));
+    audio_prepare_clip(&game->raw_music, &game->music_sfx);
+    audio_play_music(&(game->audio_engine), &game->music_sfx, game->audio_volome, TRUE);
+  }
 
   // TODO: Engine should decide max anisotropy based on device capabilities, not hardcoded here, and also loaded from settings. So that whol part will likely be removed from struct?
   struct TextureSettings sprite_texture_settings = (struct TextureSettings){.filter_type = FILTER_NEAREST, .mode_type = MODE_CLAMP_TO_EDGE, .format_type = FORMAT_R8G8B8A8_UNORM, .mip_type = MIP_GENERATE, .mip_count = 5, .premultiplied_alpha = TRUE, .max_anisotropy = 1.0f};
@@ -459,7 +153,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 
   sprite_manager_init(&(game->sprite_manager), &(game->texture_manager), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 128);
 
-  if (!EVAL_MODE) {
+  if (!DEPLOY_MODE && !DRIVE_OVERRIDE) {
     WSADATA wsa;
     struct sockaddr_in server;
 
@@ -489,18 +183,19 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 
   game->timer = 0;
   game->start_timer = 0;
+  game->state_update_accum = 0.0;
 
   game->starting_pos = (vec3){.x = 0.0f, .y = 0.0f, .z = 0.0f};
   game->starting_heading = 0.0f;
 
-  if (EVAL_MODE)
+  if (DEPLOY_MODE)
     game->current_npcs += MAX_NPCS;
   else
     game->current_npcs += 1;
 
   for (i32 npc_num = 0; npc_num < game->current_npcs; npc_num++) {
     if (npc_num == 0) {
-      if (EVAL_MODE == FALSE)
+      if (DEPLOY_MODE == FALSE)
         load_ac_model("checkpoints/ac_weights.bin", &(game->npcs[npc_num].model));
       game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartgrey");
     } else if (npc_num == 1) {
@@ -525,11 +220,6 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   }
 
   game->camera_current_follow_kart = 0;
-
-  game->flag1 = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/marker.png");
-  place_marker(game->flag1, 165.0f, 0.0f);
-  game->flag2 = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/marker.png");
-  place_marker(game->flag2, -165.0f, 0.0f);
 
   water_shader_init(&(game->water_shader), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 3);
   water_init(&(game->water), &(mana->api.api_common), &(game->water_shader.shader), texture_manager_get(game->sprite_manager.sprite_manager_common.texture_manager, "/textures/waterm1.png"));
@@ -657,371 +347,376 @@ void game_delete(struct Game* game, struct Mana* mana) {
   water_shader_delete(&(game->water_shader), api_common);
   sprite_manager_delete(&(game->sprite_manager), api_common);
   texture_manager_delete(&(game->texture_manager), api_common);
+  if (DEPLOY_MODE || DRIVE_OVERRIDE) {
+    audio_engine_stop(&(game->audio_engine));
+    audio_free_clip_f32(&(game->fart_sfx));
+    audio_free_clip(&(game->raw_fart_sfx));
+    audio_free_clip_f32(&(game->music_sfx));
+    audio_free_clip(&(game->raw_music));
+  }
 }
 
 void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
   struct Window* window = game->window;
   struct InputManager* input_manager = &window->input_manager;
 
-  b8 done = FALSE;
-
-  // Delta time clamping, good for ML but not so good for game?
-  if (delta_time > 0.05)
-    delta_time = 0.05;
-
-  // Hardcoded to episode length of 45 seconds before timeout
-  // If I can complete course in about 30 secnds then AI should have 1.3x to 1.8x buffer
-  game->timer++;
-  if (game->timer > 2700 && !EVAL_MODE) {
-    printf("Episode timed out\n");
-    game->timer = 0;
-    done = TRUE;
+  const r64 state_dt = 1.0 / 60.0;
+  game->state_update_accum += delta_time;
+  b8 update_state = FALSE;
+  if (game->state_update_accum >= state_dt) {
+    update_state = TRUE;
+    game->state_update_accum = 0.0;
   }
 
-  game->start_timer++;
-  b8 start = FALSE;
-  if (game->start_timer > 180)
-    start = TRUE;
-
-  const r32 speed_scale = 144.0f / 60.0f;  // 2.4
-  r32 move_speed = 30.0f * speed_scale;
-  r32 rotation_speed = 1.5f * speed_scale;
-  vec3d cam_pos = camera_get_pos(&game->player.camera);
-
-  // game->cloud->sprite_common.rotation = sprite_billboard_rotation(game->boat1->sprite_common.position, cam_pos);
-
-  game->boat1->sprite_common.rotation = sprite_billboard_rotation(game->boat1->sprite_common.position, cam_pos);
-  game->boat1->sprite_common.position.z -= 2.5f * (r32)delta_time;
-
-  game->aero->sprite_common.position.z += 50.0f * (r32)delta_time;
-
-  for (i32 t = 0; t < game->total_trees; t++)
-    game->trees[t]->sprite_common.rotation = sprite_billboard_rotation(game->trees[t]->sprite_common.position, cam_pos);
-
-  persist b8 prev_left_pressed = FALSE;
-  persist b8 prev_right_pressed = FALSE;
-
-  b8 left_pressed = FALSE;
-  b8 right_pressed = FALSE;
-
-  b8 w_pressed = FALSE;
-  b8 a_pressed = FALSE;
-  b8 s_pressed = FALSE;
-  b8 d_pressed = FALSE;
+  r32 player_steer = 0.0f;
+  r32 player_throttle = 0.0f;
 
   for (size_t controller_num = 0; controller_num < input_manager->controllers.size; controller_num++) {
     struct Controller* controller = (struct Controller*)array_list_get(&(input_manager->controllers), controller_num);
-    if (controller->controller_common.controller_type == CONTROLLER_KEYBOARD_MOUSE) {
-      struct KeyboardMouseController* keyboard_mouse_controller =
-          &(controller->controller_common.keyboard_mouse_controller);
+    if (controller->controller_common.controller_type == CONTROLLER_XBOX) {
+      struct XboxController* xbox_controller = &(controller->controller_common.xbox_controller);
 
-      if (keyboard_mouse_controller->keys[KEY_LEFT].state == PRESSED)
-        left_pressed = TRUE;
-      if (keyboard_mouse_controller->keys[KEY_RIGHT].state == PRESSED)
-        right_pressed = TRUE;
+      if (xbox_controller->buttons[XBOX_CONTROLLER_ACTION_DPAD_LEFT].pushed) {
+        game->camera_current_follow_kart--;
+        if (game->camera_current_follow_kart < 0)
+          game->camera_current_follow_kart = game->current_npcs - 1;
+      }
+      if (xbox_controller->buttons[XBOX_CONTROLLER_ACTION_DPAD_RIGHT].pushed) {
+        game->camera_current_follow_kart++;
+        if (game->camera_current_follow_kart >= game->current_npcs)
+          game->camera_current_follow_kart = 0;
+      }
+
+      if (xbox_controller->buttons[XBOX_CONTROLLER_ACTION_A].state == PRESSED)
+        player_throttle = 1.0f;
+      if (xbox_controller->buttons[XBOX_CONTROLLER_ACTION_B].state == PRESSED)
+        player_throttle = -1.0f;
+      player_steer = xbox_controller->left_x;
+    }
+  }
+
+  // Hack to make sure gamepad joystick can't overwrite keyboard values
+  for (size_t controller_num = 0; controller_num < input_manager->controllers.size; controller_num++) {
+    struct Controller* controller = (struct Controller*)array_list_get(&(input_manager->controllers), controller_num);
+    if (controller->controller_common.controller_type == CONTROLLER_KEYBOARD_MOUSE) {
+      struct KeyboardMouseController* keyboard_mouse_controller = &(controller->controller_common.keyboard_mouse_controller);
+
+      if (keyboard_mouse_controller->keys[KEY_LEFT].pushed) {
+        game->camera_current_follow_kart--;
+        if (game->camera_current_follow_kart < 0)
+          game->camera_current_follow_kart = game->current_npcs - 1;
+      }
+      if (keyboard_mouse_controller->keys[KEY_RIGHT].pushed) {
+        game->camera_current_follow_kart++;
+        if (game->camera_current_follow_kart >= game->current_npcs)
+          game->camera_current_follow_kart = 0;
+      }
 
       if (keyboard_mouse_controller->keys[KEY_W].state == PRESSED)
-        w_pressed = TRUE;
+        player_throttle = 1.0f;
       if (keyboard_mouse_controller->keys[KEY_S].state == PRESSED)
-        s_pressed = TRUE;
+        player_throttle = -1.0f;
       if (keyboard_mouse_controller->keys[KEY_A].state == PRESSED)
-        a_pressed = TRUE;
+        player_steer = -1.0f;
       if (keyboard_mouse_controller->keys[KEY_D].state == PRESSED)
-        d_pressed = TRUE;
+        player_steer = 1.0f;
     }
   }
 
-  if (game->current_npcs > 0) {
-    if (left_pressed && !prev_left_pressed) {
-      game->camera_current_follow_kart--;
-      if (game->camera_current_follow_kart < 0)
-        game->camera_current_follow_kart = game->current_npcs - 1;
+  if (update_state) {
+    float sim_delta_time = 0.01666666666;
+    b8 done = FALSE;
+
+    //// Delta time clamping, good for ML but not so good for game?
+    // if (delta_time > 0.05)
+    //   delta_time = 0.05;
+
+    // Hardcoded to episode length of 45 seconds before timeout
+    // If I can complete course in about 30 secnds then AI should have 1.3x to 1.8x buffer
+    game->timer++;
+    if (game->timer > 2700 && !DEPLOY_MODE) {
+      printf("Episode timed out\n");
+      game->timer = 0;
+      done = TRUE;
     }
 
-    if (right_pressed && !prev_right_pressed) {
-      game->camera_current_follow_kart++;
-      if (game->camera_current_follow_kart >= game->current_npcs)
-        game->camera_current_follow_kart = 0;
-    }
-  }
+    game->start_timer++;
+    b8 start = FALSE;
+    if (game->start_timer > 180)
+      start = TRUE;
 
-  prev_left_pressed = left_pressed;
-  prev_right_pressed = right_pressed;
+    const r32 speed_scale = 144.0f / 60.0f;  // 2.4
+    r32 move_speed = 30.0f * speed_scale;
+    r32 rotation_speed = 1.5f * speed_scale;
+    vec3d cam_pos = camera_get_pos(&game->player.camera);
 
-  for (i32 ai_num = 0; ai_num < game->current_npcs; ai_num++) {
-    r32 steer = game->npcs[ai_num].last_action[0];
-    r32 throttle = game->npcs[ai_num].last_action[1];
+    // game->cloud->sprite_common.rotation = sprite_billboard_rotation(game->boat1->sprite_common.position, cam_pos);
 
-    if (steer > 1.0f)
-      steer = 1.0f;
-    if (steer < -1.0f)
-      steer = -1.0f;
-    if (throttle > 1.0f)
-      throttle = 1.0f;
-    if (throttle < -1.0f)
-      throttle = -1.0f;
+    game->boat1->sprite_common.rotation = sprite_billboard_rotation(game->boat1->sprite_common.position, cam_pos);
+    game->boat1->sprite_common.position.z -= 2.5f * (r32)sim_delta_time;
 
-    // printf("Steer: %f, Throttle: %f\n", steer, throttle);
+    game->aero->sprite_common.position.z += 50.0f * (r32)sim_delta_time;
 
-    if (ai_num == 0 && EVAL_MODE == TRUE) {
-      steer = 0.0f;
-      throttle = 0.0f;
+    for (i32 t = 0; t < game->total_trees; t++)
+      game->trees[t]->sprite_common.rotation = sprite_billboard_rotation(game->trees[t]->sprite_common.position, cam_pos);
 
-      if (w_pressed)
-        throttle = 1.0f;
-      if (s_pressed)
-        throttle = -1.0f;
-      if (a_pressed)
-        steer = -1.0f;
-      if (d_pressed)
+    for (i32 ai_num = 0; ai_num < game->current_npcs; ai_num++) {
+      r32 steer = game->npcs[ai_num].last_action[0];
+      r32 throttle = game->npcs[ai_num].last_action[1];
+
+      if (steer > 1.0f)
         steer = 1.0f;
-    }
+      if (steer < -1.0f)
+        steer = -1.0f;
+      if (throttle > 1.0f)
+        throttle = 1.0f;
+      if (throttle < -1.0f)
+        throttle = -1.0f;
 
-    r32 angle = -rotation_speed * (r32)delta_time * steer;
+      // printf("Steer: %f, Throttle: %f\n", steer, throttle);
 
-    // Update car heading
-    game->npcs[ai_num].heading += angle;
+      if (ai_num == 0 && DRIVE_OVERRIDE == TRUE) {
+        throttle = player_throttle;
+        steer = player_steer;
+      }
 
-    game->npcs[ai_num].speed += throttle * move_speed * (r32)delta_time;
+      r32 angle = -rotation_speed * (r32)sim_delta_time * steer;
 
-    // Clamp speed
-    if (game->npcs[ai_num].speed > 50.0f * speed_scale)
-      game->npcs[ai_num].speed = 50.0f * speed_scale;
-    if (game->npcs[ai_num].speed < -20.0f * speed_scale)
-      game->npcs[ai_num].speed = -20.0f * speed_scale;
+      // Update car heading
+      game->npcs[ai_num].heading += angle;
 
-    // Movement + progress based reward
-    r32 heading = game->npcs[ai_num].heading;
-    vec3 forward_vel = (vec3){.x = (r32)real32_cos(heading), .y = 0.0f, .z = -(r32)real32_sin(heading)};
+      game->npcs[ai_num].speed += throttle * move_speed * (r32)sim_delta_time;
 
-    // Current marker position
-    vec3 marker_pos = game->marker[game->npcs[ai_num].current_marker]->sprite_common.position;
+      // Clamp speed
+      if (game->npcs[ai_num].speed > 50.0f * speed_scale)
+        game->npcs[ai_num].speed = 50.0f * speed_scale;
+      if (game->npcs[ai_num].speed < -20.0f * speed_scale)
+        game->npcs[ai_num].speed = -20.0f * speed_scale;
 
-    // Distance BEFORE movement
-    r32 dx_before = marker_pos.x - game->npcs[ai_num].position.x;
-    r32 dz_before = marker_pos.z - game->npcs[ai_num].position.z;
-    r32 dist_before = real32_sqrt(dx_before * dx_before + dz_before * dz_before);
+      // Movement + progress based reward
+      r32 heading = game->npcs[ai_num].heading;
+      vec3 forward_vel = (vec3){.x = (r32)real32_cos(heading), .y = 0.0f, .z = -(r32)real32_sin(heading)};
 
-    b8 hit_tree = FALSE;
+      // Current marker position
+      vec3 marker_pos = game->marker[game->npcs[ai_num].current_marker]->sprite_common.position;
 
-    ///////////////////////////////////////////////////
-    // Start of reward calculation
-    ///////////////////////////////////////////////////
-    r32 reward = 0.0f;
-    r32 speed_before_move = game->npcs[ai_num].speed;
-    vec3 prev_pos = game->npcs[ai_num].position;
+      // Distance BEFORE movement
+      r32 dx_before = marker_pos.x - game->npcs[ai_num].position.x;
+      r32 dz_before = marker_pos.z - game->npcs[ai_num].position.z;
+      r32 dist_before = real32_sqrt(dx_before * dx_before + dz_before * dz_before);
 
-    //  Move car
-    game->npcs[ai_num].position.x += forward_vel.x * game->npcs[ai_num].speed * (r32)delta_time;
-    game->npcs[ai_num].position.z += forward_vel.z * game->npcs[ai_num].speed * (r32)delta_time;
+      b8 hit_tree = FALSE;
 
-    // For following track
-    r32 track_y = 0.0f;
-    i32 surface_type = TRACK_SURFACE_UNKNOWN;
-    if (track_get_height_at(game->track_model, game->npcs[ai_num].position.x, game->npcs[ai_num].position.z, &track_y, &surface_type)) {
-      const r32 kart_ground_offset = 2.75f;
-      game->npcs[ai_num].position.y = track_y + kart_ground_offset;
+      ///////////////////////////////////////////////////
+      // Start of reward calculation
+      ///////////////////////////////////////////////////
+      r32 reward = 0.0f;
+      //  Move car
+      game->npcs[ai_num].position.x += forward_vel.x * game->npcs[ai_num].speed * (r32)sim_delta_time;
+      game->npcs[ai_num].position.z += forward_vel.z * game->npcs[ai_num].speed * (r32)sim_delta_time;
 
-      // if (ai_num == 0 && EVAL_MODE == TRUE)
-      //   printf("kart %d is on %s\n", ai_num, track_surface_type_name(surface_type));
-    }
+      // For following track
+      r32 track_y = 0.0f;
+      i32 surface_type = TRACK_SURFACE_UNKNOWN;
+      if (track_get_height_at(game->track_model, game->npcs[ai_num].position.x, game->npcs[ai_num].position.z, &track_y, &surface_type)) {
+        const r32 kart_ground_offset = 2.75f;
+        game->npcs[ai_num].position.y = track_y + kart_ground_offset;
 
-    heading = game->npcs[ai_num].heading;
+        // if (ai_num == 0 && DEPLOY_MODE == TRUE)
+        //   printf("kart %d is on %s\n", ai_num, track_surface_type_name(surface_type));
+      }
 
-    // Apply damping
-    r32 damping = 2.0f;
-    game->npcs[ai_num].speed *= real32_exp((r32)((r64)-damping * delta_time));
+      heading = game->npcs[ai_num].heading;
 
-    // Update sprite + camera
-    game->npcs[ai_num].sprite->sprite_common.position = game->npcs[ai_num].position;
-    game->npcs[ai_num].sprite->sprite_common.rotation = sprite_billboard_rotation(game->npcs[ai_num].position, cam_pos);
-    game->npcs[ai_num].sprite->sprite_common.frame_layer = car_frame_from_camera(game->npcs[ai_num].heading, steer, game->npcs[ai_num].position, cam_pos);
+      // Apply damping
+      r32 damping = 2.0f;
+      game->npcs[ai_num].speed *= real32_exp((r32)((r64)-damping * sim_delta_time));
 
-    //  Distance AFTER movement
-    r32 dx_after = marker_pos.x - game->npcs[ai_num].position.x;
-    r32 dz_after = marker_pos.z - game->npcs[ai_num].position.z;
-    r32 dist_after = real32_sqrt(dx_after * dx_after + dz_after * dz_after);
+      // Update sprite + camera
+      game->npcs[ai_num].sprite->sprite_common.position = game->npcs[ai_num].position;
+      game->npcs[ai_num].sprite->sprite_common.rotation = sprite_billboard_rotation(game->npcs[ai_num].position, cam_pos);
+      game->npcs[ai_num].sprite->sprite_common.frame_layer = car_frame_from_camera(game->npcs[ai_num].heading, steer, game->npcs[ai_num].position, cam_pos);
 
-    // Main dense signal: reward distance reduction
-    r32 progress = dist_before - dist_after;
-    if (!hit_tree)
-      reward += 0.1f * progress;
+      //  Distance AFTER movement
+      r32 dx_after = marker_pos.x - game->npcs[ai_num].position.x;
+      r32 dz_after = marker_pos.z - game->npcs[ai_num].position.z;
+      r32 dist_after = real32_sqrt(dx_after * dx_after + dz_after * dz_after);
 
-    const r32 checkpoint_radius = 15.0f;
-    if (!hit_tree && dist_after < checkpoint_radius) {
-      reward += 2.0f;  // checkpoint bonus
+      // Main dense signal: reward distance reduction
+      r32 progress = dist_before - dist_after;
+      if (!hit_tree)
+        reward += 0.1f * progress;
 
-      game->npcs[ai_num].current_marker++;
+      const r32 checkpoint_radius = 15.0f;
+      if (!hit_tree && dist_after < checkpoint_radius) {
+        reward += 2.0f;  // checkpoint bonus
 
-      if (game->npcs[ai_num].current_marker >= game->total_markers) {
-        game->npcs[ai_num].current_marker = 0;
-        reward += 5.0f;  // lap bonus
-        // done = TRUE;
-        // game->timer = 0;
+        game->npcs[ai_num].current_marker++;
+
+        if (game->npcs[ai_num].current_marker >= game->total_markers) {
+          game->npcs[ai_num].current_marker = 0;
+          reward += 5.0f;  // lap bonus
+          // done = TRUE;
+          // game->timer = 0;
+        }
+      }
+
+      // Penalize reversing
+      if (game->npcs[ai_num].speed < 0.0f)
+        reward -= 0.05f;
+      // Small time penalty
+      reward -= 0.005f;
+      // Steering penalty
+      reward -= 0.01f * steer * steer;
+      reward -= 0.02f * real32_fabs(angle);
+
+      // Use the current target marker after checkpoint update so we head towards the next one if we just passed the checkpoint
+      vec3 next_marker = game->marker[game->npcs[ai_num].current_marker]->sprite_common.position;
+
+      // World delta to target, basically aiming towards it
+      r32 dxw = next_marker.x - game->npcs[ai_num].position.x;
+      r32 dzw = next_marker.z - game->npcs[ai_num].position.z;
+
+      r32 fx = -real32_cos(game->npcs[ai_num].heading);
+      r32 fz = real32_sin(game->npcs[ai_num].heading);
+      r32 rx = -real32_sin(game->npcs[ai_num].heading);
+      r32 rz = -real32_cos(game->npcs[ai_num].heading);
+
+      r32 forward_err = dxw * fx + dzw * fz;
+      r32 right_err = dxw * rx + dzw * rz;
+
+      // Normalization constants
+      const r32 norm = 150.0f;
+      const r32 obstacle_norm = 100.0f;
+
+      // Pick the most relevant tree ahead of the car
+      b8 found_tree_ahead = FALSE;
+      r32 best_forward = obstacle_norm;
+      r32 best_right = 0.0f;
+      r32 best_score = R32_MAX;
+
+      for (i32 t = 0; t < game->total_trees; t++) {
+        vec3 tree_pos = game->trees[t]->sprite_common.position;
+
+        r32 dx = tree_pos.x - game->npcs[ai_num].position.x;
+        r32 dz = tree_pos.z - game->npcs[ai_num].position.z;
+
+        r32 forward = dx * fx + dz * fz;
+        r32 right = dx * rx + dz * rz;
+
+        if (forward <= 0.0f)
+          continue;
+
+        r32 score = forward + 2.0f * real32_fabs(right);
+        if (score < best_score) {
+          found_tree_ahead = TRUE;
+          best_score = score;
+          best_forward = forward;
+          best_right = right;
+        }
+      }
+
+      r32 tree_dx = 1.0f;
+      r32 tree_dy = 0.0f;
+
+      if (!DEPLOY_MODE && !DRIVE_OVERRIDE) {
+        struct Packet {
+          r32 dx;       // Next checkpoint x relative to car direction
+          r32 dy;       // Next checkpoint y relative to car direction
+          r32 speed;    // Car speed
+          r32 azimuth;  // Car angle
+          r32 tree_dx;  // Next forward facing tree x relative to car direction
+          r32 tree_dy;  // Next forward facing tree y relative to car direction
+          r32 reward;   // Reward for this step
+          i32 done;     // Whether the episode is done
+        };
+
+        struct Packet packet;
+        // Normalize to roughly [-1,1]
+        packet.dx = forward_err / norm;
+        packet.dy = right_err / norm;
+        packet.speed = game->npcs[ai_num].speed;
+        packet.azimuth = heading;
+        packet.tree_dx = tree_dx;
+        packet.tree_dy = tree_dy;
+        packet.reward = reward;
+        packet.done = done;
+
+        send(game->sock, (char*)&packet, sizeof(packet), 0);
+
+        if (recv_all(game->sock, (char*)game->npcs[ai_num].last_action, sizeof(game->npcs[ai_num].last_action)) <= 0) {
+          game->npcs[ai_num].last_action[0] = 0.0f;
+          game->npcs[ai_num].last_action[1] = 0.0f;
+        }
+
+        if (done) {
+          // game->timer = 0;
+
+          game->npcs[ai_num].speed = 0.0f;
+          game->npcs[ai_num].position = game->starting_pos;
+          game->timer = 0;
+          r32 reset_track_y = 0.0f;
+          i32 reset_surface_type = TRACK_SURFACE_UNKNOWN;
+
+          if (track_get_height_at(game->track_model, game->npcs[ai_num].position.x, game->npcs[ai_num].position.z, &reset_track_y, &reset_surface_type))
+            game->npcs[ai_num].position.y = reset_track_y + 0.75f;
+
+          game->npcs[ai_num].sprite->sprite_common.position = game->npcs[ai_num].position;
+          game->npcs[ai_num].sprite->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
+          game->npcs[ai_num].heading = game->starting_heading;
+          game->npcs[ai_num].sprite->sprite_common.rotation = sprite_billboard_rotation(game->npcs[ai_num].position, cam_pos);
+          game->npcs[ai_num].sprite->sprite_common.frame_layer = car_frame_from_camera(game->npcs[ai_num].heading, steer, game->npcs[ai_num].position, cam_pos);
+
+          game->npcs[ai_num].last_action[0] = 0.0f;
+          game->npcs[ai_num].last_action[1] = 0.0f;
+          game->npcs[ai_num].prev_y = game->npcs[ai_num].position.y;
+
+          game->npcs[ai_num].current_marker = 0;
+        }
+      } else {
+        if (start == TRUE) {
+          r32 value;
+          r32 speed_norm = real32_tanh(game->npcs[ai_num].speed / 120.0f);
+          r32 game_state[7] = {forward_err / norm, right_err / norm, speed_norm, real32_sin(heading), real32_cos(heading), tree_dx, tree_dy};
+          ac_forward(&(game->npcs[ai_num].model), game_state, game->npcs[ai_num].last_action, &value);
+        }
       }
     }
 
-    // Penalize reversing
-    if (game->npcs[ai_num].speed < 0.0f)
-      reward -= 0.05f;
-    // Small time penalty
-    reward -= 0.005f;
-    // Steering penalty
-    reward -= 0.01f * steer * steer;
-    reward -= 0.02f * real32_fabs(angle);
+    if (game->current_npcs > 0) {
+      i32 follow = game->camera_current_follow_kart;
 
-    // Use the current target marker after checkpoint update so we head towards the next one if we just passed the checkpoint
-    vec3 next_marker = game->marker[game->npcs[ai_num].current_marker]->sprite_common.position;
+      if (follow < 0)
+        follow = 0;
+      if (follow >= game->current_npcs)
+        follow = game->current_npcs - 1;
 
-    // World delta to target, basically aiming towards it
-    r32 dxw = next_marker.x - game->npcs[ai_num].position.x;
-    r32 dzw = next_marker.z - game->npcs[ai_num].position.z;
-
-    r32 fx = -real32_cos(game->npcs[ai_num].heading);
-    r32 fz = real32_sin(game->npcs[ai_num].heading);
-    r32 rx = -real32_sin(game->npcs[ai_num].heading);
-    r32 rz = -real32_cos(game->npcs[ai_num].heading);
-
-    r32 forward_err = dxw * fx + dzw * fz;
-    r32 right_err = dxw * rx + dzw * rz;
-
-    // Normalization constants
-    const r32 norm = 150.0f;
-    const r32 obstacle_norm = 100.0f;
-
-    // Pick the most relevant tree ahead of the car
-    b8 found_tree_ahead = FALSE;
-    r32 best_forward = obstacle_norm;
-    r32 best_right = 0.0f;
-    r32 best_score = R32_MAX;
-
-    for (i32 t = 0; t < game->total_trees; t++) {
-      vec3 tree_pos = game->trees[t]->sprite_common.position;
-
-      r32 dx = tree_pos.x - game->npcs[ai_num].position.x;
-      r32 dz = tree_pos.z - game->npcs[ai_num].position.z;
-
-      r32 forward = dx * fx + dz * fz;
-      r32 right = dx * rx + dz * rz;
-
-      if (forward <= 0.0f)
-        continue;
-
-      r32 score = forward + 2.0f * real32_fabs(right);
-      if (score < best_score) {
-        found_tree_ahead = TRUE;
-        best_score = score;
-        best_forward = forward;
-        best_right = right;
-      }
+      game->player.look_at_pos = (vec3d){.x = (r64)game->npcs[follow].position.x, .y = (r64)game->npcs[follow].position.y + 1.5, .z = (r64)game->npcs[follow].position.z};
+      game->player.look_at_azimuth = -(r64)game->npcs[follow].heading;
+      game->player.look_at_elevation = -R64_PI / 32.0;
+      game->player.camera.look_at_elevation = 1.25;
     }
 
-    r32 tree_dx = 1.0f;
-    r32 tree_dy = 0.0f;
+    player_update(&(game->player), input_manager_get_controller_actions(input_manager), input_manager_get_controller_action_list_length(input_manager));
 
-    if (!EVAL_MODE) {
-      struct Packet {
-        r32 dx;       // Next checkpoint x relative to car direction
-        r32 dy;       // Next checkpoint y relative to car direction
-        r32 speed;    // Car speed
-        r32 azimuth;  // Car angle
-        r32 tree_dx;  // Next forward facing tree x relative to car direction
-        r32 tree_dy;  // Next forward facing tree y relative to car direction
-        r32 reward;   // Reward for this step
-        i32 done;     // Whether the episode is done
-      };
+    for (i32 marker_num = 0; marker_num < game->total_markers; marker_num++) {
+      game->marker[marker_num]->sprite_common.rotation = sprite_billboard_rotation(game->marker[marker_num]->sprite_common.position, cam_pos);
+      if (DEPLOY_MODE)
+        game->marker[marker_num]->sprite_common.position.y = -10000.0f;
+    }
 
-      struct Packet packet;
-      // Normalize to roughly [-1,1]
-      packet.dx = forward_err / norm;
-      packet.dy = right_err / norm;
-      packet.speed = game->npcs[ai_num].speed;
-      packet.azimuth = heading;
-      packet.tree_dx = tree_dx;
-      packet.tree_dy = tree_dy;
-      packet.reward = reward;
-      packet.done = done;
-
-      send(game->sock, (char*)&packet, sizeof(packet), 0);
-
-      if (recv_all(game->sock, (char*)game->npcs[ai_num].last_action, sizeof(game->npcs[ai_num].last_action)) <= 0) {
-        game->npcs[ai_num].last_action[0] = 0.0f;
-        game->npcs[ai_num].last_action[1] = 0.0f;
-      }
-
-      if (done) {
-        // game->timer = 0;
-
-        game->npcs[ai_num].speed = 0.0f;
-        game->npcs[ai_num].position = game->starting_pos;
-
-        r32 reset_track_y = 0.0f;
-        i32 reset_surface_type = TRACK_SURFACE_UNKNOWN;
-
-        if (track_get_height_at(game->track_model, game->npcs[ai_num].position.x, game->npcs[ai_num].position.z, &reset_track_y, &reset_surface_type))
-          game->npcs[ai_num].position.y = reset_track_y + 0.75f;
-
-        game->npcs[ai_num].sprite->sprite_common.position = game->npcs[ai_num].position;
-        game->npcs[ai_num].sprite->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
-        game->npcs[ai_num].heading = game->starting_heading;
-        game->npcs[ai_num].sprite->sprite_common.rotation = sprite_billboard_rotation(game->npcs[ai_num].position, cam_pos);
-        game->npcs[ai_num].sprite->sprite_common.frame_layer = car_frame_from_camera(game->npcs[ai_num].heading, steer, game->npcs[ai_num].position, cam_pos);
-
-        game->npcs[ai_num].last_action[0] = 0.0f;
-        game->npcs[ai_num].last_action[1] = 0.0f;
-        game->npcs[ai_num].prev_y = game->npcs[ai_num].position.y;
-
-        game->npcs[ai_num].current_marker = 0;
-      }
-    } else {
-      if (start == TRUE) {
-        r32 value;
-        r32 speed_norm = real32_tanh(game->npcs[ai_num].speed / 120.0f);
-        r32 game_state[7] = {forward_err / norm, right_err / norm, speed_norm, real32_sin(heading), real32_cos(heading), tree_dx, tree_dy};
-        ac_forward(&(game->npcs[ai_num].model), game_state, game->npcs[ai_num].last_action, &value);
+    game->tentacle.accum += (r32)sim_delta_time;
+    if (game->tentacle.accum > game->tentacle.accum_limit) {
+      game->tentacle.frame = (game->tentacle.frame + 1) % game->tentacle.max_frames;
+      game->tentacle.accum = 0.0f;
+      game->tentacle.sprite->sprite_common.frame_layer = game->tentacle.frame;
+      if (game->tentacle.frame == 4) {
+        if (DEPLOY_MODE || DRIVE_OVERRIDE)
+          audio_play_sfx(&(game->audio_engine), &game->fart_sfx, game->audio_volome);
       }
     }
+    game->tentacle.sprite->sprite_common.rotation = sprite_billboard_rotation(game->tentacle.sprite->sprite_common.position, cam_pos);
   }
-
-  if (game->current_npcs > 0) {
-    i32 follow = game->camera_current_follow_kart;
-
-    if (follow < 0)
-      follow = 0;
-    if (follow >= game->current_npcs)
-      follow = game->current_npcs - 1;
-
-    game->player.look_at_pos = (vec3d){.x = (r64)game->npcs[follow].position.x, .y = (r64)game->npcs[follow].position.y + 1.5, .z = (r64)game->npcs[follow].position.z};
-    game->player.look_at_azimuth = -(r64)game->npcs[follow].heading;
-    game->player.look_at_elevation = -R64_PI / 32.0;
-    game->player.camera.look_at_elevation = 1.25;
-  }
-
-  player_update(&(game->player), input_manager_get_controller_actions(input_manager), input_manager_get_controller_action_list_length(input_manager));
-
-  // Make this always facing toward the camera
-  for (i32 marker_num = 0; marker_num < game->total_markers; marker_num++) {
-    mat4 marker_rotation = mat4_rotate(MAT4_IDENTITY, -(r32)R32_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
-    marker_rotation = mat4_rotate(marker_rotation, (r32)R32_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
-    game->marker[marker_num]->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(marker_rotation, (r32)-game->player.camera.look_at_azimuth, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f}));
-    // TODO: Commented out temporarily because we just want to hide markers for now
-    // if (EVAL_MODE)
-    game->marker[marker_num]->sprite_common.position.y = -10000.0f;
-  }
-  mat4 flag1_rotation = mat4_rotate(MAT4_IDENTITY, -(r32)R32_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
-  flag1_rotation = mat4_rotate(flag1_rotation, (r32)R32_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
-  game->flag1->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(flag1_rotation, (r32)-game->player.camera.look_at_azimuth, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f}));
-  mat4 flag2_rotation = mat4_rotate(MAT4_IDENTITY, -(r32)R32_PI / 2.0f, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
-  flag2_rotation = mat4_rotate(flag2_rotation, (r32)R32_PI / 2.0f, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f});
-  game->flag2->sprite_common.rotation = mat4_to_quaternion(mat4_rotate(flag2_rotation, (r32)-game->player.camera.look_at_azimuth, (vec3){.x = 0.0f, .y = 1.0f, .z = 0.0f}));
-
-  game->tentacle.accum += (r32)delta_time;
-  if (game->tentacle.accum > game->tentacle.accum_limit) {
-    game->tentacle.frame = (game->tentacle.frame + 1) % game->tentacle.max_frames;
-    game->tentacle.accum = 0.0f;
-    game->tentacle.sprite->sprite_common.frame_layer = game->tentacle.frame;
-  }
-  game->tentacle.sprite->sprite_common.rotation = sprite_billboard_rotation(game->tentacle.sprite->sprite_common.position, cam_pos);
 }
 
 void game_render(struct Game* game, struct Mana* mana, r64 delta_time) {

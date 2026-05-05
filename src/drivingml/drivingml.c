@@ -54,9 +54,10 @@ void drivingml_delete(struct DrivingML* drivingml) {
 }
 
 void drivingml_start(struct DrivingML* drivingml) {
-  const r64 sim_dt = 1.0 / 60.0;
   r64 previous_time = get_high_resolution_time();
-  r64 accumulator = 0.0;
+
+  r64 minimized_update_accum = 0.0;
+  const r64 minimized_update_dt = 1.0 / 60.0;
 
   while (!drivingml->window.should_close) {
     r64 current_time = get_high_resolution_time();
@@ -64,33 +65,22 @@ void drivingml_start(struct DrivingML* drivingml) {
 
     previous_time = current_time;
 
-    if (frame_time > 0.25) frame_time = 0.25;  // avoid giant catch-up
-    accumulator += frame_time;
-    // window->minimized
     window_prepare_frame(&(drivingml->window));
 
-    i32 max_steps = 5;
-    i32 steps = 0;
+    if (drivingml->window.minimized && DEPLOY_MODE == TRUE) {
+      minimized_update_accum += frame_time;
 
-    if (EVAL_MODE) {
-      // In training mode we want to run as many sim steps as possible to speed up training, but still render every frame so we can see what's going on
-      while (accumulator >= sim_dt && steps < max_steps) {
-        game_update(&(drivingml->game), &(drivingml->mana), sim_dt);
-        accumulator -= sim_dt;
-        steps++;
+      if (minimized_update_accum >= minimized_update_dt) {
+        game_update(&(drivingml->game), &(drivingml->mana), minimized_update_dt);
+        minimized_update_accum = 0.0;
+      } else {
+        Sleep(1);
       }
+    } else {
+      minimized_update_accum = 0.0;
+      game_update(&(drivingml->game), &(drivingml->mana), frame_time);
+    }
 
-      if (drivingml->window.minimized) {
-        r64 sleep_s = sim_dt - accumulator;
-        // More than 1 ms left
-        if (sleep_s > 0.001) {
-          Sleep((DWORD)((sleep_s - 0.001) * 1000.0));
-        }
-      }
-    } else
-      game_update(&(drivingml->game), &(drivingml->mana), 0.01666666666);
-
-    // render once per displayed frame
     game_render(&(drivingml->game), &(drivingml->mana), frame_time);
     window_end_frame(&(drivingml->window));
   }

@@ -13,7 +13,7 @@ HOST = "127.0.0.1"
 PORT = 5000
 
 # Set to False to resume training
-EVAL_MODE = False
+DEPLOY_MODE = False
 # If True: overwrite single checkpoint
 SAVE_ONLY_LATEST = True
 # Export .bin weights for C engine
@@ -197,7 +197,7 @@ while True:
     # ------------------------------------------------------------
     # IMPORTANT: The reward that just arrived belongs to the PREVIOUS action
     # ------------------------------------------------------------
-    if not EVAL_MODE and prev_state is not None:
+    if not DEPLOY_MODE and prev_state is not None:
         states.append(prev_state)
         us.append(prev_u)
         old_log_probs.append(prev_log_prob)
@@ -225,7 +225,7 @@ while True:
         prev_value = None
     else:
         # If evaluating(testing) the model then we just use the mean direction, otherwise add random for training
-        if EVAL_MODE:
+        if DEPLOY_MODE:
             # Deterministic action
             u = mean
         else:
@@ -250,7 +250,7 @@ while True:
         # If training then store past into buffers
         # Store CURRENT action/state as pending.
         # Its reward will arrive in the NEXT packet.
-        if not EVAL_MODE:
+        if not DEPLOY_MODE:
             prev_state = state.detach()
             prev_u = u.detach()
             prev_log_prob = log_prob.detach()
@@ -259,7 +259,7 @@ while True:
 
     # If episode finished then we train and save training
     # Trigger training on rollout or episode end
-    if not EVAL_MODE and (done == 1 or len(rewards) >= rollout_length):
+    if not DEPLOY_MODE and (done == 1 or len(rewards) >= rollout_length):
         if done == 1:
             episode += 1
 

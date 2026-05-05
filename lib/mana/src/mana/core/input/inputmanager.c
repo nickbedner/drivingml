@@ -9,6 +9,11 @@ void input_manager_init(struct InputManager* input_manager, struct Surface* surf
   keyboard_mouse_controller->controller_common.controller_type = CONTROLLER_KEYBOARD_MOUSE;
   controller_init(keyboard_mouse_controller);  // Keyboard and mouse controller
   array_list_add(&(input_manager->controllers), keyboard_mouse_controller);
+
+  struct Controller* xbox_controller = (struct Controller*)calloc(1, sizeof(struct Controller));
+  xbox_controller->controller_common.controller_type = CONTROLLER_XBOX;
+  controller_init(xbox_controller);  // Xbox controller
+  array_list_add(&(input_manager->controllers), xbox_controller);
 #endif
 #ifdef GAMECUBE_CONTROLLER_SUPPORTED
   // TODO: This is good code and I need to finish this but at a later time
