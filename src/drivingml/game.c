@@ -22,7 +22,7 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
     snprintf(fart_path, MAX_LENGTH_OF_PATH, "%s/audio/fart.wav", mana->api.api_common.asset_directory);
     load_audio(fart_path, &(game->raw_fart_sfx));
     audio_prepare_clip(&game->raw_fart_sfx, &game->fart_sfx);
-    audio_play_sfx(&(game->audio_engine), &game->fart_sfx, game->audio_volome);
+    // audio_play_sfx(&(game->audio_engine), &game->fart_sfx, game->audio_volome);
 
     char music_path[MAX_LENGTH_OF_PATH] = {0};
     snprintf(music_path, MAX_LENGTH_OF_PATH, "%s/audio/Koopa Troopa Beach.wav", mana->api.api_common.asset_directory);
@@ -151,6 +151,12 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
       "/textures/tentacle/tile007.png"};
   texture_manager_add_array(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/tentacle", tentacle_frames, 8);
 
+  const char* crab_frames[] = {
+      "/textures/crab/tile000.png",
+      "/textures/crab/tile001.png",
+  };
+  texture_manager_add_array(&(game->texture_manager), &(mana->api.api_common), sprite_texture_settings, "/textures/crab", crab_frames, 2);
+
   sprite_manager_init(&(game->sprite_manager), &(game->texture_manager), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 128);
 
   water_shader_init(&(game->water_shader), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 3);
@@ -251,8 +257,43 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->aero->sprite_common.rotation = mat4_to_quaternion(rot);
 
   game->boat1 = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/boats/boat1.png");
-  game->boat1->sprite_common.position = (vec3){.x = 45.0f, .y = 16.0f, .z = 50.0f};
+  game->boat1->sprite_common.position = (vec3){.x = -300.0f, .y = 16.0f, .z = 450.0f};
   game->boat1->sprite_common.scale = (vec3){.x = 25.0f, .y = 25.0f, .z = 1.0f};
+
+  const char* barrel_textures[MAX_BARRELS] = {
+      "/textures/barrel1.png",
+      "/textures/barrel1.png",
+      "/textures/barrel2.png",
+  };
+
+  vec3 barrel_positions[MAX_BARRELS] = {
+      {.x = -20.0f, .y = 3.0f, .z = 400.0f},
+      {.x = 0.0f, .y = 3.0f, .z = 410.0f},
+      {.x = -62.0f, .y = 2.0f, .z = 405.0f},
+  };
+
+  for (i32 barrel_num = 0; barrel_num < MAX_BARRELS; barrel_num++) {
+    struct Sprite* barrel_sprite = sprite_manager_add_sprite(
+        &(game->sprite_manager),
+        &(mana->api.api_common),
+        barrel_textures[barrel_num]);
+
+    barrel_obstacle_init(&game->barrels[barrel_num], barrel_sprite, barrel_positions[barrel_num]);
+  }
+
+  vec3 crab_positions[MAX_CRABS] = {
+      {.x = -28.0f, .y = 3.0f, .z = 0.0f},
+      {.x = 20.0f, .y = 3.0f, .z = 80.0f},
+      {.x = -12.0f, .y = 3.0f, .z = 32.0f},
+  };
+
+  for (i32 crab_num = 0; crab_num < MAX_CRABS; crab_num++) {
+    struct Sprite* crab_sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/crab");
+
+    r32 start_dir = (crab_num % 2 == 0) ? 1.0f : -1.0f;
+
+    crab_obstacle_init(&game->crabs[crab_num], crab_sprite, crab_positions[crab_num], CRAB_WALK_HALF_RANGE, CRAB_WALK_SPEED, start_dir);
+  }
 
   game->tentacle.sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/tentacle");
   game->tentacle.sprite->sprite_common.position = (vec3){.x = 30.0f, .y = 3.25f, .z = -138.0f};
@@ -307,24 +348,30 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
       if (DEPLOY_MODE == FALSE)
         load_ac_model("checkpoints/ac_weights.bin", &(game->npcs[npc_num].model));
       game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartgrey");
-    } else if (npc_num == 1) {
-      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartred");
-      load_ac_model("checkpoints/ac_weights100.bin", &(game->npcs[npc_num].model));
-    } else if (npc_num == 2) {
-      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartcyan");
-      load_ac_model("checkpoints/ac_weights300.bin", &(game->npcs[npc_num].model));
-    } else if (npc_num == 3) {
-      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartgreen");
-      load_ac_model("checkpoints/ac_weights500.bin", &(game->npcs[npc_num].model));
-    } else {
-      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartgreen");
-      load_ac_model("checkpoints/ac_weights500.bin", &(game->npcs[npc_num].model));
     }
     // Forced override for testing
-    if (npc_num < 5)
+    else if (npc_num < 5) {
+      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartred");
       load_ac_model("checkpoints/ac_weightsh.bin", &(game->npcs[npc_num].model));
-    else
+      game->npcs[npc_num].risk_preference_init = 1.0f;
+    } else {
+      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartcyan");
       load_ac_model("checkpoints/ac_weightsl.bin", &(game->npcs[npc_num].model));
+      game->npcs[npc_num].risk_preference_init = 0.0f;
+    }
+    // else if (npc_num == 1) {
+    //   game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartred");
+    //   load_ac_model("checkpoints/ac_weights100.bin", &(game->npcs[npc_num].model));
+    // } else if (npc_num == 2) {
+    //   game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartcyan");
+    //   load_ac_model("checkpoints/ac_weights300.bin", &(game->npcs[npc_num].model));
+    // } else if (npc_num == 3) {
+    //   game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartgreen");
+    //   load_ac_model("checkpoints/ac_weights500.bin", &(game->npcs[npc_num].model));
+    // } else {
+    //   game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartgreen");
+    //   load_ac_model("checkpoints/ac_weights500.bin", &(game->npcs[npc_num].model));
+    // }
 
     game->npcs[npc_num].speed = 0.0f;
 
@@ -357,7 +404,10 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
     if (start_marker_index < 0)
       start_marker_index = 0;
     game->npcs[npc_num].current_marker = start_marker_index;
-    game->npcs[npc_num].risk_preference = AI_RISK_PREFERENCE;
+    if (!DEPLOY_MODE)
+      game->npcs[npc_num].risk_preference = AI_RISK_PREFERENCE;
+    else
+      game->npcs[npc_num].risk_preference = game->npcs[npc_num].risk_preference_init;
     game->npcs[npc_num].last_action[0] = 0.0f;
     game->npcs[npc_num].last_action[1] = 0.0f;
     game->npcs[npc_num].prev_y = game->npcs[npc_num].position.y;
@@ -484,9 +534,15 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
     // game->cloud->sprite_common.rotation = sprite_billboard_rotation(game->boat1->sprite_common.position, cam_pos);
 
     game->boat1->sprite_common.rotation = sprite_billboard_rotation(game->boat1->sprite_common.position, cam_pos);
-    game->boat1->sprite_common.position.z -= 2.5f * (r32)sim_delta_time;
+    game->boat1->sprite_common.position.x += 0.5f * (r32)sim_delta_time;
 
     game->aero->sprite_common.position.z += 50.0f * (r32)sim_delta_time;
+
+    for (i32 barrel_num = 0; barrel_num < MAX_BARRELS; barrel_num++)
+      barrel_obstacle_update(&game->barrels[barrel_num], &game->game_map, (r32)sim_delta_time, cam_pos);
+
+    for (i32 crab_num = 0; crab_num < MAX_CRABS; crab_num++)
+      crab_obstacle_update(&game->crabs[crab_num], &game->game_map, (r32)sim_delta_time, cam_pos);
 
     for (i32 t = 0; t < game->total_trees; t++)
       game->game_map.trees[t]->sprite_common.rotation = sprite_billboard_rotation(game->game_map.trees[t]->sprite_common.position, cam_pos);
@@ -546,15 +602,67 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
       game->npcs[ai_num].position.x += forward_vel.x * game->npcs[ai_num].speed * (r32)sim_delta_time;
       game->npcs[ai_num].position.z += forward_vel.z * game->npcs[ai_num].speed * (r32)sim_delta_time;
 
+      for (i32 barrel_num = 0; barrel_num < MAX_BARRELS; barrel_num++) {
+        struct BarrelObstacle* barrel = &game->barrels[barrel_num];
+
+        if (!barrel->active || !barrel->sprite)
+          continue;
+
+        r32 barrel_dx = barrel->sprite->sprite_common.position.x - game->npcs[ai_num].position.x;
+        r32 barrel_dz = barrel->sprite->sprite_common.position.z - game->npcs[ai_num].position.z;
+        r32 barrel_dist = real32_sqrt(barrel_dx * barrel_dx + barrel_dz * barrel_dz);
+
+        if (barrel_dist < BARREL_HIT_RADIUS) {
+          game->npcs[ai_num].speed *= BARREL_SPEED_MULTIPLIER;
+          reward += BARREL_HIT_REWARD_PENALTY;
+
+          barrel->active = FALSE;
+          barrel->respawn_timer = BARREL_RESPAWN_TIME;
+          barrel->sprite->sprite_common.position.y = -10000.0f;
+
+          break;
+        }
+      }
+
+      for (i32 crab_num = 0; crab_num < MAX_CRABS; crab_num++) {
+        struct CrabObstacle* crab = &game->crabs[crab_num];
+
+        if (!crab->active || !crab->sprite)
+          continue;
+
+        r32 crab_dx = crab->sprite->sprite_common.position.x - game->npcs[ai_num].position.x;
+        r32 crab_dz = crab->sprite->sprite_common.position.z - game->npcs[ai_num].position.z;
+        r32 crab_dist = real32_sqrt(crab_dx * crab_dx + crab_dz * crab_dz);
+
+        if (crab_dist < CRAB_HIT_RADIUS) {
+          game->npcs[ai_num].speed *= CRAB_SPEED_MULTIPLIER;
+          reward += CRAB_HIT_REWARD_PENALTY;
+
+          if (DEPLOY_MODE || DRIVE_OVERRIDE)
+            audio_play_sfx(&(game->audio_engine), &(game->fart_sfx), game->audio_volome);
+
+          crab->active = FALSE;
+          crab->respawn_timer = CRAB_RESPAWN_TIME;
+          crab->sprite->sprite_common.position.y = -10000.0f;
+
+          break;
+        }
+      }
+
       // For following track
       r32 track_y = 0.0f;
       i32 surface_type = TRACK_SURFACE_UNKNOWN;
+      r32 surface_bad = 1.0f;
       if (track_get_height_at(game->game_map.track_model, game->npcs[ai_num].position.x, game->npcs[ai_num].position.z, &track_y, &surface_type)) {
         const r32 kart_ground_offset = 2.75f;
         game->npcs[ai_num].position.y = track_y + kart_ground_offset;
-
-        // if (ai_num == 0 && DEPLOY_MODE == TRUE)
-        //   printf("kart %d is on %s\n", ai_num, track_surface_type_name(surface_type));
+        surface_bad = is_good_driving_surface(surface_type) ? 0.0f : 1.0f;
+        game->npcs[ai_num].speed *= track_surface_step_speed_multiplier(surface_type);
+        if (surface_bad > 0.0f) reward -= 0.03f;
+      } else {
+        surface_bad = 1.0f;
+        game->npcs[ai_num].speed *= 0.90f;
+        reward -= 0.05f;
       }
 
       heading = game->npcs[ai_num].heading;
@@ -620,42 +728,44 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
       r32 rx = -real32_sin(game->npcs[ai_num].heading);
       r32 rz = -real32_cos(game->npcs[ai_num].heading);
 
-      r32 forward_err = dxw * fx + dzw * fz;
-      r32 right_err = dxw * rx + dzw * rz;
-
       // Normalization constants
-      const r32 norm = 150.0f;
       const r32 obstacle_norm = 100.0f;
-
       // Pick the most relevant tree ahead of the car
-      b8 found_tree_ahead = FALSE;
-      r32 best_forward = obstacle_norm;
-      r32 best_right = 0.0f;
-      r32 best_score = R32_MAX;
+      r32 obstacle_dx = 1.0f;
+      r32 obstacle_dy = 0.0f;
+      r32 powerup_dx = 1.0f;
+      r32 powerup_dy = 0.0f;
 
-      for (i32 t = 0; t < game->total_trees; t++) {
-        vec3 tree_pos = game->game_map.trees[t]->sprite_common.position;
-
-        r32 dx = tree_pos.x - game->npcs[ai_num].position.x;
-        r32 dz = tree_pos.z - game->npcs[ai_num].position.z;
-
-        r32 forward = dx * fx + dz * fz;
-        r32 right = dx * rx + dz * rz;
-
-        if (forward <= 0.0f)
+      closest_sprite_ahead_features(game->game_map.trees, NULL, game->total_trees, &game->npcs[ai_num], fx, fz, rx, rz, obstacle_norm, &obstacle_dx, &obstacle_dy);
+      for (i32 barrel_num = 0; barrel_num < MAX_BARRELS; barrel_num++) {
+        if (!game->barrels[barrel_num].active)
           continue;
 
-        r32 score = forward + 2.0f * real32_fabs(right);
-        if (score < best_score) {
-          found_tree_ahead = TRUE;
-          best_score = score;
-          best_forward = forward;
-          best_right = right;
+        merge_single_sprite_ahead_feature(game->barrels[barrel_num].sprite, &game->npcs[ai_num], fx, fz, rx, rz, obstacle_norm, &obstacle_dx, &obstacle_dy);
+      }
+      for (i32 crab_num = 0; crab_num < MAX_CRABS; crab_num++) {
+        if (!game->crabs[crab_num].active)
+          continue;
+
+        merge_single_sprite_ahead_feature(game->crabs[crab_num].sprite, &game->npcs[ai_num], fx, fz, rx, rz, obstacle_norm, &obstacle_dx, &obstacle_dy);
+      }
+      closest_sprite_ahead_features(game->game_map.rewards, game->game_map.reward_collected, game->total_rewards, &game->npcs[ai_num], fx, fz, rx, rz, obstacle_norm, &powerup_dx, &powerup_dy);
+
+      const r32 reward_pickup_radius = 12.0f;
+      for (i32 r = 0; r < game->total_rewards; r++) {
+        if (game->game_map.reward_collected[r] || !game->game_map.rewards[r]) continue;
+        vec3 reward_pos = game->game_map.rewards[r]->sprite_common.position;
+        r32 dx = reward_pos.x - game->npcs[ai_num].position.x;
+        r32 dz = reward_pos.z - game->npcs[ai_num].position.z;
+        r32 d = real32_sqrt(dx * dx + dz * dz);
+        if (d < reward_pickup_radius) {
+          game->game_map.reward_collected[r] = TRUE;
+          game->game_map.rewards[r]->sprite_common.position.y = -10000.0f;
+          reward += 1.5f;
         }
       }
 
-      r32 tree_dx = 1.0f;
-      r32 tree_dy = 0.0f;
+      const r32 marker_norm = 150.0f;
 
       struct TargetOption target_options[2];
       get_current_target_options(&game->game_map, &game->npcs[ai_num], target_options);
@@ -667,49 +777,44 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
       r32 option1_dy = 0.0f;
       r32 option1_risk = 0.0f;
 
-      marker_option_to_local_features(&game->game_map, &game->npcs[ai_num], target_options[0], norm, &option0_dx, &option0_dy, &option0_risk);
-      marker_option_to_local_features(&game->game_map, &game->npcs[ai_num], target_options[1], norm, &option1_dx, &option1_dy, &option1_risk);
+      marker_option_to_local_features(&game->game_map, &game->npcs[ai_num], target_options[0], marker_norm, &option0_dx, &option0_dy, &option0_risk);
+      marker_option_to_local_features(&game->game_map, &game->npcs[ai_num], target_options[1], marker_norm, &option1_dx, &option1_dy, &option1_risk);
 
       if (!DEPLOY_MODE && !DRIVE_OVERRIDE) {
         struct Packet {
           r32 option0_dx;
           r32 option0_dy;
           r32 option0_risk;
-
           r32 option1_dx;
           r32 option1_dy;
           r32 option1_risk;
-
           r32 risk_preference;
-
           r32 speed;
           r32 azimuth;
-
-          r32 tree_dx;
-          r32 tree_dy;
-
+          r32 obstacle_dx;
+          r32 obstacle_dy;
+          r32 powerup_dx;
+          r32 powerup_dy;
+          r32 surface_bad;
           r32 reward;
           i32 done;
         };
 
         struct Packet packet;
-
         packet.option0_dx = option0_dx;
         packet.option0_dy = option0_dy;
         packet.option0_risk = option0_risk;
-
         packet.option1_dx = option1_dx;
         packet.option1_dy = option1_dy;
         packet.option1_risk = option1_risk;
-
         packet.risk_preference = game->npcs[ai_num].risk_preference;
-
         packet.speed = game->npcs[ai_num].speed;
         packet.azimuth = heading;
-
-        packet.tree_dx = tree_dx;
-        packet.tree_dy = tree_dy;
-
+        packet.obstacle_dx = obstacle_dx;
+        packet.obstacle_dy = obstacle_dy;
+        packet.powerup_dx = powerup_dx;
+        packet.powerup_dy = powerup_dy;
+        packet.surface_bad = surface_bad;
         packet.reward = reward;
         packet.done = done;
 
@@ -722,6 +827,11 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
 
         if (done) {
           // game->timer = 0;
+
+          for (i32 r = 0; r < game->total_rewards; r++) {
+            game->game_map.reward_collected[r] = FALSE;
+            if (game->game_map.rewards[r]) game->game_map.rewards[r]->sprite_common.position.y = 4.0f;
+          }
 
           game->npcs[ai_num].speed = 0.0f;
           game->npcs[ai_num].position = game->game_map.start_pos;
@@ -754,7 +864,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
         if (start == TRUE) {
           r32 value;
           r32 speed_norm = real32_tanh(game->npcs[ai_num].speed / 120.0f);
-          r32 game_state[12] = {option0_dx, option0_dy, option0_risk, option1_dx, option1_dy, option1_risk, game->npcs[ai_num].risk_preference, speed_norm, real32_sin(heading), real32_cos(heading), tree_dx, tree_dy};
+          r32 game_state[15] = {option0_dx, option0_dy, option0_risk, option1_dx, option1_dy, option1_risk, game->npcs[ai_num].risk_preference, speed_norm, real32_sin(heading), real32_cos(heading), obstacle_dx, obstacle_dy, powerup_dx, powerup_dy, surface_bad};
           ac_forward(&(game->npcs[ai_num].model), game_state, game->npcs[ai_num].last_action, &value);
         }
       }
@@ -793,10 +903,10 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
       game->tentacle.frame = (game->tentacle.frame + 1) % game->tentacle.max_frames;
       game->tentacle.accum = 0.0f;
       game->tentacle.sprite->sprite_common.frame_layer = game->tentacle.frame;
-      if (game->tentacle.frame == 4) {
-        if (DEPLOY_MODE || DRIVE_OVERRIDE)
-          audio_play_sfx(&(game->audio_engine), &game->fart_sfx, game->audio_volome);
-      }
+      // if (game->tentacle.frame == 4) {
+      //   if (DEPLOY_MODE || DRIVE_OVERRIDE)
+      //     audio_play_sfx(&(game->audio_engine), &game->fart_sfx, game->audio_volome);
+      // }
     }
     // game->tentacle.sprite->sprite_common.rotation = sprite_billboard_rotation(game->tentacle.sprite->sprite_common.position, cam_pos);
   }
@@ -846,9 +956,9 @@ void game_render(struct Game* game, struct Mana* mana, r64 delta_time) {
     // GBuffer, only texture that needs to be multisampled
     gbuffer_start(window->gbuffer, &(window->swap_chain->swap_chain_common), window->renderer.renderer_settings.msaa_samples);
 
-    model_render(game->test_model, window->gbuffer, delta_time);
-    model_render(game->test_static_model, window->gbuffer, delta_time);
-    model_render(game->coin_model, window->gbuffer, delta_time);
+    // model_render(game->test_model, window->gbuffer, delta_time);
+    // model_render(game->test_static_model, window->gbuffer, delta_time);
+    // model_render(game->coin_model, window->gbuffer, delta_time);
     model_render(game->game_map.track_model, window->gbuffer, delta_time);
     model_render(game->game_map.plane_model, window->gbuffer, delta_time);
 

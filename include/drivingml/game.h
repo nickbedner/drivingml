@@ -16,7 +16,7 @@
 #include "drivingml/core/ac_model.h"
 #include "drivingml/core/player.h"
 
-#define DRIVE_OVERRIDE FALSE
+#define DRIVE_OVERRIDE TRUE
 #define DEPLOY_MODE TRUE
 
 #define MAX_MARKERS 32
@@ -24,6 +24,25 @@
 #define MAX_NEXT_MARKERS 2
 #define MAX_NPCS 8
 #define MAX_TREES 32
+#define MAX_REWARDS 32
+
+#define BARREL_HIT_RADIUS 4.0f
+#define BARREL_RESPAWN_TIME 3.0f
+#define BARREL_SPEED_MULTIPLIER 0.15f
+#define BARREL_HIT_REWARD_PENALTY -1.25f
+
+#define MAX_BARRELS 3
+
+#define MAX_CRABS 3
+
+#define CRAB_HIT_RADIUS BARREL_HIT_RADIUS
+#define CRAB_RESPAWN_TIME BARREL_RESPAWN_TIME
+#define CRAB_SPEED_MULTIPLIER BARREL_SPEED_MULTIPLIER
+#define CRAB_HIT_REWARD_PENALTY BARREL_HIT_REWARD_PENALTY
+
+#define CRAB_WALK_HALF_RANGE 30.0f
+#define CRAB_WALK_SPEED 6.0f
+#define CRAB_FRAME_TIME 0.20f
 
 // Hyperparameter:
 // 0.0 = prefer safest path
@@ -47,12 +66,11 @@ struct MarkerData {
 struct GameMap {
   struct MarkerData markers[MAX_MARKERS];
   i32 marker_id_to_index[MAX_MARKER_ID];
-
   struct Sprite* trees[MAX_TREES];
-
+  struct Sprite* rewards[MAX_REWARDS];
+  b8 reward_collected[MAX_REWARDS];
   struct Model* track_model;
   struct Model* plane_model;
-
   vec3 start_pos;
   float start_heading;
 };
@@ -68,6 +86,7 @@ struct NPC {
   i32 last_marker;
   r32 risk_preference;
   struct Sprite* sprite;
+  r32 risk_preference_init;
 };
 
 struct Tentacle {
@@ -76,6 +95,29 @@ struct Tentacle {
   r32 accum_limit;
   u8 frame;
   u8 max_frames;
+};
+
+struct BarrelObstacle {
+  struct Sprite* sprite;
+  b8 active;
+  r32 respawn_timer;
+  vec3 spawn_pos;
+};
+
+struct CrabObstacle {
+  struct Sprite* sprite;
+  b8 active;
+  r32 respawn_timer;
+
+  vec3 spawn_pos;
+
+  r32 walk_offset;
+  r32 walk_dir;
+  r32 walk_half_range;
+  r32 walk_speed;
+
+  r32 frame_accum;
+  u8 frame;
 };
 
 struct Game {
@@ -102,12 +144,18 @@ struct Game {
 
   struct Sprite* aero;
 
+  struct BarrelObstacle barrels[MAX_BARRELS];
+
+  struct CrabObstacle crabs[MAX_CRABS];
+
   struct Tentacle tentacle;
   struct GameMap game_map;
 
   struct Model* test_model;
   struct Model* test_static_model;
   struct Model* coin_model;
+
+  i32 total_rewards;
 
   SOCKET sock;
 
@@ -140,6 +188,62 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window);
 void game_delete(struct Game* game, struct Mana* mana);
 void game_update(struct Game* game, struct Mana* mana, r64 delta_time);
 void game_render(struct Game* game, struct Mana* mana, r64 delta_time);
+
+internal b8 is_good_driving_surface(i32 surface_type) {
+  return surface_type == TRACK_SURFACE_ROAD || surface_type == TRACK_SURFACE_SAND_DRIVE;
+}
+
+internal r32 track_surface_step_speed_multiplier(i32 surface_type) {
+  switch (surface_type) {
+    case TRACK_SURFACE_ROAD:
+      return 1.0f;
+    case TRACK_SURFACE_SAND_DRIVE:
+      return 1.0f;
+    case TRACK_SURFACE_GRASS:
+      return 0.985f;
+    case TRACK_SURFACE_SAND:
+      return 0.965f;
+    case TRACK_SURFACE_WALL:
+      return 0.850f;
+    case TRACK_SURFACE_OOB:
+      return 0.750f;
+    default:
+      return 0.950f;
+  }
+}
+
+internal void closest_sprite_ahead_features(struct Sprite** sprites, const b8* ignored, i32 count, struct NPC* npc, r32 fx, r32 fz, r32 rx, r32 rz, r32 norm, r32* out_forward, r32* out_right) {
+  b8 found = FALSE;
+  r32 best_score = R32_MAX;
+  r32 best_forward = norm;
+  r32 best_right = 0.0f;
+  for (i32 i = 0; i < count; i++) {
+    if (ignored && ignored[i]) continue;
+    if (!sprites[i]) continue;
+    vec3 p = sprites[i]->sprite_common.position;
+    r32 dx = p.x - npc->position.x;
+    r32 dz = p.z - npc->position.z;
+    r32 forward = dx * fx + dz * fz;
+    r32 right = dx * rx + dz * rz;
+    if (forward <= 0.0f) continue;
+    r32 score = forward + 2.0f * real32_fabs(right);
+    if (score < best_score) {
+      found = TRUE;
+      best_score = score;
+      best_forward = forward;
+      best_right = right;
+    }
+  }
+  *out_forward = found ? best_forward / norm : 1.0f;
+  *out_right = found ? best_right / norm : 0.0f;
+}
+
+internal inline void place_reward_sprite(struct Sprite* reward, r32 x, r32 y) {
+  reward->sprite_common.position = (vec3){.x = x, .y = 4.0f, .z = y};
+  reward->sprite_common.scale = (vec3){.x = 3.0f, .y = 3.0f, .z = 0.0f};
+  mat4 rot = mat4_rotate(MAT4_IDENTITY, -(r32)R32_PI / 2, (vec3){.x = 0.5f, .y = 0.0f, .z = 0.0f});
+  reward->sprite_common.rotation = mat4_to_quaternion(rot);
+}
 
 internal r32 clamp01(r32 x) {
   if (x < 0.0f) return 0.0f;
@@ -637,5 +741,202 @@ internal void load_map_from_xml(struct Game* game, struct Mana* mana, struct Gam
     }
   }
 
+  struct XmlNode* rewards_node = xml_node_get_child(map_node, "rewards");
+  game->total_rewards = 0;
+  for (i32 i = 0; i < MAX_REWARDS; i++) {
+    game_map->rewards[i] = NULL;
+    game_map->reward_collected[i] = FALSE;
+  }
+  if (rewards_node) {
+    struct ArrayList* reward_list = xml_node_get_children(rewards_node, "reward");
+    if (reward_list) {
+      size_t count = array_list_size(reward_list);
+      if (count > MAX_REWARDS) count = MAX_REWARDS;
+      game->total_rewards = (i32)count;
+      for (size_t i = 0; i < count; i++) {
+        struct XmlNode* reward_node = (struct XmlNode*)array_list_get(reward_list, i);
+        char* x_str = xml_node_get_attribute(reward_node, "x");
+        char* y_str = xml_node_get_attribute(reward_node, "y");
+        if (!x_str || !y_str) continue;
+        r32 x = (r32)atof(x_str);
+        r32 y = (r32)atof(y_str);
+        game_map->rewards[i] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/barrel1.png");
+        game_map->reward_collected[i] = FALSE;
+        place_reward_sprite(game_map->rewards[i], x, y);
+      }
+    }
+  }
+
   xml_parser_delete(root);
+}
+
+internal void merge_single_sprite_ahead_feature(
+    struct Sprite* sprite,
+    struct NPC* npc,
+    r32 fx,
+    r32 fz,
+    r32 rx,
+    r32 rz,
+    r32 norm,
+    r32* out_forward,
+    r32* out_right) {
+  if (!sprite)
+    return;
+
+  vec3 p = sprite->sprite_common.position;
+
+  r32 dx = p.x - npc->position.x;
+  r32 dz = p.z - npc->position.z;
+
+  r32 forward = dx * fx + dz * fz;
+  r32 right = dx * rx + dz * rz;
+
+  if (forward <= 0.0f)
+    return;
+
+  r32 current_forward = (*out_forward) * norm;
+  r32 current_right = (*out_right) * norm;
+
+  r32 current_score = current_forward + 2.0f * real32_fabs(current_right);
+  r32 candidate_score = forward + 2.0f * real32_fabs(right);
+
+  if (candidate_score < current_score) {
+    *out_forward = forward / norm;
+    *out_right = right / norm;
+  }
+}
+
+internal void crab_obstacle_init(struct CrabObstacle* crab, struct Sprite* sprite, vec3 spawn_pos, r32 walk_half_range, r32 walk_speed, r32 walk_dir) {
+  crab->sprite = sprite;
+  crab->active = TRUE;
+  crab->respawn_timer = 0.0f;
+
+  crab->spawn_pos = spawn_pos;
+
+  crab->walk_offset = 0.0f;
+  crab->walk_dir = walk_dir;
+  crab->walk_half_range = walk_half_range;
+  crab->walk_speed = walk_speed;
+
+  crab->frame_accum = 0.0f;
+  crab->frame = 0;
+
+  if (crab->sprite) {
+    crab->sprite->sprite_common.position = spawn_pos;
+    crab->sprite->sprite_common.scale = (vec3){.x = 12.0f, .y = 12.0f, .z = 1.0f};
+    crab->sprite->sprite_common.frame_layer = 0;
+  }
+}
+
+internal void crab_obstacle_reset(struct CrabObstacle* crab) {
+  crab->active = TRUE;
+  crab->respawn_timer = 0.0f;
+  crab->walk_offset = 0.0f;
+  crab->frame_accum = 0.0f;
+  crab->frame = 0;
+
+  if (crab->sprite) {
+    crab->sprite->sprite_common.position = crab->spawn_pos;
+    crab->sprite->sprite_common.frame_layer = 0;
+  }
+}
+
+internal void crab_obstacle_update(struct CrabObstacle* crab, struct GameMap* game_map, r32 dt, vec3d cam_pos) {
+  if (!crab->sprite)
+    return;
+
+  if (!crab->active) {
+    crab->respawn_timer -= dt;
+
+    if (crab->respawn_timer <= 0.0f) {
+      crab->active = TRUE;
+      crab->respawn_timer = 0.0f;
+      crab->sprite->sprite_common.position = crab->spawn_pos;
+    } else {
+      return;
+    }
+  }
+
+  crab->walk_offset += crab->walk_dir * crab->walk_speed * dt;
+
+  if (crab->walk_offset > crab->walk_half_range) {
+    crab->walk_offset = crab->walk_half_range;
+    crab->walk_dir = -1.0f;
+  }
+
+  if (crab->walk_offset < -crab->walk_half_range) {
+    crab->walk_offset = -crab->walk_half_range;
+    crab->walk_dir = 1.0f;
+  }
+
+  r32 crab_x = crab->spawn_pos.x + crab->walk_offset;
+  r32 crab_z = crab->spawn_pos.z;
+  r32 crab_y = crab->spawn_pos.y;
+
+  r32 track_y = 0.0f;
+  i32 surface_type = TRACK_SURFACE_UNKNOWN;
+
+  if (game_map && track_get_height_at(game_map->track_model, crab_x, crab_z, &track_y, &surface_type)) {
+    const r32 crab_ground_offset = 0.75f;
+    crab_y = track_y + crab_ground_offset;
+  }
+
+  crab->sprite->sprite_common.position = (vec3){.x = crab_x, .y = crab_y, .z = crab_z};
+
+  crab->frame_accum += dt;
+  if (crab->frame_accum >= CRAB_FRAME_TIME) {
+    crab->frame_accum = 0.0f;
+    crab->frame = (u8)((crab->frame + 1) % 2);
+    crab->sprite->sprite_common.frame_layer = crab->frame;
+  }
+
+  crab->sprite->sprite_common.rotation = sprite_billboard_rotation(crab->sprite->sprite_common.position, cam_pos);
+}
+
+internal void barrel_obstacle_init(struct BarrelObstacle* barrel, struct Sprite* sprite, vec3 spawn_pos) {
+  barrel->sprite = sprite;
+  barrel->active = TRUE;
+  barrel->respawn_timer = 0.0f;
+  barrel->spawn_pos = spawn_pos;
+
+  if (barrel->sprite) {
+    barrel->sprite->sprite_common.position = spawn_pos;
+    barrel->sprite->sprite_common.scale = (vec3){.x = 15.0f, .y = 15.0f, .z = 1.0f};
+  }
+}
+
+internal void barrel_obstacle_reset(struct BarrelObstacle* barrel) {
+  barrel->active = TRUE;
+  barrel->respawn_timer = 0.0f;
+
+  if (barrel->sprite) {
+    barrel->sprite->sprite_common.position = barrel->spawn_pos;
+  }
+}
+
+internal void barrel_obstacle_update(struct BarrelObstacle* barrel, struct GameMap* game_map, r32 dt, vec3d cam_pos) {
+  if (!barrel->sprite)
+    return;
+
+  if (!barrel->active) {
+    barrel->respawn_timer -= dt;
+
+    if (barrel->respawn_timer <= 0.0f) {
+      barrel->active = TRUE;
+      barrel->respawn_timer = 0.0f;
+      barrel->sprite->sprite_common.position = barrel->spawn_pos;
+    } else {
+      return;
+    }
+  }
+
+  r32 barrel_x = barrel->spawn_pos.x;
+  r32 barrel_z = barrel->spawn_pos.z;
+  r32 barrel_y = barrel->spawn_pos.y;
+
+  r32 track_y = 0.0f;
+  i32 surface_type = TRACK_SURFACE_UNKNOWN;
+
+  barrel->sprite->sprite_common.position = (vec3){.x = barrel_x, .y = barrel_y, .z = barrel_z};
+  barrel->sprite->sprite_common.rotation = sprite_billboard_rotation(barrel->sprite->sprite_common.position, cam_pos);
 }

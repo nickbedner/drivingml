@@ -11,7 +11,7 @@ import os
 
 HOST = "127.0.0.1"
 PORT = 5000
-STATE_SIZE = 12
+STATE_SIZE = 15
 
 # Set to False to resume training
 DEPLOY_MODE = False
@@ -182,20 +182,20 @@ def recv_exact(sock, size):
 
 while True:
     # Make sure we actually recieved something and it's correct packet size
-    data = recv_exact(conn, 52)
+    data = recv_exact(conn, 64)
     if data is None:
         break
 
     # Break apart packet into variable
-    option0_dx, option0_dy, option0_risk, option1_dx, option1_dy, option1_risk, risk_preference, speed, azimuth, tree_dx, tree_dy, reward, done = struct.unpack("<12fi", data)
+    option0_dx, option0_dy, option0_risk, option1_dx, option1_dy, option1_risk, risk_preference, speed, azimuth, obstacle_dx, obstacle_dy, powerup_dx, powerup_dy, surface_bad, reward, done = struct.unpack("<15fi", data) 
     speed = np.tanh(speed / 120.0)
     # Simplifies and normalizes azimuth into sin and cos angles for model
     # For example in azimuth 0 and 360 are the same but can look different for the model
     azimuth = np.sin(azimuth), np.cos(azimuth)
 
     # Creates and input tensor for the model
-    state = torch.tensor([option0_dx, option0_dy, option0_risk, option1_dx, option1_dy, option1_risk, risk_preference, speed, azimuth[0], azimuth[1], tree_dx, tree_dy], dtype=torch.float32)
-
+    state = torch.tensor([option0_dx, option0_dy, option0_risk, option1_dx, option1_dy, option1_risk, risk_preference, speed, azimuth[0], azimuth[1], obstacle_dx, obstacle_dy, powerup_dx, powerup_dy, surface_bad], dtype=torch.float32)
+    
     # ------------------------------------------------------------
     # IMPORTANT: The reward that just arrived belongs to the PREVIOUS action
     # ------------------------------------------------------------

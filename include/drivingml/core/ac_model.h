@@ -2,7 +2,7 @@
 
 #include "mana/core/math/advmath.h"
 
-#define INPUTS 12
+#define INPUTS 15
 #define HIDDEN_1 128
 #define HIDDEN_2 128
 #define ACTIONS 2
@@ -16,11 +16,11 @@ struct ACModel {
   r32 hidden1_to_hidden2_weights[HIDDEN_2 * HIDDEN_1];
   r32 hidden2_bias[HIDDEN_2];
 
-  // Hidden Layer 2 → Actor (action mean)
+  // Hidden Layer 2 → Actor(action mean)
   r32 hidden2_to_action_weights[ACTIONS * HIDDEN_2];
   r32 action_bias[ACTIONS];
 
-  // Hidden Layer 2 → Critic (value estimate)
+  // Hidden Layer 2 → Critic(value estimate)
   r32 hidden2_to_value_weights[HIDDEN_2];
   r32 value_bias[1];
 
