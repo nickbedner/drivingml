@@ -90,12 +90,17 @@ internal void sprite_insertion_sort(struct Sprite** sprites, size_t count, vec4d
 }
 
 void sprite_manager_render(struct SpriteManager* sprite_manager, struct GBufferCommon* gbuffer_common, vec4d sort_key) {
-  struct Sprite* ordered_sprites[128] = {0};
-  for (size_t i = 0; i < array_list_size(&(sprite_manager->sprite_manager_common.sprites)); i++)
-    ordered_sprites[i] = (struct Sprite*)array_list_get(&sprite_manager->sprite_manager_common.sprites, i);
+  size_t count = array_list_size(&(sprite_manager->sprite_manager_common.sprites));
 
-  sprite_insertion_sort(ordered_sprites, array_list_size(&(sprite_manager->sprite_manager_common.sprites)) - 2, sort_key);
-  for (size_t i = 0; i < array_list_size(&(sprite_manager->sprite_manager_common.sprites)); i++)
+  struct Sprite* ordered_sprites[128] = {0};
+
+  if (count > 128)
+    count = 128;
+
+  for (size_t i = 0; i < count; i++)
+    ordered_sprites[i] = (struct Sprite*)array_list_get(&sprite_manager->sprite_manager_common.sprites, i);
+  sprite_insertion_sort(ordered_sprites, count, sort_key);
+  for (size_t i = 0; i < count; i++)
     sprite_render(ordered_sprites[i], gbuffer_common);
 }
 

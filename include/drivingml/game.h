@@ -17,11 +17,22 @@
 #include "drivingml/core/player.h"
 
 #define DRIVE_OVERRIDE TRUE
-#define DEPLOY_MODE FALSE
+#define DEPLOY_MODE TRUE
 
 #define MAX_MARKERS 32
-#define MAX_NPCS 4
+#define MAX_NPCS 8
 #define MAX_TREES 32
+
+struct GameMap {
+  struct Sprite* marker[MAX_MARKERS];
+  struct Sprite* trees[MAX_TREES];
+
+  struct Model* track_model;
+  struct Model* plane_model;
+
+  vec3 start_pos;
+  float start_heading;
+};
 
 struct NPC {
   struct ACModel model;
@@ -59,9 +70,6 @@ struct Game {
 
   struct Sprite* floor_plane;
 
-  struct Sprite* marker[MAX_MARKERS];
-  struct Sprite* trees[MAX_TREES];
-
   struct Sprite* boat1;
 
   struct Sprite* cloud1;
@@ -70,9 +78,8 @@ struct Game {
   struct Sprite* aero;
 
   struct Tentacle tentacle;
+  struct GameMap game_map;
 
-  struct Model* track_model;
-  struct Model* plane_model;
   struct Model* test_model;
   struct Model* test_static_model;
   struct Model* coin_model;
@@ -92,19 +99,16 @@ struct Game {
 
   struct NPC npcs[MAX_NPCS];
 
-  vec3 starting_pos;
-
   r32 previous_reward;
-  r32 starting_heading;
 
-  int start_timer;
-  int timer;
+  i32 start_timer;
+  i32 timer;
 
-  int camera_current_follow_kart;
+  i32 camera_current_follow_kart;
 
-  int total_markers;
-  int current_npcs;
-  int total_trees;
+  i32 total_markers;
+  i32 current_npcs;
+  i32 total_trees;
 };
 
 void game_init(struct Game* game, struct Mana* mana, struct Window* window);
@@ -321,7 +325,7 @@ internal inline void place_marker(struct Sprite* marker, r32 x, r32 y) {
   marker->sprite_common.rotation = mat4_to_quaternion(marker_rotation_0);
 }
 
-internal void load_map_from_xml(struct Game* game, struct Mana* mana, const char* xml_path, const char* map_name) {
+internal void load_map_from_xml(struct Game* game, struct Mana* mana, struct GameMap* game_map, const char* xml_path, const char* map_name) {
   struct XmlNode* root = xml_parser_load_xml_file(xml_path);
   if (!root)
     return;
@@ -345,14 +349,30 @@ internal void load_map_from_xml(struct Game* game, struct Mana* mana, const char
   char* py = xml_node_get_attribute(track_node, "y");
 
   if (tex) {
-    game->track_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), tex);
+    game_map->track_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), tex);
 
     r32 scale = sx ? (r32)atof(sx) : 25.0f;
     r32 x = px ? (r32)atof(px) : 0.0f;
     r32 y = py ? (r32)atof(py) : 0.0f;
 
-    game->track_model->model_common.position = (vec3){.x = x, .y = 0.0f, .z = y};
-    game->track_model->model_common.scale = (vec3){.x = scale, .y = scale, .z = scale};
+    game_map->track_model->model_common.position = (vec3){.x = x, .y = 0.0f, .z = y};
+    game_map->track_model->model_common.scale = (vec3){.x = scale, .y = scale, .z = scale};
+  }
+
+  game_map->start_pos = (vec3){.x = 0.0f, .y = 0.0f, .z = 0.0f};
+  game_map->start_heading = 0.0f;
+
+  struct XmlNode* start_node = xml_node_get_child(map_node, "start");
+
+  if (start_node) {
+    char* start_x_str = xml_node_get_attribute(start_node, "x");
+    char* start_y_str = xml_node_get_attribute(start_node, "y");
+    char* start_z_str = xml_node_get_attribute(start_node, "z");
+    char* heading_str = xml_node_get_attribute(start_node, "heading");
+
+    game_map->start_pos = (vec3){.x = start_x_str ? (r32)atof(start_x_str) : 0.0f, .y = start_y_str ? (r32)atof(start_y_str) : 0.0f, .z = start_z_str ? (r32)atof(start_z_str) : 0.0f};
+
+    game_map->start_heading = heading_str ? (r32)atof(heading_str) : 0.0f;
   }
 
   struct XmlNode* markers_node = xml_node_get_child(map_node, "markers");
@@ -376,9 +396,9 @@ internal void load_map_from_xml(struct Game* game, struct Mana* mana, const char
         r32 x = (r32)atof(x_str);
         r32 y = (r32)atof(y_str);
 
-        game->marker[i] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/marker.png");
+        game_map->marker[i] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/marker.png");
 
-        place_marker(game->marker[i], x, y);
+        place_marker(game_map->marker[i], x, y);
       }
     }
   }
@@ -404,13 +424,13 @@ internal void load_map_from_xml(struct Game* game, struct Mana* mana, const char
         r32 x = (r32)atof(x_str);
         r32 y = (r32)atof(y_str);
 
-        game->trees[i] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/tree.png");
+        game_map->trees[i] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/tree.png");
 
-        game->trees[i]->sprite_common.position = (vec3){.x = x, .y = 4.5f, .z = y};
-        game->trees[i]->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
+        game_map->trees[i]->sprite_common.position = (vec3){.x = x, .y = 4.5f, .z = y};
+        game_map->trees[i]->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
 
         mat4 rot = mat4_rotate(MAT4_IDENTITY, -(r32)R32_PI / 2, (vec3){.x = 0.5, .y = 0, .z = 0});
-        game->trees[i]->sprite_common.rotation = mat4_to_quaternion(rot);
+        game_map->trees[i]->sprite_common.rotation = mat4_to_quaternion(rot);
       }
     }
   }

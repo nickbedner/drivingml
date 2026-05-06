@@ -1,11 +1,18 @@
 <game>
 	<map name="track0">
 		<track texture="./assets/models/track/track.dae" x="0" y="0" scale="20"/>
+		<start x="29.0" y="0.0" z="385" heading="1.5"/>
 		<markers>
-			<marker x="-175" y="25"/>
-			<marker x="-171" y="-25"/>
-			<marker x="175" y="-25"/>
-			<marker x="175" y="25"/>
+			<marker x="40" y="250"/>
+			<marker x="30" y="125"/>
+			<marker x="-15" y="20"/>
+			<marker x="-60" y="-60"/>
+			<marker x="-70" y="-150"/>
+			<marker x="-50" y="-225"/>
+			<marker x="40" y="-265"/>
+			<marker x="80" y="-325"/>
+			<marker x="20" y="-415"/>
+			<marker x="-100" y="-350"/>
 		</markers>
 	</map>
 	<map name="track1">

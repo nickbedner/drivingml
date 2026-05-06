@@ -153,74 +153,6 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
 
   sprite_manager_init(&(game->sprite_manager), &(game->texture_manager), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 128);
 
-  if (!DEPLOY_MODE && !DRIVE_OVERRIDE) {
-    WSADATA wsa;
-    struct sockaddr_in server;
-
-    // Initialize Winsock
-    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
-      printf("WSAStartup failed\n");
-      return;
-    }
-
-    game->sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (game->sock == INVALID_SOCKET) {
-      printf("Socket creation failed\n");
-      WSACleanup();
-      return;
-    }
-
-    server.sin_family = AF_INET;
-    server.sin_port = htons(5000);
-    inet_pton(AF_INET, "127.0.0.1", &server.sin_addr);
-
-    if (connect(game->sock, (struct sockaddr*)&server, sizeof(server)) < 0) {
-      printf("Connection failed\n");
-      closesocket(game->sock);
-      WSACleanup();
-    }
-  }
-
-  game->timer = 0;
-  game->start_timer = 0;
-  game->state_update_accum = 0.0;
-
-  game->starting_pos = (vec3){.x = 0.0f, .y = 0.0f, .z = 0.0f};
-  game->starting_heading = 0.0f;
-
-  if (DEPLOY_MODE)
-    game->current_npcs += MAX_NPCS;
-  else
-    game->current_npcs += 1;
-
-  for (i32 npc_num = 0; npc_num < game->current_npcs; npc_num++) {
-    if (npc_num == 0) {
-      if (DEPLOY_MODE == FALSE)
-        load_ac_model("checkpoints/ac_weights.bin", &(game->npcs[npc_num].model));
-      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartgrey");
-    } else if (npc_num == 1) {
-      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartred");
-      load_ac_model("checkpoints/ac_weights100.bin", &(game->npcs[npc_num].model));
-    } else if (npc_num == 2) {
-      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartcyan");
-      load_ac_model("checkpoints/ac_weights300.bin", &(game->npcs[npc_num].model));
-    } else if (npc_num == 3) {
-      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartgreen");
-      load_ac_model("checkpoints/ac_weights500.bin", &(game->npcs[npc_num].model));
-    }
-    game->npcs[npc_num].speed = 0.0f;
-    game->npcs[npc_num].position = (vec3){.x = game->starting_pos.x - ((r32)npc_num * 8), .y = game->starting_pos.y, .z = game->starting_pos.z + ((r32)(npc_num % 4) * 5.0f)};
-    game->npcs[npc_num].sprite->sprite_common.position = game->npcs[npc_num].position;
-    game->npcs[npc_num].sprite->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
-    game->npcs[npc_num].heading = game->starting_heading;  // R32_PI / 2.0f;  // facing down -Y
-    game->npcs[npc_num].current_marker = 0;
-    game->npcs[npc_num].last_action[0] = 0.0f;
-    game->npcs[npc_num].last_action[1] = 0.0f;
-    game->npcs[npc_num].prev_y = game->npcs[npc_num].position.y;
-  }
-
-  game->camera_current_follow_kart = 0;
-
   water_shader_init(&(game->water_shader), &(mana->api.api_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height, window->swap_chain->swap_chain_common.supersample_scale, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.msaa_samples, 3);
   water_init(&(game->water), &(mana->api.api_common), &(game->water_shader.shader), texture_manager_get(game->sprite_manager.sprite_manager_common.texture_manager, "/textures/waterm1.png"));
   game->water.water_common.position = (vec3){.x = 0.0f, .y = -5.0f, .z = 0.0f};
@@ -274,9 +206,9 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
       .ao_texture = texture_manager_get(&(game->texture_manager), "/models/track/ao.png"),
       5};
   model_cache_add(&(game->model_cache), &(mana->api.api_common), &model_plane_settings, 3, FALSE);
-  game->plane_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/plane/plane.dae");
-  game->plane_model->model_common.position = (vec3){.x = 0.0f, .y = -50.0f, .z = 0.0f};
-  game->plane_model->model_common.scale = (vec3){.x = 100000.0f, .y = 1.0f, .z = 100000.0f};
+  game->game_map.plane_model = model_cache_get(&(game->model_cache), &(mana->api.api_common), "./assets/models/plane/plane.dae");
+  game->game_map.plane_model->model_common.position = (vec3){.x = 0.0f, .y = -50.0f, .z = 0.0f};
+  game->game_map.plane_model->model_common.scale = (vec3){.x = 100000.0f, .y = 1.0f, .z = 100000.0f};
 
   // struct ModelSettings coin_settings = (struct ModelSettings){
   //     .path = "./assets/models/ssc/Coin.dae",
@@ -312,15 +244,11 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->cloud2->sprite_common.scale = (vec3){.x = 1000.0f, .y = 1000.0f, .z = 1.0f};
 
   game->aero = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aero.png");
-  game->aero->sprite_common.position = (vec3){.x = -500.0f, .y = 500.0f, .z = -5000.0f};
+  game->aero->sprite_common.position = (vec3){.x = -500.0f, .y = 750.0f, .z = -7500.0f};
   game->aero->sprite_common.scale = (vec3){.x = 75.0f, .y = 7500.0f, .z = 1.0f};
   mat4 rot = mat4_rotate(MAT4_IDENTITY, (r32)R32_PI / 2.0f, (vec3){.x = 1.0f, .y = 0.0f, .z = 0.0f});
   // rot = mat4_rotate(rot, (r32)R32_PI / 2.0f, (vec3){.x = 0.0f, .y = 0.0f, .z = 0.0f});
   game->aero->sprite_common.rotation = mat4_to_quaternion(rot);
-
-  char path[MAX_LENGTH_OF_PATH] = {0};
-  snprintf(path, MAX_LENGTH_OF_PATH, "%s/maps.xml", mana->api.api_common.asset_directory);
-  load_map_from_xml(game, mana, path, "track0");
 
   game->boat1 = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/boats/boat1.png");
   game->boat1->sprite_common.position = (vec3){.x = 45.0f, .y = 16.0f, .z = 50.0f};
@@ -333,6 +261,99 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
   game->tentacle.max_frames = 8;
   game->tentacle.accum = 0.0f;
   game->tentacle.accum_limit = 0.5f;
+
+  if (!DEPLOY_MODE && !DRIVE_OVERRIDE) {
+    WSADATA wsa;
+    struct sockaddr_in server;
+
+    // Initialize Winsock
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+      printf("WSAStartup failed\n");
+      return;
+    }
+
+    game->sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (game->sock == INVALID_SOCKET) {
+      printf("Socket creation failed\n");
+      WSACleanup();
+      return;
+    }
+
+    server.sin_family = AF_INET;
+    server.sin_port = htons(5000);
+    inet_pton(AF_INET, "127.0.0.1", &server.sin_addr);
+
+    if (connect(game->sock, (struct sockaddr*)&server, sizeof(server)) < 0) {
+      printf("Connection failed\n");
+      closesocket(game->sock);
+      WSACleanup();
+    }
+  }
+
+  char path[MAX_LENGTH_OF_PATH] = {0};
+  snprintf(path, MAX_LENGTH_OF_PATH, "%s/maps.xml", mana->api.api_common.asset_directory);
+  load_map_from_xml(game, mana, &(game->game_map), path, "track0");
+
+  game->timer = 0;
+  game->start_timer = 0;
+  game->state_update_accum = 0.0;
+  game->camera_current_follow_kart = 0;
+  if (DEPLOY_MODE)
+    game->current_npcs += MAX_NPCS;
+  else
+    game->current_npcs += 1;
+  for (i32 npc_num = 0; npc_num < game->current_npcs; npc_num++) {
+    if (npc_num == 0) {
+      if (DEPLOY_MODE == FALSE)
+        load_ac_model("checkpoints/ac_weights.bin", &(game->npcs[npc_num].model));
+      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartgrey");
+    } else if (npc_num == 1) {
+      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartred");
+      load_ac_model("checkpoints/ac_weights100.bin", &(game->npcs[npc_num].model));
+    } else if (npc_num == 2) {
+      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartcyan");
+      load_ac_model("checkpoints/ac_weights300.bin", &(game->npcs[npc_num].model));
+    } else if (npc_num == 3) {
+      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartgreen");
+      load_ac_model("checkpoints/ac_weights500.bin", &(game->npcs[npc_num].model));
+    } else {
+      game->npcs[npc_num].sprite = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/aikartgreen");
+      load_ac_model("checkpoints/ac_weights500.bin", &(game->npcs[npc_num].model));
+    }
+    // Forced override for testing
+    load_ac_model("checkpoints/ac_weights.bin", &(game->npcs[npc_num].model));
+
+    game->npcs[npc_num].speed = 0.0f;
+
+    const r32 GRID_FORWARD_SPACING = 17.0f;
+    const r32 GRID_LANE_SPACING = 8.0f;
+
+    r32 h = game->game_map.start_heading;
+
+    vec3 forward = {.x = real32_cos(h), .y = 0.0f, .z = -real32_sin(h)};
+    vec3 right = {.x = real32_sin(h), .y = 0.0f, .z = real32_cos(h)};
+
+    i32 row = npc_num / 2;
+    i32 col = npc_num % 2;
+
+    const r32 LEFT_COLUMN_STAGGER = 3.0f;
+
+    r32 forward_offset = (r32)row * GRID_FORWARD_SPACING;
+    r32 side_offset = (r32)col * GRID_LANE_SPACING;
+
+    if (col == 0)
+      forward_offset += LEFT_COLUMN_STAGGER;
+
+    game->npcs[npc_num].position = (vec3){.x = game->game_map.start_pos.x + forward.x * forward_offset + right.x * side_offset, .y = game->game_map.start_pos.y, .z = game->game_map.start_pos.z + forward.z * forward_offset + right.z * side_offset};
+
+    game->npcs[npc_num].sprite->sprite_common.position = game->npcs[npc_num].position;
+    game->npcs[npc_num].sprite->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
+    game->npcs[npc_num].heading = game->game_map.start_heading;
+    game->npcs[npc_num].current_marker = 0;
+    game->npcs[npc_num].last_action[0] = 0.0f;
+    game->npcs[npc_num].last_action[1] = 0.0f;
+    game->npcs[npc_num].prev_y = game->npcs[npc_num].position.y;
+  }
 }
 
 void game_delete(struct Game* game, struct Mana* mana) {
@@ -445,9 +466,11 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
     if (game->start_timer > 180)
       start = TRUE;
 
-    const r32 speed_scale = 144.0f / 60.0f;  // 2.4
-    r32 move_speed = 30.0f * speed_scale;
-    r32 rotation_speed = 1.5f * speed_scale;
+    // const r32 speed_scale = 144.0f / 60.0f;  // 2.4
+    // r32 move_speed = 30.0f * speed_scale;
+    // r32 rotation_speed = 1.5f * speed_scale;
+    r32 move_speed = 125.0f;
+    r32 rotation_speed = 4.0f;
     vec3d cam_pos = camera_get_pos(&game->player.camera);
 
     // game->cloud->sprite_common.rotation = sprite_billboard_rotation(game->boat1->sprite_common.position, cam_pos);
@@ -458,7 +481,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
     game->aero->sprite_common.position.z += 50.0f * (r32)sim_delta_time;
 
     for (i32 t = 0; t < game->total_trees; t++)
-      game->trees[t]->sprite_common.rotation = sprite_billboard_rotation(game->trees[t]->sprite_common.position, cam_pos);
+      game->game_map.trees[t]->sprite_common.rotation = sprite_billboard_rotation(game->game_map.trees[t]->sprite_common.position, cam_pos);
 
     for (i32 ai_num = 0; ai_num < game->current_npcs; ai_num++) {
       r32 steer = game->npcs[ai_num].last_action[0];
@@ -488,17 +511,17 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
       game->npcs[ai_num].speed += throttle * move_speed * (r32)sim_delta_time;
 
       // Clamp speed
-      if (game->npcs[ai_num].speed > 50.0f * speed_scale)
-        game->npcs[ai_num].speed = 50.0f * speed_scale;
-      if (game->npcs[ai_num].speed < -20.0f * speed_scale)
-        game->npcs[ai_num].speed = -20.0f * speed_scale;
+      if (game->npcs[ai_num].speed > 500.0f)
+        game->npcs[ai_num].speed = 500.0f;
+      if (game->npcs[ai_num].speed < -50.0f)
+        game->npcs[ai_num].speed = -50.0f;
 
       // Movement + progress based reward
       r32 heading = game->npcs[ai_num].heading;
       vec3 forward_vel = (vec3){.x = (r32)real32_cos(heading), .y = 0.0f, .z = -(r32)real32_sin(heading)};
 
       // Current marker position
-      vec3 marker_pos = game->marker[game->npcs[ai_num].current_marker]->sprite_common.position;
+      vec3 marker_pos = game->game_map.marker[game->npcs[ai_num].current_marker]->sprite_common.position;
 
       // Distance BEFORE movement
       r32 dx_before = marker_pos.x - game->npcs[ai_num].position.x;
@@ -518,7 +541,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
       // For following track
       r32 track_y = 0.0f;
       i32 surface_type = TRACK_SURFACE_UNKNOWN;
-      if (track_get_height_at(game->track_model, game->npcs[ai_num].position.x, game->npcs[ai_num].position.z, &track_y, &surface_type)) {
+      if (track_get_height_at(game->game_map.track_model, game->npcs[ai_num].position.x, game->npcs[ai_num].position.z, &track_y, &surface_type)) {
         const r32 kart_ground_offset = 2.75f;
         game->npcs[ai_num].position.y = track_y + kart_ground_offset;
 
@@ -571,7 +594,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
       reward -= 0.02f * real32_fabs(angle);
 
       // Use the current target marker after checkpoint update so we head towards the next one if we just passed the checkpoint
-      vec3 next_marker = game->marker[game->npcs[ai_num].current_marker]->sprite_common.position;
+      vec3 next_marker = game->game_map.marker[game->npcs[ai_num].current_marker]->sprite_common.position;
 
       // World delta to target, basically aiming towards it
       r32 dxw = next_marker.x - game->npcs[ai_num].position.x;
@@ -596,7 +619,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
       r32 best_score = R32_MAX;
 
       for (i32 t = 0; t < game->total_trees; t++) {
-        vec3 tree_pos = game->trees[t]->sprite_common.position;
+        vec3 tree_pos = game->game_map.trees[t]->sprite_common.position;
 
         r32 dx = tree_pos.x - game->npcs[ai_num].position.x;
         r32 dz = tree_pos.z - game->npcs[ai_num].position.z;
@@ -653,17 +676,17 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
           // game->timer = 0;
 
           game->npcs[ai_num].speed = 0.0f;
-          game->npcs[ai_num].position = game->starting_pos;
+          game->npcs[ai_num].position = game->game_map.start_pos;
           game->timer = 0;
           r32 reset_track_y = 0.0f;
           i32 reset_surface_type = TRACK_SURFACE_UNKNOWN;
 
-          if (track_get_height_at(game->track_model, game->npcs[ai_num].position.x, game->npcs[ai_num].position.z, &reset_track_y, &reset_surface_type))
+          if (track_get_height_at(game->game_map.track_model, game->npcs[ai_num].position.x, game->npcs[ai_num].position.z, &reset_track_y, &reset_surface_type))
             game->npcs[ai_num].position.y = reset_track_y + 0.75f;
 
           game->npcs[ai_num].sprite->sprite_common.position = game->npcs[ai_num].position;
           game->npcs[ai_num].sprite->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
-          game->npcs[ai_num].heading = game->starting_heading;
+          game->npcs[ai_num].heading = game->game_map.start_heading;
           game->npcs[ai_num].sprite->sprite_common.rotation = sprite_billboard_rotation(game->npcs[ai_num].position, cam_pos);
           game->npcs[ai_num].sprite->sprite_common.frame_layer = car_frame_from_camera(game->npcs[ai_num].heading, steer, game->npcs[ai_num].position, cam_pos);
 
@@ -700,9 +723,9 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
     player_update(&(game->player), input_manager_get_controller_actions(input_manager), input_manager_get_controller_action_list_length(input_manager));
 
     for (i32 marker_num = 0; marker_num < game->total_markers; marker_num++) {
-      game->marker[marker_num]->sprite_common.rotation = sprite_billboard_rotation(game->marker[marker_num]->sprite_common.position, cam_pos);
+      game->game_map.marker[marker_num]->sprite_common.rotation = sprite_billboard_rotation(game->game_map.marker[marker_num]->sprite_common.position, cam_pos);
       if (DEPLOY_MODE)
-        game->marker[marker_num]->sprite_common.position.y = -10000.0f;
+        game->game_map.marker[marker_num]->sprite_common.position.y = -10000.0f;
     }
 
     game->tentacle.accum += (r32)sim_delta_time;
@@ -752,8 +775,8 @@ void game_render(struct Game* game, struct Mana* mana, r64 delta_time) {
     model_update_uniforms(game->test_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
     model_update_uniforms(game->test_static_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
     model_update_uniforms(game->coin_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
-    model_update_uniforms(game->track_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
-    model_update_uniforms(game->plane_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
+    model_update_uniforms(game->game_map.track_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
+    model_update_uniforms(game->game_map.plane_model, api_common, window->gbuffer, camera_get_pos(&(game->player.camera)), full_dir, diffuse_color, ambient_color, specular_light);
 
     water_update_uniforms(&(game->water), api_common, &(window->gbuffer->gbuffer_common), window->renderer.renderer_settings.width, window->renderer.renderer_settings.height);
 
@@ -766,8 +789,8 @@ void game_render(struct Game* game, struct Mana* mana, r64 delta_time) {
     model_render(game->test_model, window->gbuffer, delta_time);
     model_render(game->test_static_model, window->gbuffer, delta_time);
     model_render(game->coin_model, window->gbuffer, delta_time);
-    model_render(game->track_model, window->gbuffer, delta_time);
-    model_render(game->plane_model, window->gbuffer, delta_time);
+    model_render(game->game_map.track_model, window->gbuffer, delta_time);
+    model_render(game->game_map.plane_model, window->gbuffer, delta_time);
 
     water_render(&(game->water), &(window->gbuffer->gbuffer_common));
 
