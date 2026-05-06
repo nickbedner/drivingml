@@ -738,7 +738,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
           audio_play_sfx(&(game->audio_engine), &game->fart_sfx, game->audio_volome);
       }
     }
-    game->tentacle.sprite->sprite_common.rotation = sprite_billboard_rotation(game->tentacle.sprite->sprite_common.position, cam_pos);
+    // game->tentacle.sprite->sprite_common.rotation = sprite_billboard_rotation(game->tentacle.sprite->sprite_common.position, cam_pos);
   }
 }
 

@@ -3,59 +3,16 @@
 		<track texture="./assets/models/track/track.dae" x="0" y="0" scale="20"/>
 		<start x="29.0" y="0.0" z="385" heading="1.5"/>
 		<markers>
-			<marker x="40" y="250"/>
-			<marker x="30" y="125"/>
-			<marker x="-15" y="20"/>
-			<marker x="-60" y="-60"/>
-			<marker x="-70" y="-150"/>
-			<marker x="-50" y="-225"/>
-			<marker x="40" y="-265"/>
-			<marker x="80" y="-325"/>
-			<marker x="20" y="-415"/>
-			<marker x="-100" y="-350"/>
-		</markers>
-	</map>
-	<map name="track1">
-		<track texture="/textures/map.png" x="0" y="0" scale="25"/>
-		<markers>
-			<marker x="-100" y="100"/>
-			<marker x="-100" y="50"/>
-			<marker x="-20" y="50"/>
-			<marker x="-100" y="20"/>
-			<marker x="-100" y="-20"/>
-			<marker x="-25" y="-20"/>
-			<marker x="-100" y="-50"/>
-			<marker x="-100" y="-105"/>
-			<marker x="140" y="-90"/>
-			<marker x="130" y="-30"/>
-			<marker x="65" y="-30"/>
-			<marker x="50" y="20"/>
-			<marker x="65" y="60"/>
-			<marker x="110" y="65"/>
-			<marker x="110" y="100"/>
-		</markers>
-		<obstacle>
-			<tree x="-75" y="105"/>
-			<tree x="-50" y="95"/>
-			<tree x="-70" y="-92"/>
-			<tree x="-60" y="-105"/>
-			<tree x="-50" y="-76"/>
-			<tree x="-45" y="-115"/>
-			<tree x="-30" y="-96"/>
-			<tree x="-25" y="-90"/>
-			<tree x="24" y="-106"/>
-			<tree x="20" y="-84"/>
-			<tree x="-35" y="-100"/>
-			<tree x="-15" y="-84"/>
-		</obstacle>
-	</map>
-	<map name="track2">
-		<track texture="/textures/circuit.png" x="0" y="0" scale="20"/>
-		<markers>
-			<marker x="-75" y="90"/>
-			<marker x="-90" y="-90"/>
-			<marker x="90" y="-90"/>
-			<marker x="75" y="90"/>
+			<marker x="40" y="250" id="0"/>
+			<marker x="30" y="125" id="1"/>
+			<marker x="-15" y="20" id="2"/>
+			<marker x="-60" y="-60" id="3"/>
+			<marker x="-70" y="-150" id="4"/>
+			<marker x="-50" y="-225" id="5"/>
+			<marker x="40" y="-265" id="6"/>
+			<marker x="80" y="-325" id="7"/>
+			<marker x="20" y="-415" id="8"/>
+			<marker x="-100" y="-350" id="9"/>
 		</markers>
 	</map>
 </game>

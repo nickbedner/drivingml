@@ -5,7 +5,7 @@ u8 sprite_shader_init(struct SpriteShader* sprite_shader, struct APICommon* api_
   shader_settings->vertex_shader = "sprite";
   shader_settings->fragment_shader = "sprite";
   shader_settings->front_face = SHADER_FRONT_FACE_COUNTER_CLOCKWISE;
-  shader_settings->cull_mode = SHADER_CULL_MODE_BACK_BIT;  // SHADER_CULL_MODE_NONE
+  shader_settings->cull_mode = SHADER_CULL_MODE_NONE;  // SHADER_CULL_MODE_BACK_BIT;
   shader_settings->depth_test = depth_test;
   shader_settings->depth_write = depth_write;
   shader_settings->supersampled = TRUE;

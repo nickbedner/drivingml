@@ -17,7 +17,7 @@
 #include "drivingml/core/player.h"
 
 #define DRIVE_OVERRIDE TRUE
-#define DEPLOY_MODE TRUE
+#define DEPLOY_MODE FALSE
 
 #define MAX_MARKERS 32
 #define MAX_NPCS 8
