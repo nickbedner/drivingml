@@ -1,5 +1,8 @@
 #include "drivingml/core/ac_model.h"
 
+void linear_layer_avx2(const r32* weights, const r32* bias, int input_size, int output_size, const r32* input, r32* output);
+void relu_activation_avx2(r32* values, int count);
+
 int load_ac_model(const char* path, struct ACModel* model) {
   FILE* f = NULL;
   if (fopen_s(&f, path, "rb") != 0 || !f) {
@@ -56,72 +59,6 @@ void linear_layer(const r32* weights, const r32* bias, int input_size, int outpu
   }
 }
 
-static inline r32 horizontal_sum_avx2(__m256 v) {
-  __m128 low = _mm256_castps256_ps128(v);
-  __m128 high = _mm256_extractf128_ps(v, 1);
-  __m128 sum = _mm_add_ps(low, high);
-
-  sum = _mm_hadd_ps(sum, sum);
-  sum = _mm_hadd_ps(sum, sum);
-
-  return _mm_cvtss_f32(sum);
-}
-
-void linear_layer_avx2(
-    const r32* weights,
-    const r32* bias,
-    int input_size,
-    int output_size,
-    const r32* input,
-    r32* output) {
-  for (int out_neuron = 0; out_neuron < output_size; out_neuron++) {
-    const r32* weight_row = weights + out_neuron * input_size;
-
-    __m256 sum_vec = _mm256_setzero_ps();
-
-    int in_feature = 0;
-
-    for (; in_feature + 7 < input_size; in_feature += 8) {
-      __m256 w = _mm256_loadu_ps(weight_row + in_feature);
-      __m256 x = _mm256_loadu_ps(input + in_feature);
-
-#if defined(__FMA__)
-      sum_vec = _mm256_fmadd_ps(w, x, sum_vec);
-#else
-      sum_vec = _mm256_add_ps(sum_vec, _mm256_mul_ps(w, x));
-#endif
-    }
-
-    r32 neuron_sum = bias[out_neuron] + horizontal_sum_avx2(sum_vec);
-
-    // Tail loop for leftover inputs when input_size is not divisible by 8.
-    for (; in_feature < input_size; in_feature++) {
-      neuron_sum += weight_row[in_feature] * input[in_feature];
-    }
-
-    output[out_neuron] = neuron_sum;
-  }
-}
-
-void relu_activation_avx2(r32* values, int count) {
-  __m256 zero = _mm256_setzero_ps();
-
-  int neuron = 0;
-
-  for (; neuron + 7 < count; neuron += 8) {
-    __m256 v = _mm256_loadu_ps(values + neuron);
-    v = _mm256_max_ps(v, zero);
-    _mm256_storeu_ps(values + neuron, v);
-  }
-
-  // Tail loop.
-  for (; neuron < count; neuron++) {
-    if (values[neuron] < 0.0f) {
-      values[neuron] = 0.0f;
-    }
-  }
-}
-
 // Note: Remember relu = Rectified Linear Unit, which introduces nonlinearity into the model
 void relu_activation(r32* values, int count) {
   for (int neuron = 0; neuron < count; neuron++) {
@@ -129,6 +66,72 @@ void relu_activation(r32* values, int count) {
       values[neuron] = 0.0f;
   }
 }
+
+// static inline r32 horizontal_sum_avx2(__m256 v) {
+//   __m128 low = _mm256_castps256_ps128(v);
+//   __m128 high = _mm256_extractf128_ps(v, 1);
+//   __m128 sum = _mm_add_ps(low, high);
+//
+//   sum = _mm_hadd_ps(sum, sum);
+//   sum = _mm_hadd_ps(sum, sum);
+//
+//   return _mm_cvtss_f32(sum);
+// }
+//
+// void linear_layer_avx2(
+//     const r32* weights,
+//     const r32* bias,
+//     int input_size,
+//     int output_size,
+//     const r32* input,
+//     r32* output) {
+//   for (int out_neuron = 0; out_neuron < output_size; out_neuron++) {
+//     const r32* weight_row = weights + out_neuron * input_size;
+//
+//     __m256 sum_vec = _mm256_setzero_ps();
+//
+//     int in_feature = 0;
+//
+//     for (; in_feature + 7 < input_size; in_feature += 8) {
+//       __m256 w = _mm256_loadu_ps(weight_row + in_feature);
+//       __m256 x = _mm256_loadu_ps(input + in_feature);
+//
+// #if defined(__FMA__)
+//       sum_vec = _mm256_fmadd_ps(w, x, sum_vec);
+// #else
+//       sum_vec = _mm256_add_ps(sum_vec, _mm256_mul_ps(w, x));
+// #endif
+//     }
+//
+//     r32 neuron_sum = bias[out_neuron] + horizontal_sum_avx2(sum_vec);
+//
+//     // Tail loop for leftover inputs when input_size is not divisible by 8.
+//     for (; in_feature < input_size; in_feature++) {
+//       neuron_sum += weight_row[in_feature] * input[in_feature];
+//     }
+//
+//     output[out_neuron] = neuron_sum;
+//   }
+// }
+//
+// void relu_activation_avx2(r32* values, int count) {
+//   __m256 zero = _mm256_setzero_ps();
+//
+//   int neuron = 0;
+//
+//   for (; neuron + 7 < count; neuron += 8) {
+//     __m256 v = _mm256_loadu_ps(values + neuron);
+//     v = _mm256_max_ps(v, zero);
+//     _mm256_storeu_ps(values + neuron, v);
+//   }
+//
+//   // Tail loop.
+//   for (; neuron < count; neuron++) {
+//     if (values[neuron] < 0.0f) {
+//       values[neuron] = 0.0f;
+//     }
+//   }
+// }
 
 // Forward pass and inference in C, which is the process of moving input data through the network's layers from input to output to generate a prediction
 void ac_forward(const struct ACModel* model, const r32 state_vector[INPUTS], r32 action_output[ACTIONS], r32* value_prediction) {
@@ -168,7 +171,7 @@ void ac_forward(const struct ACModel* model, const r32 state_vector[INPUTS], r32
   linear_layer_avx2(weights, bias, 4, 2, input, output);
   relu_activation_avx2(output, 2);
 
-  printf("%f %f\n", output[0], output[1]);
+  printf("asm %f %f\n", output[0], output[1]);
 
   // Critic value
   *value_prediction = value[0];

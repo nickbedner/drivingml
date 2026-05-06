@@ -23,7 +23,7 @@ endif()
 # =========================
 # Sources
 # =========================
-file(GLOB_RECURSE drivingml_SRC include/drivingml/*.h src/drivingml/*.c)
+file(GLOB_RECURSE drivingml_SRC include/drivingml/*.h src/drivingml/*.c src/drivingml/*.asm)
 
 # =========================
 # Mana Library
