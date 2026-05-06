@@ -2,7 +2,7 @@
 
 #include "mana/core/math/advmath.h"
 
-#define INPUTS 7
+#define INPUTS 12
 #define HIDDEN_1 128
 #define HIDDEN_2 128
 #define ACTIONS 2

@@ -11,6 +11,7 @@ import os
 
 HOST = "127.0.0.1"
 PORT = 5000
+STATE_SIZE = 12
 
 # Set to False to resume training
 DEPLOY_MODE = False
@@ -51,7 +52,7 @@ def export_weights_bin(model, log_std, path):
         # Magic number so we know version, aka Actor-Critic v.1
         f.write(b"ACv1")
         # Dimensions so C knows what are model is
-        f.write(struct.pack("<5i", 7, 128, 128, 2, 1))
+        f.write(struct.pack("<5i", STATE_SIZE, 128, 128, 2, 1))
 
         # Shared layers
         write_tensor(f, sd["shared.0.weight"])
@@ -87,7 +88,7 @@ class ActorCritic(nn.Module):
     def __init__(self):
         super().__init__()
         self.shared = nn.Sequential(
-            nn.Linear(7, 128),
+            nn.Linear(STATE_SIZE, 128),
             nn.ReLU(),
             nn.Linear(128, 128),
             nn.ReLU()
@@ -148,12 +149,17 @@ optimizer = optim.Adam(list(model.parameters()) + [log_std], lr=lr)
 # Resume training from the latest checkpoint if it exists
 checkpoint_path = EXPORT_PATH + "/latest_model.pt"
 if os.path.exists(checkpoint_path):
-    checkpoint = torch.load(checkpoint_path)
-    model.load_state_dict(checkpoint["model_state_dict"])
-    log_std.data.copy_(checkpoint.get("log_std", torch.zeros_like(log_std)))
-    optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-    episode = checkpoint["episode"]
-    print(f"Resumed training from episode {episode}")
+    try:
+        checkpoint = torch.load(checkpoint_path)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        log_std.data.copy_(checkpoint.get("log_std", torch.zeros_like(log_std)))
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        episode = checkpoint["episode"]
+        print(f"Resumed training from episode {episode}")
+    except RuntimeError as e:
+        print("Existing checkpoint is incompatible with the new 12-input model.")
+        print("Starting fresh training.")
+        episode = 0
 else:
     print("Starting fresh training.")
 
@@ -176,23 +182,19 @@ def recv_exact(sock, size):
 
 while True:
     # Make sure we actually recieved something and it's correct packet size
-    data = recv_exact(conn, 32)
+    data = recv_exact(conn, 52)
     if data is None:
         break
 
     # Break apart packet into variable
-    dx, dy, speed, azimuth, tree_dx, tree_dy, reward, done = struct.unpack("<7fi", data)
-    # Normalize speed to help with training
+    option0_dx, option0_dy, option0_risk, option1_dx, option1_dy, option1_risk, risk_preference, speed, azimuth, tree_dx, tree_dy, reward, done = struct.unpack("<12fi", data)
     speed = np.tanh(speed / 120.0)
     # Simplifies and normalizes azimuth into sin and cos angles for model
     # For example in azimuth 0 and 360 are the same but can look different for the model
     azimuth = np.sin(azimuth), np.cos(azimuth)
 
     # Creates and input tensor for the model
-    state = torch.tensor(
-        [dx, dy, speed, azimuth[0], azimuth[1], tree_dx, tree_dy],
-        dtype=torch.float32
-    )
+    state = torch.tensor([option0_dx, option0_dy, option0_risk, option1_dx, option1_dy, option1_risk, risk_preference, speed, azimuth[0], azimuth[1], tree_dx, tree_dy], dtype=torch.float32)
 
     # ------------------------------------------------------------
     # IMPORTANT: The reward that just arrived belongs to the PREVIOUS action

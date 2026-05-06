@@ -321,7 +321,10 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
       load_ac_model("checkpoints/ac_weights500.bin", &(game->npcs[npc_num].model));
     }
     // Forced override for testing
-    load_ac_model("checkpoints/ac_weights.bin", &(game->npcs[npc_num].model));
+    if (npc_num < 5)
+      load_ac_model("checkpoints/ac_weightsh.bin", &(game->npcs[npc_num].model));
+    else
+      load_ac_model("checkpoints/ac_weightsl.bin", &(game->npcs[npc_num].model));
 
     game->npcs[npc_num].speed = 0.0f;
 
@@ -349,7 +352,12 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window) {
     game->npcs[npc_num].sprite->sprite_common.position = game->npcs[npc_num].position;
     game->npcs[npc_num].sprite->sprite_common.scale = (vec3){.x = 5.0f, .y = 5.0f, .z = 0.0f};
     game->npcs[npc_num].heading = game->game_map.start_heading;
-    game->npcs[npc_num].current_marker = 0;
+    game->npcs[npc_num].last_marker = -1;
+    i32 start_marker_index = game_map_marker_index_from_id(&game->game_map, 0);
+    if (start_marker_index < 0)
+      start_marker_index = 0;
+    game->npcs[npc_num].current_marker = start_marker_index;
+    game->npcs[npc_num].risk_preference = AI_RISK_PREFERENCE;
     game->npcs[npc_num].last_action[0] = 0.0f;
     game->npcs[npc_num].last_action[1] = 0.0f;
     game->npcs[npc_num].prev_y = game->npcs[npc_num].position.y;
@@ -521,7 +529,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
       vec3 forward_vel = (vec3){.x = (r32)real32_cos(heading), .y = 0.0f, .z = -(r32)real32_sin(heading)};
 
       // Current marker position
-      vec3 marker_pos = game->game_map.marker[game->npcs[ai_num].current_marker]->sprite_common.position;
+      vec3 marker_pos = game->game_map.markers[game->npcs[ai_num].current_marker].sprite->sprite_common.position;
 
       // Distance BEFORE movement
       r32 dx_before = marker_pos.x - game->npcs[ai_num].position.x;
@@ -571,16 +579,23 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
         reward += 0.1f * progress;
 
       const r32 checkpoint_radius = 15.0f;
+
       if (!hit_tree && dist_after < checkpoint_radius) {
-        reward += 2.0f;  // checkpoint bonus
+        reward += 2.0f;
 
-        game->npcs[ai_num].current_marker++;
+        i32 completed_marker = game->npcs[ai_num].current_marker;
+        game->npcs[ai_num].last_marker = completed_marker;
 
-        if (game->npcs[ai_num].current_marker >= game->total_markers) {
-          game->npcs[ai_num].current_marker = 0;
-          reward += 5.0f;  // lap bonus
-          // done = TRUE;
-          // game->timer = 0;
+        i32 next_marker = choose_next_marker_by_risk(&game->game_map, completed_marker, game->npcs[ai_num].risk_preference);
+
+        if (next_marker >= 0) {
+          game->npcs[ai_num].current_marker = next_marker;
+
+          // Lap bonus when route points back to marker id 0.
+          if (game->game_map.markers[next_marker].id == 0 &&
+              game->game_map.markers[completed_marker].id != 0) {
+            reward += 5.0f;
+          }
         }
       }
 
@@ -594,7 +609,7 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
       reward -= 0.02f * real32_fabs(angle);
 
       // Use the current target marker after checkpoint update so we head towards the next one if we just passed the checkpoint
-      vec3 next_marker = game->game_map.marker[game->npcs[ai_num].current_marker]->sprite_common.position;
+      vec3 next_marker = game->game_map.markers[game->npcs[ai_num].current_marker].sprite->sprite_common.position;
 
       // World delta to target, basically aiming towards it
       r32 dxw = next_marker.x - game->npcs[ai_num].position.x;
@@ -642,26 +657,59 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
       r32 tree_dx = 1.0f;
       r32 tree_dy = 0.0f;
 
+      struct TargetOption target_options[2];
+      get_current_target_options(&game->game_map, &game->npcs[ai_num], target_options);
+
+      r32 option0_dx = 0.0f;
+      r32 option0_dy = 0.0f;
+      r32 option0_risk = 0.0f;
+      r32 option1_dx = 0.0f;
+      r32 option1_dy = 0.0f;
+      r32 option1_risk = 0.0f;
+
+      marker_option_to_local_features(&game->game_map, &game->npcs[ai_num], target_options[0], norm, &option0_dx, &option0_dy, &option0_risk);
+      marker_option_to_local_features(&game->game_map, &game->npcs[ai_num], target_options[1], norm, &option1_dx, &option1_dy, &option1_risk);
+
       if (!DEPLOY_MODE && !DRIVE_OVERRIDE) {
         struct Packet {
-          r32 dx;       // Next checkpoint x relative to car direction
-          r32 dy;       // Next checkpoint y relative to car direction
-          r32 speed;    // Car speed
-          r32 azimuth;  // Car angle
-          r32 tree_dx;  // Next forward facing tree x relative to car direction
-          r32 tree_dy;  // Next forward facing tree y relative to car direction
-          r32 reward;   // Reward for this step
-          i32 done;     // Whether the episode is done
+          r32 option0_dx;
+          r32 option0_dy;
+          r32 option0_risk;
+
+          r32 option1_dx;
+          r32 option1_dy;
+          r32 option1_risk;
+
+          r32 risk_preference;
+
+          r32 speed;
+          r32 azimuth;
+
+          r32 tree_dx;
+          r32 tree_dy;
+
+          r32 reward;
+          i32 done;
         };
 
         struct Packet packet;
-        // Normalize to roughly [-1,1]
-        packet.dx = forward_err / norm;
-        packet.dy = right_err / norm;
+
+        packet.option0_dx = option0_dx;
+        packet.option0_dy = option0_dy;
+        packet.option0_risk = option0_risk;
+
+        packet.option1_dx = option1_dx;
+        packet.option1_dy = option1_dy;
+        packet.option1_risk = option1_risk;
+
+        packet.risk_preference = game->npcs[ai_num].risk_preference;
+
         packet.speed = game->npcs[ai_num].speed;
         packet.azimuth = heading;
+
         packet.tree_dx = tree_dx;
         packet.tree_dy = tree_dy;
+
         packet.reward = reward;
         packet.done = done;
 
@@ -694,13 +742,19 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
           game->npcs[ai_num].last_action[1] = 0.0f;
           game->npcs[ai_num].prev_y = game->npcs[ai_num].position.y;
 
-          game->npcs[ai_num].current_marker = 0;
+          game->npcs[ai_num].last_marker = -1;
+
+          i32 reset_marker_index = game_map_marker_index_from_id(&game->game_map, 0);
+          if (reset_marker_index < 0)
+            reset_marker_index = 0;
+
+          game->npcs[ai_num].current_marker = reset_marker_index;
         }
       } else {
         if (start == TRUE) {
           r32 value;
           r32 speed_norm = real32_tanh(game->npcs[ai_num].speed / 120.0f);
-          r32 game_state[7] = {forward_err / norm, right_err / norm, speed_norm, real32_sin(heading), real32_cos(heading), tree_dx, tree_dy};
+          r32 game_state[12] = {option0_dx, option0_dy, option0_risk, option1_dx, option1_dy, option1_risk, game->npcs[ai_num].risk_preference, speed_norm, real32_sin(heading), real32_cos(heading), tree_dx, tree_dy};
           ac_forward(&(game->npcs[ai_num].model), game_state, game->npcs[ai_num].last_action, &value);
         }
       }
@@ -723,9 +777,15 @@ void game_update(struct Game* game, struct Mana* mana, r64 delta_time) {
     player_update(&(game->player), input_manager_get_controller_actions(input_manager), input_manager_get_controller_action_list_length(input_manager));
 
     for (i32 marker_num = 0; marker_num < game->total_markers; marker_num++) {
-      game->game_map.marker[marker_num]->sprite_common.rotation = sprite_billboard_rotation(game->game_map.marker[marker_num]->sprite_common.position, cam_pos);
+      struct Sprite* marker_sprite = game->game_map.markers[marker_num].sprite;
+
+      if (!marker_sprite)
+        continue;
+
+      marker_sprite->sprite_common.rotation = sprite_billboard_rotation(marker_sprite->sprite_common.position, cam_pos);
+
       if (DEPLOY_MODE)
-        game->game_map.marker[marker_num]->sprite_common.position.y = -10000.0f;
+        marker_sprite->sprite_common.position.y = -10000.0f;
     }
 
     game->tentacle.accum += (r32)sim_delta_time;

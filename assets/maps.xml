@@ -3,16 +3,44 @@
 		<track texture="./assets/models/track/track.dae" x="0" y="0" scale="20"/>
 		<start x="29.0" y="0.0" z="385" heading="1.5"/>
 		<markers>
-			<marker x="40" y="250" id="0"/>
-			<marker x="30" y="125" id="1"/>
-			<marker x="-15" y="20" id="2"/>
-			<marker x="-60" y="-60" id="3"/>
-			<marker x="-70" y="-150" id="4"/>
-			<marker x="-50" y="-225" id="5"/>
-			<marker x="40" y="-265" id="6"/>
-			<marker x="80" y="-325" id="7"/>
-			<marker x="20" y="-415" id="8"/>
-			<marker x="-100" y="-350" id="9"/>
+			<marker x="40" y="250" id="0">
+				<next id="1" risk="0.0"/>
+			</marker>
+			<marker x="30" y="125" id="1">
+				<next id="2" risk="0.0"/>
+			</marker>
+			<marker x="-15" y="20" id="2">
+				<next id="3" risk="0.0"/>
+				<next id="100" risk="1.0"/>
+			</marker>
+			<marker x="-60" y="-60" id="3">
+				<next id="4" risk="0.0"/>
+			</marker>
+			<marker x="-70" y="-150" id="4">
+				<next id="5" risk="0.0"/>
+			</marker>
+			<marker x="-50" y="-225" id="5">
+				<next id="6" risk="0.0"/>
+			</marker>
+			<marker x="40" y="-265" id="6">
+				<next id="7" risk="0.0"/>
+			</marker>
+			<marker x="80" y="-325" id="7">
+				<next id="8" risk="0.0"/>
+			</marker>
+			<marker x="20" y="-415" id="8">
+				<next id="9" risk="0.0"/>
+			</marker>
+			<marker x="-100" y="-350" id="9">
+				<next id="0" risk="0.0"/>
+			</marker>
+			<!-- This is a single-line or multi-line comment -->
+			<marker x="0" y="-100" id="100">
+				<next id="101" risk="0.0"/>
+			</marker>
+			<marker x="40" y="-180" id="101">
+				<next id="6" risk="0.0"/>
+			</marker>
 		</markers>
 	</map>
 </game>

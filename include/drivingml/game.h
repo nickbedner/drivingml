@@ -16,15 +16,38 @@
 #include "drivingml/core/ac_model.h"
 #include "drivingml/core/player.h"
 
-#define DRIVE_OVERRIDE TRUE
-#define DEPLOY_MODE FALSE
+#define DRIVE_OVERRIDE FALSE
+#define DEPLOY_MODE TRUE
 
 #define MAX_MARKERS 32
+#define MAX_MARKER_ID 256
+#define MAX_NEXT_MARKERS 2
 #define MAX_NPCS 8
 #define MAX_TREES 32
 
+// Hyperparameter:
+// 0.0 = prefer safest path
+// 1.0 = prefer riskiest path
+#define AI_RISK_PREFERENCE 0.0f
+
+struct MarkerNext {
+  i32 marker_id;
+  i32 marker_index;
+  r32 risk;
+};
+
+struct MarkerData {
+  i32 id;
+  struct Sprite* sprite;
+
+  i32 next_count;
+  struct MarkerNext next[MAX_NEXT_MARKERS];
+};
+
 struct GameMap {
-  struct Sprite* marker[MAX_MARKERS];
+  struct MarkerData markers[MAX_MARKERS];
+  i32 marker_id_to_index[MAX_MARKER_ID];
+
   struct Sprite* trees[MAX_TREES];
 
   struct Model* track_model;
@@ -42,6 +65,8 @@ struct NPC {
   r32 last_action[2];
   r32 prev_y;
   i32 current_marker;
+  i32 last_marker;
+  r32 risk_preference;
   struct Sprite* sprite;
 };
 
@@ -115,6 +140,111 @@ void game_init(struct Game* game, struct Mana* mana, struct Window* window);
 void game_delete(struct Game* game, struct Mana* mana);
 void game_update(struct Game* game, struct Mana* mana, r64 delta_time);
 void game_render(struct Game* game, struct Mana* mana, r64 delta_time);
+
+internal r32 clamp01(r32 x) {
+  if (x < 0.0f) return 0.0f;
+  if (x > 1.0f) return 1.0f;
+  return x;
+}
+
+internal i32 game_map_marker_index_from_id(struct GameMap* game_map, i32 marker_id) {
+  if (marker_id < 0 || marker_id >= MAX_MARKER_ID)
+    return -1;
+
+  return game_map->marker_id_to_index[marker_id];
+}
+
+internal i32 choose_next_marker_by_risk(struct GameMap* game_map, i32 marker_index, r32 risk_preference) {
+  if (marker_index < 0 || marker_index >= MAX_MARKERS)
+    return -1;
+
+  struct MarkerData* marker = &game_map->markers[marker_index];
+
+  if (marker->next_count <= 0)
+    return game_map_marker_index_from_id(game_map, 0);
+
+  i32 best_next = 0;
+
+  for (i32 i = 1; i < marker->next_count; i++) {
+    r32 current_best_risk = marker->next[best_next].risk;
+    r32 candidate_risk = marker->next[i].risk;
+
+    if (risk_preference >= 0.5f) {
+      // High-risk AI chooses the highest risk path.
+      if (candidate_risk > current_best_risk)
+        best_next = i;
+    } else {
+      // Low-risk AI chooses the lowest risk path.
+      if (candidate_risk < current_best_risk)
+        best_next = i;
+    }
+  }
+
+  return marker->next[best_next].marker_index;
+}
+
+struct TargetOption {
+  i32 marker_index;
+  r32 risk;
+};
+
+internal void get_current_target_options(struct GameMap* game_map, struct NPC* npc, struct TargetOption out_options[2]) {
+  out_options[0].marker_index = npc->current_marker;
+  out_options[0].risk = 0.0f;
+  out_options[1].marker_index = npc->current_marker;
+  out_options[1].risk = 0.0f;
+
+  if (npc->last_marker < 0)
+    return;
+
+  struct MarkerData* last_marker = &game_map->markers[npc->last_marker];
+
+  if (last_marker->next_count <= 0)
+    return;
+
+  for (i32 i = 0; i < last_marker->next_count && i < 2; i++) {
+    out_options[i].marker_index = last_marker->next[i].marker_index;
+    out_options[i].risk = last_marker->next[i].risk;
+  }
+
+  // If there is only one option, duplicate it so the model always receives two.
+  if (last_marker->next_count == 1) {
+    out_options[1] = out_options[0];
+  }
+}
+
+internal void marker_option_to_local_features(
+    struct GameMap* game_map,
+    struct NPC* npc,
+    struct TargetOption option,
+    r32 norm,
+    r32* out_forward,
+    r32* out_right,
+    r32* out_risk) {
+  if (option.marker_index < 0 || option.marker_index >= MAX_MARKERS) {
+    *out_forward = 0.0f;
+    *out_right = 0.0f;
+    *out_risk = 0.0f;
+    return;
+  }
+
+  vec3 target_pos = game_map->markers[option.marker_index].sprite->sprite_common.position;
+
+  r32 dxw = target_pos.x - npc->position.x;
+  r32 dzw = target_pos.z - npc->position.z;
+
+  r32 fx = -real32_cos(npc->heading);
+  r32 fz = real32_sin(npc->heading);
+  r32 rx = -real32_sin(npc->heading);
+  r32 rz = -real32_cos(npc->heading);
+
+  r32 forward_err = dxw * fx + dzw * fz;
+  r32 right_err = dxw * rx + dzw * rz;
+
+  *out_forward = forward_err / norm;
+  *out_right = right_err / norm;
+  *out_risk = clamp01(option.risk);
+}
 
 internal const char* track_surface_type_name(i32 surface_type) {
   switch (surface_type) {
@@ -377,28 +507,100 @@ internal void load_map_from_xml(struct Game* game, struct Mana* mana, struct Gam
 
   struct XmlNode* markers_node = xml_node_get_child(map_node, "markers");
 
+  for (i32 i = 0; i < MAX_MARKER_ID; i++)
+    game_map->marker_id_to_index[i] = -1;
+
+  for (i32 i = 0; i < MAX_MARKERS; i++) {
+    game_map->markers[i].id = -1;
+    game_map->markers[i].sprite = NULL;
+    game_map->markers[i].next_count = 0;
+  }
+
   if (markers_node) {
     struct ArrayList* marker_list = xml_node_get_children(markers_node, "marker");
 
     if (marker_list) {
-      size_t count = array_list_size(marker_list);
+      size_t raw_count = array_list_size(marker_list);
+      size_t count = raw_count;
+
+      if (count > MAX_MARKERS)
+        count = MAX_MARKERS;
+
       game->total_markers = (i32)count;
 
+      // First pass: load marker positions and IDs.
       for (size_t i = 0; i < count; i++) {
         struct XmlNode* marker = (struct XmlNode*)array_list_get(marker_list, i);
 
+        char* id_str = xml_node_get_attribute(marker, "id");
         char* x_str = xml_node_get_attribute(marker, "x");
         char* y_str = xml_node_get_attribute(marker, "y");
 
         if (!x_str || !y_str)
           continue;
 
+        i32 marker_id = id_str ? atoi(id_str) : (i32)i;
+
+        if (marker_id < 0 || marker_id >= MAX_MARKER_ID) {
+          printf("Marker id %d is out of range. Increase MAX_MARKER_ID.\n", marker_id);
+          continue;
+        }
+
         r32 x = (r32)atof(x_str);
         r32 y = (r32)atof(y_str);
 
-        game_map->marker[i] = sprite_manager_add_sprite(&(game->sprite_manager), &(mana->api.api_common), "/textures/marker.png");
+        game_map->markers[i].id = marker_id;
+        game_map->markers[i].next_count = 0;
+        game_map->markers[i].sprite = sprite_manager_add_sprite(
+            &(game->sprite_manager),
+            &(mana->api.api_common),
+            "/textures/marker.png");
 
-        place_marker(game_map->marker[i], x, y);
+        game_map->marker_id_to_index[marker_id] = (i32)i;
+
+        place_marker(game_map->markers[i].sprite, x, y);
+      }
+
+      // Second pass: load <next> children now that all marker IDs are known.
+      for (size_t i = 0; i < count; i++) {
+        struct XmlNode* marker = (struct XmlNode*)array_list_get(marker_list, i);
+        struct MarkerData* marker_data = &game_map->markers[i];
+
+        struct ArrayList* next_list = xml_node_get_children(marker, "next");
+
+        if (!next_list)
+          continue;
+
+        size_t next_count = array_list_size(next_list);
+
+        for (size_t j = 0; j < next_count && j < MAX_NEXT_MARKERS; j++) {
+          struct XmlNode* next = (struct XmlNode*)array_list_get(next_list, j);
+
+          char* next_id_str = xml_node_get_attribute(next, "id");
+          char* risk_str = xml_node_get_attribute(next, "risk");
+
+          if (!next_id_str)
+            continue;
+
+          i32 next_id = atoi(next_id_str);
+          i32 next_index = game_map_marker_index_from_id(game_map, next_id);
+
+          if (next_index < 0) {
+            printf("Marker %d has invalid next id %d\n", marker_data->id, next_id);
+            continue;
+          }
+
+          r32 risk = risk_str ? (r32)atof(risk_str) : 0.0f;
+          risk = clamp01(risk);
+
+          i32 slot = marker_data->next_count;
+
+          marker_data->next[slot].marker_id = next_id;
+          marker_data->next[slot].marker_index = next_index;
+          marker_data->next[slot].risk = risk;
+
+          marker_data->next_count++;
+        }
       }
     }
   }
